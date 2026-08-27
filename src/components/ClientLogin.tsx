@@ -5,11 +5,7 @@ import {
   Lock, 
   Phone, 
   ArrowRight, 
-  Sparkles, 
-  CheckCircle2, 
-  Layers,
-  Loader2,
-  Globe
+  Loader2
 } from 'lucide-react';
 import { Order } from '../types';
 import { getStoredOrders, normalizePhone, saveStoredOrders } from '../services/storage';
@@ -18,24 +14,19 @@ import { ImzoLogo } from './ImzoLogo';
 
 interface ClientLoginProps {
   onLoginSuccess: (order: Order) => void;
-  onSwitchToManager: () => void;
+  onSwitchToManager?: () => void;
 }
 
 export const ClientLogin: React.FC<ClientLoginProps> = ({
   onLoginSuccess,
-  onSwitchToManager,
 }) => {
   const [loginInput, setLoginInput] = useState('');
   const [pinInput, setPinInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [hasBitrixUrl, setHasBitrixUrl] = useState(false);
 
   useEffect(() => {
     const loaded = getStoredOrders();
-    setOrders(loaded);
-    setHasBitrixUrl(Boolean(getBitrixWebhookUrl()));
 
     // Check if URL has direct token query param
     const params = new URLSearchParams(window.location.search);
@@ -96,29 +87,8 @@ export const ClientLogin: React.FC<ClientLoginProps> = ({
     }
 
     setIsLoading(false);
-    setErrorMsg('Telefon raqam yoki maxsus parol noto\'g\'ri kiritildi. Bitrix24 dagi SMS maxsus kod (UF_CRM_1745308434) ni tekshiring.');
+    setErrorMsg('Telefon raqam yoki maxsus parol noto\'g\'ri kiritildi. Iltimos qaytadan tekshirib kiritib ko\'ring.');
   };
-
-  const handleQuickLogin = (order: Order) => {
-    setLoginInput(order.clientPhone || order.credentials.login);
-    setPinInput(order.credentials.pinCode);
-    setErrorMsg('');
-    onLoginSuccess(order);
-  };
-
-  // Group unique clients for quick demo preview
-  const uniqueClientMap = new Map<string, { mainOrder: Order; orderCount: number; invoices: string[] }>();
-  orders.forEach((o) => {
-    const key = o.clientPhone.replace(/\D/g, '') || o.clientFullName;
-    if (!uniqueClientMap.has(key)) {
-      uniqueClientMap.set(key, { mainOrder: o, orderCount: 1, invoices: [o.invoiceNumber] });
-    } else {
-      const cur = uniqueClientMap.get(key)!;
-      cur.orderCount += 1;
-      cur.invoices.push(o.invoiceNumber);
-    }
-  });
-  const clientGroups = Array.from(uniqueClientMap.values());
 
   return (
     <div className="min-h-[80vh] flex flex-col items-center justify-center p-3 sm:p-4">
@@ -141,6 +111,7 @@ export const ClientLogin: React.FC<ClientLoginProps> = ({
             Mijoz Shaxsiy Kabineti
           </h2>
         </div>
+
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-3.5 sm:space-y-4 relative z-10">
           <div>
@@ -167,6 +138,7 @@ export const ClientLogin: React.FC<ClientLoginProps> = ({
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Maxsus Parol (SMS PIN Kod)</span>
+              <span className="text-[10px] text-slate-500 font-mono">SMS orqali kelgan kod</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -174,10 +146,10 @@ export const ClientLogin: React.FC<ClientLoginProps> = ({
               </div>
               <input
                 id="input-client-pin"
-                type="text"
+                type="password"
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value)}
-                placeholder="Maxsus kod (masalan: 8841)..."
+                placeholder="SMS kodni kiriting..."
                 required
                 className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs sm:text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-mono tracking-wider"
               />
@@ -200,7 +172,7 @@ export const ClientLogin: React.FC<ClientLoginProps> = ({
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Bitrix24 tekshirilmoqda...</span>
+                <span>Tekshirilmoqda...</span>
               </>
             ) : (
               <>
@@ -210,58 +182,6 @@ export const ClientLogin: React.FC<ClientLoginProps> = ({
             )}
           </button>
         </form>
-
-        {/* Demo Fast Login Section */}
-        <div className="pt-2 border-t border-slate-800/80 space-y-2.5 relative z-10">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Namunaviy Hisoblar (1 bosishda kirish):
-            </span>
-          </div>
-
-          <div className="space-y-1.5">
-            {clientGroups.map((grp) => (
-              <button
-                key={grp.mainOrder.id}
-                type="button"
-                onClick={() => handleQuickLogin(grp.mainOrder)}
-                className="w-full p-2.5 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 text-left flex items-center justify-between transition-all cursor-pointer group"
-              >
-                <div className="min-w-0 pr-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-bold text-white group-hover:text-blue-300 transition-colors truncate">
-                      {grp.mainOrder.clientFullName}
-                    </span>
-                    {grp.orderCount > 1 && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-                        {grp.orderCount} ta buyurtma
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5 truncate">
-                    Login: <strong className="text-slate-200">{grp.mainOrder.credentials.login}</strong> | PIN: <strong className="text-amber-300">{grp.mainOrder.credentials.pinCode}</strong>
-                  </p>
-                </div>
-                <div className="shrink-0 flex items-center gap-1 text-[11px] text-blue-400 font-semibold group-hover:translate-x-0.5 transition-transform">
-                  <span>Kirish</span>
-                  <ArrowRight className="w-3 h-3" />
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Switch to Manager */}
-        <div className="pt-2 text-center relative z-10">
-          <button
-            type="button"
-            onClick={onSwitchToManager}
-            className="text-[11px] text-slate-400 hover:text-white transition-colors cursor-pointer"
-          >
-            Menejer yoki Sifat nazoratchisimiz? <strong className="text-blue-400 underline">Sifat Nazorati Paneliga o'tish</strong>
-          </button>
-        </div>
       </motion.div>
     </div>
   );
