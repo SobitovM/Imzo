@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 
-const DEFAULT_WEBHOOK = "https://bitrix.imzo.uz/rest/244/lhfi8leh3yqxl3sc/";
+export const DEFAULT_BITRIX_WEBHOOK = import.meta.env.VITE_BITRIX_WEBHOOK_URL || '';
 
 async function startServer() {
   const app = express();
