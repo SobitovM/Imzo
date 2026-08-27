@@ -290,7 +290,7 @@ export const BITRIX_FIELDS = {
 
   // Showroom fields by regions
   SHOWROOMS: {
-    DEFAULT: "UF_CRM_1647931321",          // Шоурум :
+    SERGELI: "UF_CRM_1647931321",          // Шоурум :
     ANDIJAN: "UF_CRM_1649332403191",       // Шоу-рум :(андижан)
     SAMARKAND: "UF_CRM_1653148491",        // Шоу-рум : (самарканд)
     NAMANGAN: "UF_CRM_1655321621579",       // Шоу-рум Наманган
