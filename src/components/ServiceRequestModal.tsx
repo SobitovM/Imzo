@@ -241,7 +241,7 @@ export const ServiceRequestModal: React.FC<ServiceRequestModalProps> = ({
                       >
                         {availableOrders.map((ord) => (
                           <option key={ord.id} value={ord.invoiceNumber}>
-                            {ord.invoiceNumber} — {ord.products[0]?.name || 'Mahsulot'} ({ord.warranty?.warrantyPeriodMonths || 36} oy kafolat)
+                            {ord.invoiceNumber} — {ord.products[0]?.name || 'Mahsulot'} ({ord.warranty?.warrantyPeriodMonths || 60} oy kafolat)
                           </option>
                         ))}
                       </select>
