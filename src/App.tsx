@@ -67,7 +67,7 @@ export default function App() {
     e.preventDefault();
     setAdminError('');
     // Passwords accepted for admin: 'admin', 'imzo2026', 'okk2026', 'manager'
-    const allowed = ['%zmnTOa5~bjOTBH2'];
+    const allowed = ['1234'];
     if (allowed.includes(adminPassword.trim().toLowerCase())) {
       setIsAdminModalOpen(false);
       setAdminPassword('');
