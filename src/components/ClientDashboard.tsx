@@ -250,7 +250,9 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
           </div>
 
           <div className="text-[11px] sm:text-xs text-slate-400">
-            Kafolat: <strong className="text-amber-400 font-bold">{activeOrder.warranty?.warrantyPeriodMonths || 60} Oy (5 Yil)</strong>
+            Kafolat: <strong className="text-amber-400 font-bold">
+              {(activeOrder.warranty?.warrantyPeriodMonths && activeOrder.warranty.warrantyPeriodMonths >= 60) ? activeOrder.warranty.warrantyPeriodMonths : 60} Oy (5 Yil)
+            </strong>
           </div>
         </div>
 
