@@ -166,7 +166,7 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
       invoiceNumber: String(invoiceNumber),
       orderDate: formatBitrixDate(deal.DATE_CREATE) || '2026-08-01',
       readyDate: readyDate || 'Tasdiqlangan',
-      warrantyPeriodMonths: 36,
+      warrantyPeriodMonths: 60,
       okkManagerName: okkInspector,
       okkManagerTitle: "Sifat nazorati (OKK) Bosh mutaxassisi",
       qualityScore: 99.8,
@@ -174,7 +174,7 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
       signatureUrl: "",
       qrCodeValue: `https://kabinet.fabrika.uz/?token=${token}`,
       terms: [
-        "Alyumin profil va lak-bo'yoq qatlamiga 36 oy to'liq kafolat beriladi.",
+        "Alyumin profil va lak-bo'yoq qatlamiga 60 oy to'liq kafolat beriladi.",
         "Muntazam profilaktika va servis xizmati bepul amalga oshiriladi.",
         "Mexanik shikastlanish va noto'g'ri foydalanish kafolatga kirmaydi."
       ]
