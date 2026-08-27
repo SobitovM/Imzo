@@ -139,7 +139,11 @@ export const ClientLogin: React.FC<ClientLoginProps> = ({
 
           <h2 className="text-lg sm:text-2xl font-black tracking-tight text-white">
             Mijoz Shaxsiy Kabineti
-      
+          </h2>
+          <p className="text-[11px] sm:text-xs text-slate-400 max-w-xs mx-auto">
+            Telefon raqamingiz va maxsus parolingiz orqali barcha buyurtmalaringiz, kafolat talonlari va servis xizmatlariga ulaning
+          </p>
+
           {hasBitrixUrl && (
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold">
               <Globe className="w-3 h-3" />
