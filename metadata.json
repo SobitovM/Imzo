@@ -1,0 +1,6 @@
+{
+  "name": "IMZO",
+  "description": "IMZO rasmiy mijoz shaxsiy kabineti, buyurtma holatini kuzatish, elektron kafolat taloni va Sifat nazorati portali",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

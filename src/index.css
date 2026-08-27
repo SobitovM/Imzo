@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-warranty-certificate, #printable-warranty-certificate * {
+    visibility: visible;
+  }
+  #printable-warranty-certificate {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20mm;
+    box-shadow: none;
+    border: 4px double #D4AF37 !important;
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  #warranty-modal-overlay {
+    position: static;
+    background: none !important;
+    padding: 0;
+  }
+}
