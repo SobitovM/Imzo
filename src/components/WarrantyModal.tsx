@@ -75,7 +75,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   };
 
   const isReady = ['okk_otdi', 'topshirildi'].includes(order.status);
-  const warrantyMonths = order.warranty?.warrantyPeriodMonths || 36;
+  const warrantyMonths = order.warranty?.warrantyPeriodMonths || 60;
   const inspectorName = order.warranty?.okkManagerName || order.okkInspectorName || "Xolmatov S.A.";
   const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '8841'}`;
 
