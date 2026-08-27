@@ -1,18 +1,48 @@
 import { Order, ServiceTicket, OrderStatus, ProductItem } from '../types';
 import { INITIAL_ORDERS, INITIAL_SERVICE_TICKETS } from '../data/mockData';
 
-const ORDERS_KEY = 'fabrika_orders_v1';
-const TICKETS_KEY = 'fabrika_tickets_v1';
-const AUTH_KEY = 'fabrika_current_session';
+const ORDERS_KEY = 'imzo_orders_v2';
+const TICKETS_KEY = 'imzo_tickets_v2';
+const AUTH_KEY = 'imzo_current_session';
 
 export const getStoredOrders = (): Order[] => {
   try {
     const raw = localStorage.getItem(ORDERS_KEY);
+    let orders: Order[];
     if (!raw) {
+      // Clear legacy storage if present
+      try {
+        localStorage.removeItem('fabrika_orders_v1');
+      } catch (_) {}
       localStorage.setItem(ORDERS_KEY, JSON.stringify(INITIAL_ORDERS));
-      return INITIAL_ORDERS;
+      orders = INITIAL_ORDERS;
+    } else {
+      orders = JSON.parse(raw);
     }
-    return JSON.parse(raw);
+
+    // Force migration of all orders to 60 months warranty
+    let modified = false;
+    orders = orders.map((ord) => {
+      if (ord.warranty && (ord.warranty.warrantyPeriodMonths === 36 || !ord.warranty.warrantyPeriodMonths)) {
+        modified = true;
+        return {
+          ...ord,
+          warranty: {
+            ...ord.warranty,
+            warrantyPeriodMonths: 60,
+            terms: ord.warranty.terms.map(t => t.replace(/36\s*oy/gi, '60 oy (5 yil)')),
+            qrCodeValue: (ord.warranty.qrCodeValue || '').replace('36_MONTHS', '60_MONTHS')
+          }
+        };
+      }
+      return ord;
+    });
+
+    if (modified) {
+      localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+    }
+
+    return orders;
   } catch (e) {
     console.error('Failed to load orders from storage', e);
     return INITIAL_ORDERS;
@@ -82,7 +112,7 @@ export const generatePinCode = (): string => {
 // Generate unique order token
 export const generateOrderToken = (invoiceNumber: string): string => {
   const cleanInv = invoiceNumber.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-  const rand = Math.random().toString(60).substring(2, 7);
+  const rand = Math.random().toString(36).substring(2, 7);
   return `tok_${cleanInv}_${rand}`;
 };
 
@@ -335,7 +365,7 @@ export const createNewOrder = (orderData: Partial<Order>): Order => {
       signatureUrl: 'sig_alisher',
       qrCodeValue: `VERIFY:${invNum}:ALISHER_RUSTAMOV:OKK_PASS:60_MONTHS`,
       terms: [
-        'Ishlab chiqarish nuqsonlari va furnituraga 60 oy to\'liq kafolat taqdim etiladi.',
+        'Ishlab chiqarish nuqsonlari va furnituraga 60 oy (5 yil) to\'liq kafolat taqdim etiladi.',
         'Muntazam bepul profilaktika va servis xizmati kafolatlanadi.',
       ],
     },
