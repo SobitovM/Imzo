@@ -26,7 +26,7 @@ export interface WarrantyDetails {
   invoiceNumber: string; // Schet raqam
   orderDate: string; // Buyurtma sanasi
   readyDate: string; // Tayyor bo'lgan sana
-  warrantyPeriodMonths: number; // e.g. 36 oy (3 yil)
+  warrantyPeriodMonths: number; // e.g. 60 oy (5 yil)
   okkManagerName: string; // Sifat nazorati menejeri
   okkManagerTitle: string;
   qualityScore: number; // 99.8%
