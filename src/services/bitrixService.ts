@@ -31,7 +31,7 @@ export const setBitrixAutoSync = (enabled: boolean) => {
   localStorage.setItem(BITRIX_AUTO_SYNC_KEY, enabled ? 'true' : 'false');
 };
 
-// Map STAGE_ID to internal OrderStatus
+// Bitrix stage -> Ichki OrderStatus
 export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
   const s = (stageId || '').toUpperCase();
   if (s.includes('WON') || s.includes('READY') || s.includes('B2NTSZ') || s.includes('Q8F0S3') || s.includes(':1') || s.includes('Q4UARA') || s.includes('ZRA1WC') || s.includes(':6') || s.includes('G7GQBV') || s.includes('IC6QYV')) {
@@ -49,7 +49,7 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
   return 'yangi';
 };
 
-// Resolve Showroom Name from deal fields or IDs
+// Showroom nomini aniqlash
 export const resolveShowroomName = (deal: Record<string, any>): string => {
   const s = BITRIX_FIELDS.SHOWROOMS;
   
@@ -67,7 +67,7 @@ export const resolveShowroomName = (deal: Record<string, any>): string => {
   if (deal[s.BUKHARA]) return `Buxoro (${getDictOrVal(deal[s.BUKHARA])})`;
   if (deal[s.SURKHANDARYA]) return `Surxondaryo (${getDictOrVal(deal[s.SURKHANDARYA])})`;
   if (deal[s.KHOREZM]) return `Xorazm (${getDictOrVal(deal[s.KHOREZM])})`;
-  if (deal[s.DEFAULT]) return `${getDictOrVal(deal[s.DEFAULT])}`;
+  if (deal[s.TOSHKENT]) return `${getDictOrVal(deal[s.TOSHKENT])}`;
   return "Bosh Showroom (Toshkent)";
 };
 
@@ -81,16 +81,26 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   const isReady = status === 'okk_otdi' || stageId.includes('WON');
 
   // Parse Products
-  let rawProductIds = deal[BITRIX_FIELDS.PRODUCT_SERIES];
-  if (!Array.isArray(rawProductIds)) {
-    rawProductIds = rawProductIds ? [rawProductIds] : [];
-  }
-  let rawColorIds = deal[BITRIX_FIELDS.COLOR];
-  if (!Array.isArray(rawColorIds)) {
-    rawColorIds = rawColorIds ? [rawColorIds] : [];
+  let rawProductIds: any[] = [];
+  const rawProd = deal[BITRIX_FIELDS.PRODUCT_SERIES];
+  if (Array.isArray(rawProd)) {
+    rawProductIds = rawProd;
+  } else if (rawProd) {
+    rawProductIds = [rawProd];
   }
 
-  const areaSqM = parseFloat(deal[BITRIX_FIELDS.AREA_SQM]) || 0;
+  // Parse Colors
+  let rawColorIds: any[] = [];
+  const rawColor = deal[BITRIX_FIELDS.COLOR];
+  if (Array.isArray(rawColor)) {
+    rawColorIds = rawColor;
+  } else if (rawColor) {
+    rawColorIds = [rawColor];
+  }
+
+  const rawArea = String(deal[BITRIX_FIELDS.AREA_SQM] || '').replace(',', '.');
+  const areaSqM = parseFloat(rawArea) || 0;
+
   const productNames = rawProductIds.map((id: any) => PRODUCTS_DICT[id] || `Model #${id}`);
   const colorNames = rawColorIds.map((id: any) => COLORS_DICT[id] || `Rang #${id}`);
 
@@ -104,11 +114,11 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
       category: 'Alyumin va PVX Konstruktsiya',
       model: productNames[0] || 'Termo Seriya',
       color: mainColorName,
-      areaSqM: areaSqM > 0 ? areaSqM : 12.5,
-      dimensions: 'Standart loyiha o\'lchamlari',
+      areaSqM: areaSqM,
+      dimensions: areaSqM > 0 ? `${areaSqM} kv.m` : 'Standart loyiha o\'lchamlari',
       quantity: 1,
-      unitPrice: parseFloat(deal.OPPORTUNITY) || 15000000,
-      totalPrice: parseFloat(deal.OPPORTUNITY) || 15000000,
+      unitPrice: parseFloat(deal.OPPORTUNITY) || 0,
+      totalPrice: parseFloat(deal.OPPORTUNITY) || 0,
     }
   ];
 
@@ -119,22 +129,23 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
     ? formatBitrixDate(deal[BITRIX_FIELDS.ORDER_READY_DATE])
     : (isReady ? (estimatedReadyDate !== '-' ? estimatedReadyDate : 'Bugun') : undefined);
 
-  // Client info
+  // Standart Contact bo'limidan Ism va Telefon raqamini olish
   const clientName = contact?.NAME 
     ? `${contact.LAST_NAME || ''} ${contact.NAME} ${contact.SECOND_NAME || ''}`.trim()
     : (deal.TITLE || `Mijoz (Deal #${dealId})`);
     
-  const clientPhone = contact?.PHONE && contact.PHONE[0]?.VALUE 
-    ? contact.PHONE[0].VALUE 
-    : "+998 90 123 45 67";
+  let clientPhone = "Raqam ko'rsatilmagan";
+  if (contact?.PHONE && Array.isArray(contact.PHONE) && contact.PHONE.length > 0) {
+    clientPhone = contact.PHONE[0].VALUE || "Raqam ko'rsatilmagan";
+  }
 
-  const specialCode = String(deal[BITRIX_FIELDS.SPECIAL_CODE] || dealId.slice(-4) || '8841');
-  const login = `SCH${dealId.slice(-4) || '8841'}`;
+  const specialCode = String(deal[BITRIX_FIELDS.SPECIAL_CODE] || '');
+  const login = `SCH${dealId.slice(-4)}`;
   const pin = specialCode;
   const token = `tok_${login.toLowerCase()}_${dealId}`;
 
   const showroom = resolveShowroomName(deal);
-  const managerName = deal[BITRIX_FIELDS.RESPONSIBLE_MANAGER] || "Komil Rahimov";
+  const managerName = deal[BITRIX_FIELDS.RESPONSIBLE_MANAGER] || "Menejer ko'rsatilmagan";
   const okkInspector = deal[BITRIX_FIELDS.OKK_MANAGER] || "Alisher Rustamov (Bosh OKK)";
 
   return {
@@ -146,25 +157,25 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
     showroomName: showroom,
     showroomId: 'bx_sh',
     salesManagerName: managerName,
-    salesManagerPhone: '+998 90 777 88 99',
-    orderDate: formatBitrixDate(deal.DATE_CREATE) || '2026-08-01',
-    factorySentDate: factorySentDate !== '-' ? factorySentDate : '2026-08-05',
-    productionStartDate: deal[BITRIX_FIELDS.READY_TO_PROD_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.READY_TO_PROD_DATE]) : '2026-08-10',
-    okkInspectionDate: isReady ? '2026-08-20' : undefined,
+    salesManagerPhone: '',
+    orderDate: formatBitrixDate(deal.DATE_CREATE) || '-',
+    factorySentDate: factorySentDate !== '-' ? factorySentDate : '-',
+    productionStartDate: deal[BITRIX_FIELDS.READY_TO_PROD_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.READY_TO_PROD_DATE]) : '-',
+    okkInspectionDate: isReady ? 'Bugun' : undefined,
     readyDate: readyDate,
     status: status,
     products: productsList,
-    totalAmount: parseFloat(deal.OPPORTUNITY) || 18500000,
-    paidAmount: parseFloat(deal.OPPORTUNITY) || 18500000,
+    totalAmount: parseFloat(deal.OPPORTUNITY) || 0,
+    paidAmount: parseFloat(deal.OPPORTUNITY) || 0,
     credentials: {
       login: login,
       pinCode: pin,
       directToken: token,
     },
     warranty: {
-      certificateNumber: `KT-2026-${dealId.slice(-4) || '8841'}`,
+      certificateNumber: `KT-2026-${dealId.slice(-4)}`,
       invoiceNumber: String(invoiceNumber),
-      orderDate: formatBitrixDate(deal.DATE_CREATE) || '2026-08-01',
+      orderDate: formatBitrixDate(deal.DATE_CREATE) || '-',
       readyDate: readyDate || 'Tasdiqlangan',
       warrantyPeriodMonths: 60,
       okkManagerName: okkInspector,
@@ -186,34 +197,25 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   };
 };
 
-// Call Bitrix24 REST API (using backend proxy or direct fallback)
+// Bitrix24 REST API so'rov yuborish
 export const callBitrixMethod = async (method: string, params: Record<string, any> = {}): Promise<any> => {
   const webhookUrl = getBitrixWebhookUrl();
   if (!webhookUrl) {
     throw new Error("Bitrix24 Webhook URL kiritilmagan.");
   }
 
-  // 1. Try server-side proxy first (handles CORS and timeouts)
   let proxyErrorMessage = '';
   try {
     const proxyRes = await fetch('/api/bitrix-proxy', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        webhookUrl,
-        method,
-        params,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ webhookUrl, method, params }),
     });
 
     const data = await proxyRes.json().catch(() => null);
-
     if (proxyRes.ok && data && !data.error) {
       return data.result;
     }
-
     if (data && data.error_description) {
       proxyErrorMessage = data.error_description;
     }
@@ -221,17 +223,14 @@ export const callBitrixMethod = async (method: string, params: Record<string, an
     console.warn("Proxy call notice:", proxyErr.message);
   }
 
-  // 2. Direct fetch fallback (if client is in same local network as Bitrix24)
   try {
     const url = `${webhookUrl.trim().replace(/\/+$/, '')}/${method}.json`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
       signal: controller.signal,
     });
@@ -250,24 +249,15 @@ export const callBitrixMethod = async (method: string, params: Record<string, an
 
     return json.result;
   } catch (directErr: any) {
-    // If we have a detailed proxy error message (e.g. timeout on bitrix.imzo.uz), present it clearly
-    if (proxyErrorMessage) {
-      throw new Error(proxyErrorMessage);
-    }
-    
+    if (proxyErrorMessage) throw new Error(proxyErrorMessage);
     if (directErr.name === 'AbortError') {
-      throw new Error(`Bitrix24 (${webhookUrl}) serveriga ulanish vaqti tugadi (5s).`);
+      throw new Error(`Bitrix24 (${webhookUrl}) serveriga ulanish vaqti tugadi (10s).`);
     }
-
-    throw new Error(
-      directErr.message?.includes('Failed to fetch') || directErr.name === 'TypeError'
-        ? `Bitrix24 serveriga (${webhookUrl}) to'g'ridan-to'g'ri ulanib bo'lmadi. Server korporativ ichki tarmoqda bo'lishi mumkin.`
-        : (directErr.message || "Bitrix24 ulanish xatosi")
-    );
+    throw new Error(directErr.message || "Bitrix24 ulanish xatosi");
   }
 };
 
-// Fetch deal by Special Code (UF_CRM_1745308434)
+// PIN/Special Code orqali tekshirish
 export const fetchBitrixDealBySpecialCode = async (specialCode: string): Promise<Order | null> => {
   try {
     const authResult = await fetchBitrixCustomerOrdersByCredentials('', specialCode);
@@ -278,7 +268,7 @@ export const fetchBitrixDealBySpecialCode = async (specialCode: string): Promise
   }
 };
 
-// Authenticate customer by Phone Number (Login) & Special PIN Code directly with Bitrix24 and load all client deals
+// Mijoz kirishi va kontaktni parallel yuklash
 export const fetchBitrixCustomerOrdersByCredentials = async (
   phoneInput: string,
   pinInput: string
@@ -300,7 +290,7 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     BITRIX_FIELDS.RESPONSIBLE_MANAGER,
     BITRIX_FIELDS.OKK_MANAGER,
     BITRIX_FIELDS.SPECIAL_CODE,
-    BITRIX_FIELDS.SHOWROOMS.SERGELI,
+    BITRIX_FIELDS.SHOWROOMS.TOSHKENT,
     BITRIX_FIELDS.SHOWROOMS.FERGANA,
     BITRIX_FIELDS.SHOWROOMS.ANDIJAN,
     BITRIX_FIELDS.SHOWROOMS.SAMARKAND,
@@ -314,7 +304,6 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
 
   let matchedDeals: any[] = [];
 
-  // 1. Search deals by Special PIN Code in Bitrix24 (UF_CRM_1745308434)
   if (cleanPin) {
     const res = await callBitrixMethod('crm.deal.list', {
       filter: {
@@ -327,7 +316,6 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     }
   }
 
-  // 2. If not found by PIN directly and Phone is provided, search contact by phone in Bitrix24
   if (matchedDeals.length === 0 && phoneDigits.length >= 7) {
     try {
       const contacts = await callBitrixMethod('crm.contact.list', {
@@ -339,17 +327,12 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
       if (Array.isArray(contacts) && contacts.length > 0) {
         const contactId = contacts[0].ID;
         const deals = await callBitrixMethod('crm.deal.list', {
-          filter: {
-            "=CONTACT_ID": contactId
-          },
+          filter: { "=CONTACT_ID": contactId },
           select: selectFields
         });
         if (Array.isArray(deals) && deals.length > 0) {
-          // Filter by special code if PIN is given
           matchedDeals = deals.filter(d => (d[BITRIX_FIELDS.SPECIAL_CODE] || '').toString().trim() === cleanPin);
-          if (matchedDeals.length === 0 && !cleanPin) {
-            matchedDeals = deals;
-          }
+          if (matchedDeals.length === 0 && !cleanPin) matchedDeals = deals;
         }
       }
     } catch (e) {
@@ -357,124 +340,117 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     }
   }
 
-  if (matchedDeals.length === 0) {
-    return null;
-  }
+  if (matchedDeals.length === 0) return null;
 
-  // 3. Fetch Contact details (Name, Phone number)
   const firstDeal = matchedDeals[0];
   let contactData: any = undefined;
   if (firstDeal.CONTACT_ID) {
     try {
       contactData = await callBitrixMethod('crm.contact.get', { id: firstDeal.CONTACT_ID });
     } catch {
-      // ignore contact fetch fail
+      // ignore
     }
   }
 
-  // 4. Validate phone number if entered by customer
-  if (phoneDigits.length >= 7) {
-    const contactPhones: string[] = contactData?.PHONE?.map((p: any) => (p.VALUE || '').replace(/\D/g, '')) || [];
-    const inv = (firstDeal[BITRIX_FIELDS.ORDER_INVOICE_ID] || '').toString().trim().toUpperCase();
-    const dealTitle = (firstDeal.TITLE || '').toString().trim();
-
-    // Match phone (last 7 or 9 digits, e.g. 901234567 or 998901234567)
-    const last7Digits = phoneDigits.slice(-7);
-    const last9Digits = phoneDigits.slice(-9);
-
-    const matchesPhone = contactPhones.some(cp => 
-      cp.endsWith(last7Digits) || 
-      cp.endsWith(last9Digits) || 
-      phoneDigits.endsWith(cp.slice(-7)) ||
-      cp === phoneDigits
-    );
-
-    const matchesInvoiceOrTitle = cleanPhone && (inv === cleanPhone.toUpperCase() || dealTitle.toLowerCase().includes(cleanPhone.toLowerCase()));
-
-    // Verify PIN match
-    const dealPin = (firstDeal[BITRIX_FIELDS.SPECIAL_CODE] || '').toString().trim();
-    const matchesPin = dealPin === cleanPin;
-
-    if (!matchesPhone && !matchesInvoiceOrTitle && !matchesPin) {
-      return null;
-    }
-  }
-
-  // 5. Query all other deals belonging to this client (Multi-Deal feature)
-  let allClientDeals: any[] = [...matchedDeals];
-  if (firstDeal.CONTACT_ID) {
-    try {
-      const allContactDeals = await callBitrixMethod('crm.deal.list', {
-        filter: {
-          "=CONTACT_ID": firstDeal.CONTACT_ID
-        },
-        select: selectFields
-      });
-      if (Array.isArray(allContactDeals) && allContactDeals.length > 0) {
-        const existingIds = new Set(allClientDeals.map(d => d.ID));
-        for (const cd of allContactDeals) {
-          if (!existingIds.has(cd.ID)) {
-            allClientDeals.push(cd);
-            existingIds.add(cd.ID);
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Could not fetch extra contact deals:", e);
-    }
-  }
-
-  const convertedOrders = allClientDeals.map(deal => convertBitrixDealToOrder(deal, contactData));
-  const mainOrder = convertedOrders[0];
-
+  const convertedOrders = matchedDeals.map(deal => convertBitrixDealToOrder(deal, contactData));
   return {
-    mainOrder,
+    mainOrder: convertedOrders[0],
     allOrders: convertedOrders
   };
 };
 
-// Fetch real deals list
-export const fetchBitrixRecentDeals = async (limit: number = 20): Promise<Order[]> => {
+// FAZLI: Faqat SPECIAL_CODE to'ldirilgan deallarni va ularning KONTAKT ma'lumotlarini o'qish
+export const fetchBitrixRecentDeals = async (limit: number = 300): Promise<Order[]> => {
   try {
-    const result = await callBitrixMethod('crm.deal.list', {
-      order: { DATE_CREATE: "DESC" },
-      select: [
-        "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY",
-        BITRIX_FIELDS.ORDER_INVOICE_ID,
-        BITRIX_FIELDS.PRODUCT_SERIES,
-        BITRIX_FIELDS.COLOR,
-        BITRIX_FIELDS.AREA_SQM,
-        BITRIX_FIELDS.FACTORY_DATE,
-        BITRIX_FIELDS.ESTIMATED_READY_DATE,
-        BITRIX_FIELDS.READY_TO_PROD_DATE,
-        BITRIX_FIELDS.ORDER_READY_DATE,
-        BITRIX_FIELDS.RESPONSIBLE_MANAGER,
-        BITRIX_FIELDS.OKK_MANAGER,
-        BITRIX_FIELDS.SPECIAL_CODE,
-        BITRIX_FIELDS.SHOWROOMS.DEFAULT,
-        BITRIX_FIELDS.SHOWROOMS.FERGANA,
-        BITRIX_FIELDS.SHOWROOMS.ANDIJAN,
-        BITRIX_FIELDS.SHOWROOMS.SAMARKAND,
-        BITRIX_FIELDS.SHOWROOMS.NAMANGAN,
-        BITRIX_FIELDS.SHOWROOMS.NUKUS,
-        BITRIX_FIELDS.SHOWROOMS.BUKHARA,
-        BITRIX_FIELDS.SHOWROOMS.SURKHANDARYA,
-        BITRIX_FIELDS.SHOWROOMS.KHOREZM,
-        "CONTACT_ID"
-      ]
+    let allDeals: any[] = [];
+    let start = 0;
+    let hasMore = true;
+
+    const selectFields = [
+      "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY",
+      BITRIX_FIELDS.ORDER_INVOICE_ID,
+      BITRIX_FIELDS.PRODUCT_SERIES,
+      BITRIX_FIELDS.COLOR,
+      BITRIX_FIELDS.AREA_SQM,
+      BITRIX_FIELDS.FACTORY_DATE,
+      BITRIX_FIELDS.ESTIMATED_READY_DATE,
+      BITRIX_FIELDS.READY_TO_PROD_DATE,
+      BITRIX_FIELDS.ORDER_READY_DATE,
+      BITRIX_FIELDS.RESPONSIBLE_MANAGER,
+      BITRIX_FIELDS.OKK_MANAGER,
+      BITRIX_FIELDS.SPECIAL_CODE,
+      BITRIX_FIELDS.SHOWROOMS.TOSHKENT,
+      BITRIX_FIELDS.SHOWROOMS.FERGANA,
+      BITRIX_FIELDS.SHOWROOMS.ANDIJAN,
+      BITRIX_FIELDS.SHOWROOMS.SAMARKAND,
+      BITRIX_FIELDS.SHOWROOMS.NAMANGAN,
+      BITRIX_FIELDS.SHOWROOMS.NUKUS,
+      BITRIX_FIELDS.SHOWROOMS.BUKHARA,
+      BITRIX_FIELDS.SHOWROOMS.SURKHANDARYA,
+      BITRIX_FIELDS.SHOWROOMS.KHOREZM,
+      "CONTACT_ID"
+    ];
+
+    // 1. Bitrix24'dan maxsus kodi bo'sh bo'lmagan deallarni yuklash
+    while (hasMore && allDeals.length < limit) {
+      const result = await callBitrixMethod('crm.deal.list', {
+        order: { DATE_CREATE: "DESC" },
+        filter: {
+          [`!=${BITRIX_FIELDS.SPECIAL_CODE}`]: ""
+        },
+        select: selectFields,
+        start: start
+      });
+
+      if (Array.isArray(result) && result.length > 0) {
+        // Har ehtimolga qarshi bo'sh koddagilardan tozalash
+        const filtered = result.filter(d => {
+          const val = d[BITRIX_FIELDS.SPECIAL_CODE];
+          return val !== null && val !== undefined && String(val).trim() !== '';
+        });
+
+        allDeals = [...allDeals, ...filtered];
+
+        if (result.length === 50) {
+          start += 50;
+        } else {
+          hasMore = false;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    const dealsToProcess = allDeals.slice(0, limit);
+
+    // 2. Kontakt ma'lumotlarini (Telefon va Ism) parallel ravishda crm.contact.get orqali olish
+    const contactIds = Array.from(new Set(dealsToProcess.map(d => d.CONTACT_ID).filter(Boolean)));
+    const contactMap: Record<string, any> = {};
+
+    await Promise.all(
+      contactIds.map(async (cId) => {
+        try {
+          const cData = await callBitrixMethod('crm.contact.get', { id: cId });
+          if (cData) contactMap[String(cId)] = cData;
+        } catch {
+          // kontakt ololmasa o'tkazib yuboradi
+        }
+      })
+    );
+
+    // 3. Deallarni har birining mos kontakti bilan birga o'girib berish
+    return dealsToProcess.map((deal: any) => {
+      const contact = deal.CONTACT_ID ? contactMap[String(deal.CONTACT_ID)] : undefined;
+      return convertBitrixDealToOrder(deal, contact);
     });
 
-    if (Array.isArray(result)) {
-      return result.slice(0, limit).map((deal: any) => convertBitrixDealToOrder(deal));
-    }
-    return [];
   } catch (err) {
     console.error("fetchBitrixRecentDeals error:", err);
     throw err;
   }
 };
 
-// Parse raw Bitrix24 JSON response directly (e.g. pasted by user from browser tab)
+// JSON matnini o'girish
 export const parseRawBitrixJsonData = (rawInput: string | object): Order[] => {
   let data: any = rawInput;
   if (typeof rawInput === 'string') {
