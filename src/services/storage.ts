@@ -82,7 +82,7 @@ export const generatePinCode = (): string => {
 // Generate unique order token
 export const generateOrderToken = (invoiceNumber: string): string => {
   const cleanInv = invoiceNumber.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-  const rand = Math.random().toString(36).substring(2, 7);
+  const rand = Math.random().toString(60).substring(2, 7);
   return `tok_${cleanInv}_${rand}`;
 };
 
@@ -327,15 +327,15 @@ export const createNewOrder = (orderData: Partial<Order>): Order => {
       invoiceNumber: invNum,
       orderDate: dateStr,
       readyDate: dateStr,
-      warrantyPeriodMonths: 36,
+      warrantyPeriodMonths: 60,
       okkManagerName: 'Alisher Rustamov',
       okkManagerTitle: 'Bosh sifat nazorati muhandisi (OKK boshlig\'i)',
       qualityScore: 99.8,
       sealStampUrl: 'stamp_verified',
       signatureUrl: 'sig_alisher',
-      qrCodeValue: `VERIFY:${invNum}:ALISHER_RUSTAMOV:OKK_PASS:36_MONTHS`,
+      qrCodeValue: `VERIFY:${invNum}:ALISHER_RUSTAMOV:OKK_PASS:60_MONTHS`,
       terms: [
-        'Ishlab chiqarish nuqsonlari va furnituraga 36 oy to\'liq kafolat taqdim etiladi.',
+        'Ishlab chiqarish nuqsonlari va furnituraga 60 oy to\'liq kafolat taqdim etiladi.',
         'Muntazam bepul profilaktika va servis xizmati kafolatlanadi.',
       ],
     },
