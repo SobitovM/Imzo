@@ -167,7 +167,6 @@ export const ClientLogin: React.FC<ClientLoginProps> = ({
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Maxsus Parol (SMS PIN Kod)</span>
-              <span className="text-[10px] text-amber-400 font-mono">UF_CRM_1745308434</span>
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
