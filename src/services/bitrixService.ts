@@ -7,6 +7,7 @@ import {
   BITRIX_FIELDS, 
   formatBitrixDate 
 } from './bitrixConfig';
+import { MANAGERS_DICT } from './managersDict';
 
 const BITRIX_WEBHOOK_KEY = 'bitrix_webhook_url';
 const BITRIX_AUTO_SYNC_KEY = 'bitrix_auto_sync_enabled';
@@ -49,10 +50,19 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
   return 'yangi';
 };
 
-// Resolve Showroom Name from deal fields or IDs
+// Resolve Showroom Name from deal fields, manager dict or fallback IDs
 export const resolveShowroomName = (deal: Record<string, any>): string => {
+  // 1. Birinchi bo'lib MANAGERS_DICT orqali tekshiramiz
+  const managerId = String(
+    deal[BITRIX_FIELDS.RESPONSIBLE_MANAGER] || deal.ASSIGNED_BY_ID || ''
+  ).trim();
+  const managerInfo = MANAGERS_DICT[managerId];
+  if (managerInfo && managerInfo.showroom) {
+    return managerInfo.showroom;
+  }
+
+  // 2. Aks holda maydonlardagi custom showroom larni tekshiramiz
   const s = BITRIX_FIELDS.SHOWROOMS;
-  
   const getDictOrVal = (rawVal: any) => {
     if (!rawVal) return null;
     const id = Array.isArray(rawVal) ? rawVal[0] : rawVal;
@@ -79,6 +89,13 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   const stageHumanName = STAGE_NAMES[stageId] || stageId;
   const status = mapBitrixStageToStatus(stageId);
   const isReady = status === 'okk_otdi' || stageId.includes('WON');
+
+  // Menejer ma'lumotlarini MANAGERS_DICT luyg'atidan aniqlash
+  const managerId = String(
+    deal[BITRIX_FIELDS.RESPONSIBLE_MANAGER] || deal.ASSIGNED_BY_ID || ''
+  ).trim();
+  const managerInfo = MANAGERS_DICT[managerId];
+  const managerName = managerInfo ? managerInfo.name : (deal[BITRIX_FIELDS.RESPONSIBLE_MANAGER] || `Menejer #${managerId || 'Noma\'lum'}`);
 
   // Parse Products
   let rawProductIds = deal[BITRIX_FIELDS.PRODUCT_SERIES];
@@ -134,7 +151,6 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   const token = `tok_${login.toLowerCase()}_${dealId}`;
 
   const showroom = resolveShowroomName(deal);
-  const managerName = deal[BITRIX_FIELDS.RESPONSIBLE_MANAGER] || "Komil Rahimov";
   const okkInspector = deal[BITRIX_FIELDS.OKK_MANAGER] || "Alisher Rustamov (Bosh OKK)";
 
   return {
@@ -174,7 +190,7 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
       signatureUrl: "",
       qrCodeValue: `https://kabinet.fabrika.uz/?token=${token}`,
       terms: [
-        "Alyumin profil va lak-bo'yoq qatlamiga 60 oy to'liq kafolat beriladi.",
+        "Alyumin profil va lak-bo'yoq qatlamiga 36 oy to'liq kafolat beriladi.",
         "Muntazam profilaktika va servis xizmati bepul amalga oshiriladi.",
         "Mexanik shikastlanish va noto'g'ri foydalanish kafolatga kirmaydi."
       ]
@@ -287,7 +303,7 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   const phoneDigits = cleanPhone.replace(/\D/g, '');
 
   const selectFields = [
-    "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY",
+    "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY", "ASSIGNED_BY_ID",
     BITRIX_FIELDS.ORDER_INVOICE_ID,
     BITRIX_FIELDS.PRODUCT_SERIES,
     BITRIX_FIELDS.COLOR,
@@ -313,7 +329,7 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
 
   let matchedDeals: any[] = [];
 
-  // 1. Search deals by Special PIN Code in Bitrix24 (UF_CRM_1745308434)
+  // 1. Search deals by Special PIN Code in Bitrix24
   if (cleanPin) {
     const res = await callBitrixMethod('crm.deal.list', {
       filter: {
@@ -359,7 +375,7 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     return null;
   }
 
-  // 3. Fetch Contact details (Name, Phone number)
+  // 3. Fetch Contact details
   const firstDeal = matchedDeals[0];
   let contactData: any = undefined;
   if (firstDeal.CONTACT_ID) {
@@ -396,7 +412,7 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     }
   }
 
-  // 5. Query all other deals belonging to this client (Multi-Deal feature)
+  // 5. Query all other deals belonging to this client
   let allClientDeals: any[] = [...matchedDeals];
   if (firstDeal.CONTACT_ID) {
     try {
@@ -435,7 +451,7 @@ export const fetchBitrixRecentDeals = async (limit: number = 20): Promise<Order[
     const result = await callBitrixMethod('crm.deal.list', {
       order: { DATE_CREATE: "DESC" },
       select: [
-        "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY",
+        "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY", "ASSIGNED_BY_ID",
         BITRIX_FIELDS.ORDER_INVOICE_ID,
         BITRIX_FIELDS.PRODUCT_SERIES,
         BITRIX_FIELDS.COLOR,
