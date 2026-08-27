@@ -5,7 +5,7 @@ import {
   SHOWROOMS_DICT, 
   BITRIX_FIELDS, 
   formatBitrixDate 
-} from './BITRIXCONFIC';
+} from './bitrixConfig';
 
 // Menejerlar va ularning standart showroom bog'liqligi lug'ati
 export interface ManagerInfo {
