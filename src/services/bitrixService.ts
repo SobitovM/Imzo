@@ -11,7 +11,7 @@ import {
 const BITRIX_WEBHOOK_KEY = 'bitrix_webhook_url';
 const BITRIX_AUTO_SYNC_KEY = 'bitrix_auto_sync_enabled';
 
-export const DEFAULT_BITRIX_WEBHOOK = 'https://bitrix.imzo.uz/rest/244/lhfi8leh3yqxl3sc/';
+export const DEFAULT_BITRIX_WEBHOOK = import.meta.env.VITE_BITRIX_WEBHOOK_URL || '';
 
 export const getBitrixWebhookUrl = (): string => {
   return localStorage.getItem(BITRIX_WEBHOOK_KEY) || DEFAULT_BITRIX_WEBHOOK;
