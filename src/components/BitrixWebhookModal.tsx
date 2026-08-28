@@ -92,9 +92,9 @@ export const BitrixWebhookModal: React.FC<BitrixWebhookModalProps> = ({
       if (deals.length > 0) {
         // Save these real deals to local storage so the dashboard immediately shows them!
         const existing = getStoredOrders();
-        // Merge without duplicating
-        const dealIds = new Set(deals.map(d => d.id));
-        const merged = [...deals, ...existing.filter(e => !dealIds.has(e.id))];
+        // Keep non-bitrix manual orders, and replace bitrix deals with freshly fetched eligible list
+        const manualOnly = existing.filter(e => !e.id.startsWith('bx_') && (!e.notes || !e.notes.includes('Bitrix24 Deal ID')));
+        const merged = [...deals, ...manualOnly];
         saveStoredOrders(merged);
         if (onDataSynced) onDataSynced();
 
@@ -134,8 +134,8 @@ export const BitrixWebhookModal: React.FC<BitrixWebhookModalProps> = ({
       }
 
       const existing = getStoredOrders();
-      const dealIds = new Set(deals.map(d => d.id));
-      const merged = [...deals, ...existing.filter(e => !dealIds.has(e.id))];
+      const manualOnly = existing.filter(e => !e.id.startsWith('bx_') && (!e.notes || !e.notes.includes('Bitrix24 Deal ID')));
+      const merged = [...deals, ...manualOnly];
       saveStoredOrders(merged);
       if (onDataSynced) onDataSynced();
 
