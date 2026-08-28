@@ -306,11 +306,11 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                         {order.clientFullName}
                       </h3>
                       <p className="text-xs text-slate-400 flex flex-wrap items-center gap-2 mt-0.5">
-                        <span>Tel: <strong className="text-slate-300 font-mono">{order.clientPhone}</strong></span>
+                        <span>Tel: <strong className={`font-mono ${order.clientPhone && order.clientPhone !== '-' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}`}>{order.clientPhone && order.clientPhone !== '-' ? order.clientPhone : "Kiritilmagan"}</strong></span>
                         <span>•</span>
-                        <span>Showroom: <strong className="text-slate-300">{order.showroomName}</strong></span>
+                        <span>Showroom: <strong className={order.showroomName && order.showroomName !== '-' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>{order.showroomName && order.showroomName !== '-' ? order.showroomName : "Ko'rsatilmagan"}</strong></span>
                         <span>•</span>
-                        <span>Menejer: <strong className="text-slate-300">{order.salesManagerName}</strong></span>
+                        <span>Menejer: <strong className={order.salesManagerName && order.salesManagerName !== '-' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>{order.salesManagerName && order.salesManagerName !== '-' ? order.salesManagerName : "Biriktirilmagan"}</strong></span>
                       </p>
                     </div>
 
@@ -345,10 +345,14 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                         <div key={p.id} className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between items-center">
                           <div>
                             <p className="font-bold text-slate-200">{p.name}</p>
-                            <p className="text-[11px] text-slate-400">{p.model} • {p.color}</p>
+                            <p className="text-[11px] text-slate-400">
+                              {p.model && p.model !== '-' ? p.model : "Seriya: ko'rsatilmagan"} • {p.color && p.color !== '-' ? p.color : "Rang: ko'rsatilmagan"}
+                            </p>
                           </div>
                           <div className="text-right">
-                            <span className="font-mono text-amber-300 font-semibold block">{p.areaSqM} kv.m</span>
+                            <span className={`font-mono font-semibold block ${p.areaSqM > 0 ? 'text-amber-300' : 'text-slate-500'}`}>
+                              {p.areaSqM > 0 ? `${p.areaSqM} kv.m` : "- kv.m"}
+                            </span>
                             <span className="text-[11px] text-slate-400">{p.quantity} dona</span>
                           </div>
                         </div>
@@ -359,15 +363,17 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                       <span className="text-slate-400 font-semibold block">Sifat Nazorati parametri:</span>
                       <div className="flex justify-between text-slate-300 text-xs">
                         <span>Sifat nazorati muhandisi:</span>
-                        <span className="font-semibold text-white">{order.warranty.okkManagerName}</span>
+                        <span className={`font-semibold ${order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-' ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
+                          {order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-' ? order.warranty.okkManagerName : "Tayinlanmagan"}
+                        </span>
                       </div>
                       <div className="flex justify-between text-slate-300 text-xs">
                         <span>Kafolat muddati:</span>
-                        <span className="font-bold text-amber-400">{order.warranty.warrantyPeriodMonths} Oy ({order.warranty.warrantyPeriodMonths / 12} Yil)</span>
+                        <span className="font-bold text-amber-400">{order.warranty?.warrantyPeriodMonths || 60} Oy (5 Yil)</span>
                       </div>
                       <div className="flex justify-between text-slate-300 text-xs">
                         <span>Tayyor bo'lgan sana:</span>
-                        <span className="font-mono text-emerald-400">{order.readyDate || 'Ishlab chiqarilmoqda'}</span>
+                        <span className="font-mono text-emerald-400">{order.readyDate || (order.status === 'okk_otdi' ? 'Tasdiqlangan' : 'Ishlab chiqarilmoqda')}</span>
                       </div>
                     </div>
                   </div>
