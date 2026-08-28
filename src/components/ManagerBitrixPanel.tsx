@@ -69,6 +69,9 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [resolverName, setResolverName] = useState('Jasur Mahmudov (Katta servis ustasi)');
 
+  // 🔥 Admin panelda faqat 10 ta order ko'rsatish
+  const DISPLAY_LIMIT = 10;
+
   const loadData = () => {
     setOrders(getStoredOrders());
     setTickets(getStoredTickets());
@@ -85,7 +88,7 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
 
     try {
       setIsSyncingBitrix(true);
-      const bitrixDeals = await fetchBitrixRecentDeals(100);
+      const bitrixDeals = await fetchBitrixRecentDeals(200);
       
       const currentStored = getStoredOrders();
       const manualOrders = currentStored.filter(o => !o.id.startsWith('bx_') && (!o.notes || !o.notes.includes('Bitrix24 Deal ID')));
@@ -107,20 +110,13 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
     }
   };
 
-  // 🔥 AVTOMATIK YANGILASH QO'SHILDI
   useEffect(() => {
     loadData();
     if (getBitrixWebhookUrl()) {
       handleSyncWithBitrix(true);
     }
 
-    // HAR 5 MINUTDA AVTOMATIK YANGILASH
-    const interval = setInterval(() => {
-      if (getBitrixWebhookUrl()) {
-        console.log('🔄 Avtomatik yangilash...');
-        handleSyncWithBitrix(true);
-      }
-    }, 5 * 60 * 1000); // 5 daqiqa
+    // 🔥 Avtomatik yangilash O'CHIRILDI (faqat qo'lda)
 
     const handleOrders = () => setOrders(getStoredOrders());
     const handleTickets = () => setTickets(getStoredTickets());
@@ -129,7 +125,6 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
     window.addEventListener('tickets_updated', handleTickets);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener('orders_updated', handleOrders);
       window.removeEventListener('tickets_updated', handleTickets);
     };
@@ -178,6 +173,10 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
     if (statusFilter === 'all') return matchesSearch;
     return matchesSearch && o.status === statusFilter;
   });
+
+  // 🔥 Faqat 10 ta order ko'rsatamiz
+  const displayedOrders = filteredOrders.slice(0, DISPLAY_LIMIT);
+  const totalOrders = filteredOrders.length;
 
   const pendingOkkCount = orders.filter((o) => o.status === 'kontrol_kachestva').length;
   const activeTicketsCount = tickets.filter((t) => t.status !== 'hal_qilindi').length;
@@ -255,7 +254,12 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Buyurtmalar & Sifat Nazorati ({orders.length})</span>
+            <span>Buyurtmalar & Sifat Nazorati ({totalOrders})</span>
+            {totalOrders > DISPLAY_LIMIT && (
+              <span className="text-[10px] text-slate-400 ml-1">
+                (oxirgi {DISPLAY_LIMIT} ta)
+              </span>
+            )}
             {pendingOkkCount > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black">
                 {pendingOkkCount} tekshiruvda
@@ -324,180 +328,186 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
             </div>
           </div>
 
-          {/* Orders Cards Grid */}
+          {/* Orders Cards Grid - faqat 10 ta */}
           <div className="space-y-4">
-            {filteredOrders.map((order) => {
-              const isOkkPassed = ['okk_otdi', 'yetkazib_berishda', 'topshirildi'].includes(order.status);
-              const isPendingOkk = order.status === 'kontrol_kachestva';
+            {displayedOrders.length === 0 ? (
+              <div className="text-center py-8 text-slate-400 text-sm">
+                {searchQuery ? 'Qidiruv bo\'yicha hech qanday buyurtma topilmadi' : 'Hozircha buyurtmalar mavjud emas'}
+              </div>
+            ) : (
+              displayedOrders.map((order) => {
+                const isOkkPassed = ['okk_otdi', 'yetkazib_berishda', 'topshirildi'].includes(order.status);
+                const isPendingOkk = order.status === 'kontrol_kachestva';
 
-              return (
-                <motion.div
-                  key={order.id}
-                  layout
-                  className={`bg-slate-900 border rounded-2xl p-5 sm:p-6 transition-all ${
-                    isPendingOkk
-                      ? 'border-amber-500/40 shadow-lg shadow-amber-500/5 bg-gradient-to-r from-amber-950/20 via-slate-900 to-slate-900'
-                      : 'border-slate-800'
-                  }`}
-                >
-                  {/* Order Top Header */}
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                        <span className="font-mono font-bold text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-md border border-amber-400/20 text-xs">
-                          {order.invoiceNumber}
-                        </span>
-                        
-                        {isOkkPassed ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Sifat nazoratidan o'tgan
-                          </span>
-                        ) : isPendingOkk ? (
-                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse">
-                            <Clock className="w-3.5 h-3.5" />
-                            Sifat Nazorati Tekshiruvi
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
-                            Ishlab chiqarishda
-                          </span>
-                        )}
-
-                        <span className="text-[11px] text-slate-400">
-                          Sana: {order.orderDate && order.orderDate !== 'Bo\'sh' ? order.orderDate : "Bo'sh"}
-                        </span>
-                      </div>
-
-                      <h3 className="text-base sm:text-lg font-bold text-white">
-                        {order.clientFullName && order.clientFullName !== 'Bo\'sh' ? order.clientFullName : "Bo'sh"}
-                      </h3>
-                      
-                      <p className="text-xs text-slate-400 flex flex-wrap items-center gap-2 mt-0.5">
-                        <span>Tel: <strong className={`font-mono ${order.clientPhone && order.clientPhone !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}`}>
-                          {order.clientPhone && order.clientPhone !== 'Bo\'sh' ? order.clientPhone : "Bo'sh"}
-                        </strong></span>
-                        <span>•</span>
-                        <span>Showroom: <strong className={order.showroomName && order.showroomName !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>
-                          {order.showroomName && order.showroomName !== 'Bo\'sh' ? order.showroomName : "Bo'sh"}
-                        </strong></span>
-                        <span>•</span>
-                        <span>Menejer: <strong className={order.salesManagerName && order.salesManagerName !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>
-                          {order.salesManagerName && order.salesManagerName !== 'Bo\'sh' ? order.salesManagerName : "Bo'sh"}
-                        </strong></span>
-                      </p>
-                    </div>
-
-                    {/* Quick Access Credentials Banner */}
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-4 text-xs font-mono">
+                return (
+                  <motion.div
+                    key={order.id}
+                    layout
+                    className={`bg-slate-900 border rounded-2xl p-5 sm:p-6 transition-all ${
+                      isPendingOkk
+                        ? 'border-amber-500/40 shadow-lg shadow-amber-500/5 bg-gradient-to-r from-amber-950/20 via-slate-900 to-slate-900'
+                        : 'border-slate-800'
+                    }`}
+                  >
+                    {/* Order Top Header */}
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-800 pb-4">
                       <div>
-                        <span className="text-slate-500 text-[10px] block">Mijoz Logini:</span>
-                        <span className="font-bold text-white">{order.credentials.login}</span>
-                      </div>
-                      <div className="border-l border-slate-800 pl-4">
-                        <span className="text-slate-500 text-[10px] block">SMS PIN:</span>
-                        <span className="font-bold text-amber-400">{order.credentials.pinCode}</span>
-                      </div>
-                      <div className="border-l border-slate-800 pl-4">
-                        <span className="text-slate-500 text-[10px] block">SMS Statusi:</span>
-                        {order.smsSent ? (
-                          <span className="text-emerald-400 font-sans font-semibold flex items-center gap-1 text-[11px]">
-                            <CheckCheck className="w-3.5 h-3.5" /> Yuborilgan
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <span className="font-mono font-bold text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-md border border-amber-400/20 text-xs">
+                            {order.invoiceNumber}
                           </span>
-                        ) : (
-                          <span className="text-amber-400 font-sans text-[11px]">Kutilmoqda</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Products Summary */}
-                  <div className="py-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div className="space-y-2">
-                      <span className="text-slate-400 font-semibold block">Buyurtma qilingan mahsulotlar:</span>
-                      {order.products.map((p) => (
-                        <div key={p.id} className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between items-center">
-                          <div>
-                            <p className="font-bold text-slate-200">{p.name}</p>
-                            <p className="text-[11px] text-slate-400">
-                              {p.model && p.model !== 'Bo\'sh' ? p.model : "Seriya: Bo'sh"} • {p.color && p.color !== 'Bo\'sh' ? p.color : "Rang: Bo'sh"}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <span className={`font-mono font-semibold block ${p.areaSqM > 0 ? 'text-amber-300' : 'text-slate-500'}`}>
-                              {p.areaSqM > 0 ? `${p.areaSqM} kv.m` : "Bo'sh"}
+                          
+                          {isOkkPassed ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Sifat nazoratidan o'tgan
                             </span>
-                            <span className="text-[11px] text-slate-400">{p.quantity} dona</span>
+                          ) : isPendingOkk ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 animate-pulse">
+                              <Clock className="w-3.5 h-3.5" />
+                              Sifat Nazorati Tekshiruvi
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                              Ishlab chiqarishda
+                            </span>
+                          )}
+
+                          <span className="text-[11px] text-slate-400">
+                            Sana: {order.orderDate && order.orderDate !== 'Bo\'sh' ? order.orderDate : "Bo'sh"}
+                          </span>
+                        </div>
+
+                        <h3 className="text-base sm:text-lg font-bold text-white">
+                          {order.clientFullName && order.clientFullName !== 'Bo\'sh' ? order.clientFullName : "Bo'sh"}
+                        </h3>
+                        
+                        <p className="text-xs text-slate-400 flex flex-wrap items-center gap-2 mt-0.5">
+                          <span>Tel: <strong className={`font-mono ${order.clientPhone && order.clientPhone !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}`}>
+                            {order.clientPhone && order.clientPhone !== 'Bo\'sh' ? order.clientPhone : "Bo'sh"}
+                          </strong></span>
+                          <span>•</span>
+                          <span>Showroom: <strong className={order.showroomName && order.showroomName !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>
+                            {order.showroomName && order.showroomName !== 'Bo\'sh' ? order.showroomName : "Bo'sh"}
+                          </strong></span>
+                          <span>•</span>
+                          <span>Menejer: <strong className={order.salesManagerName && order.salesManagerName !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>
+                            {order.salesManagerName && order.salesManagerName !== 'Bo\'sh' ? order.salesManagerName : "Bo'sh"}
+                          </strong></span>
+                        </p>
+                      </div>
+
+                      {/* Quick Access Credentials Banner */}
+                      <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center gap-4 text-xs font-mono">
+                        <div>
+                          <span className="text-slate-500 text-[10px] block">Mijoz Logini:</span>
+                          <span className="font-bold text-white">{order.credentials.login}</span>
+                        </div>
+                        <div className="border-l border-slate-800 pl-4">
+                          <span className="text-slate-500 text-[10px] block">SMS PIN:</span>
+                          <span className="font-bold text-amber-400">{order.credentials.pinCode}</span>
+                        </div>
+                        <div className="border-l border-slate-800 pl-4">
+                          <span className="text-slate-500 text-[10px] block">SMS Statusi:</span>
+                          {order.smsSent ? (
+                            <span className="text-emerald-400 font-sans font-semibold flex items-center gap-1 text-[11px]">
+                              <CheckCheck className="w-3.5 h-3.5" /> Yuborilgan
+                            </span>
+                          ) : (
+                            <span className="text-amber-400 font-sans text-[11px]">Kutilmoqda</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Products Summary */}
+                    <div className="py-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                      <div className="space-y-2">
+                        <span className="text-slate-400 font-semibold block">Buyurtma qilingan mahsulotlar:</span>
+                        {order.products.map((p) => (
+                          <div key={p.id} className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 flex justify-between items-center">
+                            <div>
+                              <p className="font-bold text-slate-200">{p.name}</p>
+                              <p className="text-[11px] text-slate-400">
+                                {p.model && p.model !== 'Bo\'sh' ? p.model : "Seriya: Bo'sh"} • {p.color && p.color !== 'Bo\'sh' ? p.color : "Rang: Bo'sh"}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <span className={`font-mono font-semibold block ${p.areaSqM > 0 ? 'text-amber-300' : 'text-slate-500'}`}>
+                                {p.areaSqM > 0 ? `${p.areaSqM} kv.m` : "Bo'sh"}
+                              </span>
+                              <span className="text-[11px] text-slate-400">{p.quantity} dona</span>
+                            </div>
                           </div>
+                        ))}
+                      </div>
+
+                      <div className="p-3.5 rounded-xl bg-slate-950/40 border border-slate-800 space-y-2">
+                        <span className="text-slate-400 font-semibold block">Sifat Nazorati parametri:</span>
+                        <div className="flex justify-between text-slate-300 text-xs">
+                          <span>Sifat nazorati muhandisi:</span>
+                          <span className={`font-semibold ${order.warranty?.okkManagerName && order.warranty.okkManagerName !== 'Bo\'sh' ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
+                            {order.warranty?.okkManagerName && order.warranty.okkManagerName !== 'Bo\'sh' ? order.warranty.okkManagerName : "Bo'sh"}
+                          </span>
                         </div>
-                      ))}
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-slate-950/40 border border-slate-800 space-y-2">
-                      <span className="text-slate-400 font-semibold block">Sifat Nazorati parametri:</span>
-                      <div className="flex justify-between text-slate-300 text-xs">
-                        <span>Sifat nazorati muhandisi:</span>
-                        <span className={`font-semibold ${order.warranty?.okkManagerName && order.warranty.okkManagerName !== 'Bo\'sh' ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
-                          {order.warranty?.okkManagerName && order.warranty.okkManagerName !== 'Bo\'sh' ? order.warranty.okkManagerName : "Bo'sh"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-slate-300 text-xs">
-                        <span>Kafolat muddati:</span>
-                        <span className="font-bold text-amber-400">{order.warranty?.warrantyPeriodMonths || 60} Oy (5 Yil)</span>
-                      </div>
-                      <div className="flex justify-between text-slate-300 text-xs">
-                        <span>Tayyor bo'lgan sana:</span>
-                        <span className="font-mono text-emerald-400">{order.readyDate && order.readyDate !== 'Bo\'sh' ? order.readyDate : (order.status === 'okk_otdi' ? 'Tasdiqlangan' : "Bo'sh")}</span>
+                        <div className="flex justify-between text-slate-300 text-xs">
+                          <span>Kafolat muddati:</span>
+                          <span className="font-bold text-amber-400">{order.warranty?.warrantyPeriodMonths || 60} Oy (5 Yil)</span>
+                        </div>
+                        <div className="flex justify-between text-slate-300 text-xs">
+                          <span>Tayyor bo'lgan sana:</span>
+                          <span className="font-mono text-emerald-400">{order.readyDate && order.readyDate !== 'Bo\'sh' ? order.readyDate : (order.status === 'okk_otdi' ? 'Tasdiqlangan' : "Bo'sh")}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Actions & OKK State Transition Buttons */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {!isOkkPassed ? (
-                        <button
-                          id={`btn-pass-okk-${order.id}`}
-                          onClick={() => handleStatusChange(order, 'okk_otdi')}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-extrabold rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
-                        >
-                          <ShieldCheck className="w-4 h-4" />
-                          <span>Sifat nazoratidan o'tdi (Tasdiqlash & SMS yaratish)</span>
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-2">
+                    {/* Actions & OKK State Transition Buttons */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {!isOkkPassed ? (
                           <button
-                            id={`btn-send-sms-${order.id}`}
-                            onClick={() => handleSendSms(order)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition-colors cursor-pointer"
+                            id={`btn-pass-okk-${order.id}`}
+                            onClick={() => handleStatusChange(order, 'okk_otdi')}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-extrabold rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
                           >
-                            <Send className="w-3.5 h-3.5" />
-                            <span>Mijozga SMS Yuborish / Ko'rish</span>
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>Sifat nazoratidan o'tdi (Tasdiqlash & SMS yaratish)</span>
                           </button>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <button
+                              id={`btn-send-sms-${order.id}`}
+                              onClick={() => handleSendSms(order)}
+                              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-600/20 transition-colors cursor-pointer"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Mijozga SMS Yuborish / Ko'rish</span>
+                            </button>
+                          </div>
+                        )}
+
+                        <button
+                          onClick={() => setWarrantyOrder(order)}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors cursor-pointer"
+                        >
+                          <Award className="w-3.5 h-3.5" />
+                          <span>Kafolat Taloni (PDF)</span>
+                        </button>
+                      </div>
 
                       <button
-                        onClick={() => setWarrantyOrder(order)}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors cursor-pointer"
+                        id={`btn-open-client-${order.id}`}
+                        onClick={() => onOpenClientCabinet(order)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 transition-colors cursor-pointer group"
                       >
-                        <Award className="w-3.5 h-3.5" />
-                        <span>Kafolat Taloni (PDF)</span>
+                        <span>Mijoz Kabinetida Ko'rish</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
                       </button>
                     </div>
-
-                    <button
-                      id={`btn-open-client-${order.id}`}
-                      onClick={() => onOpenClientCabinet(order)}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 transition-colors cursor-pointer group"
-                    >
-                      <span>Mijoz Kabinetida Ko'rish</span>
-                      <ExternalLink className="w-3.5 h-3.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
-                    </button>
-                  </div>
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })
+            )}
           </div>
         </div>
       )}
