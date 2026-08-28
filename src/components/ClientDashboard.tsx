@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  ShieldCheck,
-  Wrench,
-  FileText,
-  Building2,
-  UserCheck,
-  Calendar,
-  Package,
-  CheckCircle2,
-  Clock,
-  Phone,
+import { 
+  ShieldCheck, 
+  Wrench, 
+  FileText, 
+  Building2, 
+  UserCheck, 
+  Calendar, 
+  Package, 
+  CheckCircle2, 
+  Clock, 
+  Phone, 
   ChevronDown,
   ChevronUp,
   LogOut,
@@ -79,13 +79,13 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
   const totalArea = activeOrder.products.reduce((sum, p) => sum + (p.areaSqM || 0), 0);
   const seriesList = activeOrder.products.map(p => p.model).filter(m => m && m !== '-' && m !== "Bo'sh");
   const seriesNames = seriesList.length > 0 ? Array.from(new Set(seriesList)).join(', ') : "Bo'sh";
-
+  
   const colorList = activeOrder.products.map(p => p.color).filter(c => c && c !== '-' && c !== "Bo'sh");
   const colorNames = colorList.length > 0 ? Array.from(new Set(colorList)).join(', ') : "Bo'sh";
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-3 sm:space-y-4 pb-16 px-2.5 sm:px-4">
-
+      
       <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-3.5 sm:p-5 flex items-center justify-between shadow-lg gap-2">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm sm:text-base shrink-0">
@@ -215,7 +215,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
         </AnimatePresence>
       </div>
 
-      <motion.div
+      <motion.div 
         key={activeOrder.id}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -252,7 +252,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-3 text-xs sm:text-sm">
-
+          
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Schet Raqami:</span>
             <span className="text-amber-300 font-mono font-bold text-sm sm:text-base mt-0.5">
