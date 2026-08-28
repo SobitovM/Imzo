@@ -50,7 +50,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
       setClientOrders([initialOrder]);
       setActiveOrder(initialOrder);
     }
-  }, [initialOrder]);
+  }, [initialOrder, activeOrder.id]);
 
   const loadTickets = () => {
     const all = getStoredTickets();
@@ -406,5 +406,3 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
     </div>
   );
 };
-
-// Yangi qator - fayl oxiriga Enter bosing
