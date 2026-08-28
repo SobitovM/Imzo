@@ -10,7 +10,6 @@ export const getStoredOrders = (): Order[] => {
     const raw = localStorage.getItem(ORDERS_KEY);
     let orders: Order[];
     if (!raw) {
-      // Clear legacy storage if present
       try {
         localStorage.removeItem('fabrika_orders_v1');
       } catch (_) {}
@@ -22,14 +21,16 @@ export const getStoredOrders = (): Order[] => {
 
     let modified = false;
 
-    // Filter out old invalid Bitrix orders that had missing/placeholder PIN or non-allowed status
+    // Filter out invalid Bitrix orders
     const initialLen = orders.length;
     orders = orders.filter((ord) => {
-      // If it's a Bitrix order, ensure it has a valid PIN code
       if (ord.id.startsWith('bx_') || (ord.notes && ord.notes.includes('Bitrix24 Deal ID'))) {
         const pin = ord.credentials?.pinCode;
-        if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0) {
-          // If it was an old dummy or had no real special code
+        if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0 || pin === "Bo'sh") {
+          return false;
+        }
+        const allowedStatuses: OrderStatus[] = ['okk_otdi', 'kontrol_kachestva', 'yetkazib_berishda', 'topshirildi'];
+        if (!allowedStatuses.includes(ord.status)) {
           return false;
         }
       }
@@ -40,7 +41,7 @@ export const getStoredOrders = (): Order[] => {
       modified = true;
     }
 
-    // Force migration of all orders to 60 months warranty
+    // Force migration to 60 months warranty
     orders = orders.map((ord) => {
       if (ord.warranty && (ord.warranty.warrantyPeriodMonths === 36 || !ord.warranty.warrantyPeriodMonths)) {
         modified = true;
@@ -56,6 +57,27 @@ export const getStoredOrders = (): Order[] => {
       }
       return ord;
     });
+
+    // Bo'sh maydonlarni "Bo'sh" ga to'ldiramiz
+    orders = orders.map((ord) => ({
+      ...ord,
+      showroomName: ord.showroomName && ord.showroomName.trim() !== '' && ord.showroomName !== '-' ? ord.showroomName : "Bo'sh",
+      salesManagerName: ord.salesManagerName && ord.salesManagerName.trim() !== '' && ord.salesManagerName !== '-' ? ord.salesManagerName : "Bo'sh",
+      clientPhone: ord.clientPhone && ord.clientPhone.trim() !== '' && ord.clientPhone !== '-' ? ord.clientPhone : "Bo'sh",
+      clientFullName: ord.clientFullName && ord.clientFullName.trim() !== '' ? ord.clientFullName : "Bo'sh",
+      clientAddress: ord.clientAddress && ord.clientAddress.trim() !== '' && ord.clientAddress !== '-' ? ord.clientAddress : "Bo'sh",
+      salesManagerPhone: ord.salesManagerPhone && ord.salesManagerPhone.trim() !== '' && ord.salesManagerPhone !== '-' ? ord.salesManagerPhone : "Bo'sh",
+      products: ord.products.map(p => ({
+        ...p,
+        model: p.model && p.model.trim() !== '' && p.model !== '-' ? p.model : "Bo'sh",
+        color: p.color && p.color.trim() !== '' && p.color !== '-' ? p.color : "Bo'sh",
+        dimensions: p.dimensions && p.dimensions.trim() !== '' && p.dimensions !== '-' ? p.dimensions : "Bo'sh",
+      })),
+      warranty: {
+        ...ord.warranty,
+        okkManagerName: ord.warranty.okkManagerName && ord.warranty.okkManagerName.trim() !== '' && ord.warranty.okkManagerName !== '-' ? ord.warranty.okkManagerName : "Bo'sh",
+      }
+    }));
 
     if (modified) {
       localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
@@ -105,7 +127,7 @@ export const normalizePhone = (phone: string): string => {
   return (phone || '').replace(/\D/g, '');
 };
 
-// Get all orders for a client based on phone, login, token or client name
+// Get all orders for a client
 export const getClientOrders = (identifier: string): Order[] => {
   const orders = getStoredOrders();
   if (!identifier) return [];
@@ -135,7 +157,7 @@ export const generateOrderToken = (invoiceNumber: string): string => {
   return `tok_${cleanInv}_${rand}`;
 };
 
-// Change Order Status (e.g. by OKK manager or Bitrix)
+// Change Order Status
 export const updateOrderStatus = (
   orderId: string, 
   newStatus: OrderStatus, 
@@ -161,18 +183,16 @@ export const updateOrderStatus = (
 
   if (newStatus === 'okk_otdi') {
     updated.readyDate = dateStr;
-    // Generate credentials if not present or refreshed
-    if (!updated.credentials.pinCode) {
+    if (!updated.credentials.pinCode || updated.credentials.pinCode === "Bo'sh") {
       updated.credentials.pinCode = generatePinCode();
     }
     if (!updated.credentials.directToken) {
       updated.credentials.directToken = generateOrderToken(updated.invoiceNumber);
     }
-    // Update warranty details
     updated.warranty = {
       ...updated.warranty,
       readyDate: dateStr,
-      okkManagerName: okkInspectorName,
+      okkManagerName: okkInspectorName || "Bo'sh",
       certificateNumber: `KT-${dateStr.replace(/-/g, '').slice(0, 6)}-${updated.invoiceNumber.replace(/[^0-9]/g, '') || '01'}`,
     };
 
@@ -205,7 +225,7 @@ export const markSmsSent = (orderId: string, customText?: string): Order | null 
   return orders[index];
 };
 
-// Add new service ticket from client
+// Add new service ticket
 export const createServiceTicket = (
   order: Order,
   category: string,
@@ -242,7 +262,7 @@ export const createServiceTicket = (
   return newTicket;
 };
 
-// Update ticket status in Bitrix CRM funnel
+// Update ticket status
 export const updateTicketStatus = (
   ticketId: string,
   status: 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi',
@@ -318,14 +338,13 @@ export const rateServiceTicket = (
   return tickets[index];
 };
 
-// Add New Order (from Manager / Bitrix Simulator)
+// Add New Order
 export const createNewOrder = (orderData: Partial<Order>): Order => {
   const orders = getStoredOrders();
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0];
   const invNum = orderData.invoiceNumber || `SCH-2026-${Math.floor(1000 + Math.random() * 9000)}`;
   
-  // Check if client already exists by phone or name to ensure ONE SINGLE LOGIN and ONE PIN
   const existingClientOrder = orders.find(
     (o) =>
       (orderData.clientPhone && normalizePhone(o.clientPhone) === normalizePhone(orderData.clientPhone)) ||
@@ -397,7 +416,7 @@ export const createNewOrder = (orderData: Partial<Order>): Order => {
   return newOrder;
 };
 
-// Reset to factory defaults if user wants to test freshly
+// Reset to factory defaults
 export const resetDemoData = () => {
   localStorage.setItem(ORDERS_KEY, JSON.stringify(INITIAL_ORDERS));
   localStorage.setItem(TICKETS_KEY, JSON.stringify(INITIAL_SERVICE_TICKETS));
