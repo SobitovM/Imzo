@@ -87,7 +87,6 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
       setIsSyncingBitrix(true);
       const bitrixDeals = await fetchBitrixRecentDeals(50);
       
-      // Merge with non-bitrix manual orders if any, replacing bitrix orders with fresh filtered list
       const currentStored = getStoredOrders();
       const manualOrders = currentStored.filter(o => !o.id.startsWith('bx_') && (!o.notes || !o.notes.includes('Bitrix24 Deal ID')));
       
@@ -110,7 +109,6 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
 
   useEffect(() => {
     loadData();
-    // Automatically perform background sync if Bitrix webhook is configured
     if (getBitrixWebhookUrl()) {
       handleSyncWithBitrix(true);
     }
@@ -131,7 +129,6 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
     const updated = updateOrderStatus(order.id, newStatus, 'Alisher Rustamov (Bosh OKK Nazoratchisi)');
     if (updated) {
       if (newStatus === 'okk_otdi') {
-        // Automatically open SMS preview when passed OKK!
         setSmsOrder(updated);
       }
       loadData();
@@ -358,19 +355,27 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                         )}
 
                         <span className="text-[11px] text-slate-400">
-                          Sana: {order.orderDate}
+                          Sana: {order.orderDate && order.orderDate !== 'Bo\'sh' ? order.orderDate : "Bo'sh"}
                         </span>
                       </div>
 
                       <h3 className="text-base sm:text-lg font-bold text-white">
-                        {order.clientFullName}
+                        {order.clientFullName && order.clientFullName !== 'Bo\'sh' ? order.clientFullName : "Bo'sh"}
                       </h3>
+                      
+                      {/* O'ZGARTIRILGAN QISM: Showroom va Manager */}
                       <p className="text-xs text-slate-400 flex flex-wrap items-center gap-2 mt-0.5">
-                        <span>Tel: <strong className={`font-mono ${order.clientPhone && order.clientPhone !== '-' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}`}>{order.clientPhone && order.clientPhone !== '-' ? order.clientPhone : "Kiritilmagan"}</strong></span>
+                        <span>Tel: <strong className={`font-mono ${order.clientPhone && order.clientPhone !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}`}>
+                          {order.clientPhone && order.clientPhone !== 'Bo\'sh' ? order.clientPhone : "Bo'sh"}
+                        </strong></span>
                         <span>•</span>
-                        <span>Showroom: <strong className={order.showroomName && order.showroomName !== '-' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>{order.showroomName && order.showroomName !== '-' ? order.showroomName : "Ko'rsatilmagan"}</strong></span>
+                        <span>Showroom: <strong className={order.showroomName && order.showroomName !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>
+                          {order.showroomName && order.showroomName !== 'Bo\'sh' ? order.showroomName : "Bo'sh"}
+                        </strong></span>
                         <span>•</span>
-                        <span>Menejer: <strong className={order.salesManagerName && order.salesManagerName !== '-' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>{order.salesManagerName && order.salesManagerName !== '-' ? order.salesManagerName : "Biriktirilmagan"}</strong></span>
+                        <span>Menejer: <strong className={order.salesManagerName && order.salesManagerName !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}>
+                          {order.salesManagerName && order.salesManagerName !== 'Bo\'sh' ? order.salesManagerName : "Bo'sh"}
+                        </strong></span>
                       </p>
                     </div>
 
@@ -406,12 +411,12 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                           <div>
                             <p className="font-bold text-slate-200">{p.name}</p>
                             <p className="text-[11px] text-slate-400">
-                              {p.model && p.model !== '-' ? p.model : "Seriya: ko'rsatilmagan"} • {p.color && p.color !== '-' ? p.color : "Rang: ko'rsatilmagan"}
+                              {p.model && p.model !== 'Bo\'sh' ? p.model : "Seriya: Bo'sh"} • {p.color && p.color !== 'Bo\'sh' ? p.color : "Rang: Bo'sh"}
                             </p>
                           </div>
                           <div className="text-right">
                             <span className={`font-mono font-semibold block ${p.areaSqM > 0 ? 'text-amber-300' : 'text-slate-500'}`}>
-                              {p.areaSqM > 0 ? `${p.areaSqM} kv.m` : "- kv.m"}
+                              {p.areaSqM > 0 ? `${p.areaSqM} kv.m` : "Bo'sh"}
                             </span>
                             <span className="text-[11px] text-slate-400">{p.quantity} dona</span>
                           </div>
@@ -423,8 +428,8 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                       <span className="text-slate-400 font-semibold block">Sifat Nazorati parametri:</span>
                       <div className="flex justify-between text-slate-300 text-xs">
                         <span>Sifat nazorati muhandisi:</span>
-                        <span className={`font-semibold ${order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-' ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
-                          {order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-' ? order.warranty.okkManagerName : "Tayinlanmagan"}
+                        <span className={`font-semibold ${order.warranty?.okkManagerName && order.warranty.okkManagerName !== 'Bo\'sh' ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
+                          {order.warranty?.okkManagerName && order.warranty.okkManagerName !== 'Bo\'sh' ? order.warranty.okkManagerName : "Bo'sh"}
                         </span>
                       </div>
                       <div className="flex justify-between text-slate-300 text-xs">
@@ -433,7 +438,7 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                       </div>
                       <div className="flex justify-between text-slate-300 text-xs">
                         <span>Tayyor bo'lgan sana:</span>
-                        <span className="font-mono text-emerald-400">{order.readyDate || (order.status === 'okk_otdi' ? 'Tasdiqlangan' : 'Ishlab chiqarilmoqda')}</span>
+                        <span className="font-mono text-emerald-400">{order.readyDate && order.readyDate !== 'Bo\'sh' ? order.readyDate : (order.status === 'okk_otdi' ? 'Tasdiqlangan' : "Bo'sh")}</span>
                       </div>
                     </div>
                   </div>
@@ -441,7 +446,6 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                   {/* Actions & OKK State Transition Buttons */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800">
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* Change to OKK Pass */}
                       {!isOkkPassed ? (
                         <button
                           id={`btn-pass-okk-${order.id}`}
@@ -464,7 +468,6 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                         </div>
                       )}
 
-                      {/* View Warranty Certificate */}
                       <button
                         onClick={() => setWarrantyOrder(order)}
                         className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold rounded-xl border border-slate-700 transition-colors cursor-pointer"
@@ -474,7 +477,6 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                       </button>
                     </div>
 
-                    {/* Direct Impersonate / Open Client View */}
                     <button
                       id={`btn-open-client-${order.id}`}
                       onClick={() => onOpenClientCabinet(order)}
@@ -511,7 +513,7 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
             </div>
           </div>
 
-          {/* CRM Kanban Pipeline Voronkasi (4 Stages) */}
+          {/* CRM Kanban Pipeline Voronkasi */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             {/* Stage 1: Yangi Ariza */}
             <div className="bg-slate-900/90 border border-amber-500/30 rounded-2xl p-4 flex flex-col min-h-[350px]">
@@ -782,7 +784,6 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                     )}
                   </div>
 
-                  {/* Resolution details or Action button */}
                   <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2">
                     {isResolved ? (
                       <div className="text-xs text-slate-300 space-y-1">
