@@ -33,11 +33,9 @@ export const setBitrixAutoSync = (enabled: boolean) => {
   localStorage.setItem(BITRIX_AUTO_SYNC_KEY, enabled ? 'true' : 'false');
 };
 
-// Check if a deal is eligible
 export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
   if (!deal || typeof deal !== 'object') return false;
 
-  // 1. UF_CRM_1745308434 (Maxsus kod) to'ldirilgan bo'lishi kerak
   const specialCode = deal[BITRIX_FIELDS.SPECIAL_CODE];
   const hasCode = specialCode !== null && 
                   specialCode !== undefined && 
@@ -48,7 +46,6 @@ export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
     return false;
   }
 
-  // 2. STAGE_ID ruxsat etilgan ro'yxatda bo'lishi kerak
   const stageId = String(deal.STAGE_ID || '').trim();
   if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
     return false;
@@ -57,16 +54,13 @@ export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
   return true;
 };
 
-// Map STAGE_ID to internal OrderStatus
 export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
   const s = (stageId || '').trim();
 
-  // 1. Muvaffaqiyatli / Yakunlangan
   if (s.endsWith(':WON')) {
     return 'topshirildi';
   }
 
-  // 2. Yetkazilmoqda / На расход / Доставка / Доставлено
   if (
     s === 'C2:2' || s === 'C2:UC_6R66T3' ||
     s === 'C8:UC_KI81ZC' ||
@@ -81,7 +75,6 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'yetkazib_berishda';
   }
 
-  // 3. Sifat nazorati / Контроль качества / OKK tekshiruvi / Заказ не прошел ОКК
   if (
     s === 'C2:6' || s === 'C2:UC_ELI1KU' ||
     s === 'C8:UC_EE5QBV' ||
@@ -96,7 +89,6 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'kontrol_kachestva';
   }
 
-  // 4. Заказ готов / Размещено в ГП склад / В процессе установки
   if (
     s === 'C2:1' || s === 'C2:5' ||
     s === 'C8:UC_Q4UARA' || s === 'C8:UC_KCNRMF' ||
@@ -111,22 +103,18 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'okk_otdi';
   }
 
-  // 5. Ishlab chiqarishda (В производстве)
   if (s === 'C2:UC_MNKRA5' || s === 'C27:UC_EVAKIV') {
     return 'ishlab_chiqarishda';
   }
 
-  // RUXSAT ETILMAGAN STATUSLAR - FILTRDAN O'TKAZILMAYDI
   return 'yangi';
 };
 
-// Resolve Responsible Manager from Bitrix deal fields and MANAGERS_DICT
 export const resolveManager = (deal: Record<string, any>): { name: string; phone: string; showroom: string } => {
   const assignedId = String(deal.ASSIGNED_BY_ID || '').trim();
   const customManagerField = deal[BITRIX_FIELDS.RESPONSIBLE_MANAGER];
   const customManagerId = (customManagerField !== null && customManagerField !== undefined) ? String(customManagerField).trim() : '';
 
-  // 1. Try ASSIGNED_BY_ID in MANAGERS_DICT
   if (assignedId && MANAGERS_DICT[assignedId]) {
     return {
       name: MANAGERS_DICT[assignedId].name,
@@ -135,7 +123,6 @@ export const resolveManager = (deal: Record<string, any>): { name: string; phone
     };
   }
 
-  // 2. Try customManagerId in MANAGERS_DICT
   if (customManagerId && MANAGERS_DICT[customManagerId]) {
     return {
       name: MANAGERS_DICT[customManagerId].name,
@@ -144,7 +131,6 @@ export const resolveManager = (deal: Record<string, any>): { name: string; phone
     };
   }
 
-  // 3. If custom field has a non-numeric string (e.g. text full name)
   if (customManagerField && typeof customManagerField === 'string' && isNaN(Number(customManagerField)) && customManagerField.trim().length > 0) {
     return {
       name: customManagerField.trim(),
@@ -153,7 +139,6 @@ export const resolveManager = (deal: Record<string, any>): { name: string; phone
     };
   }
 
-  // 4. If assignedId exists but not in dict
   if (assignedId && assignedId !== '0' && assignedId !== '') {
     return {
       name: `Menejer #${assignedId}`,
@@ -162,7 +147,6 @@ export const resolveManager = (deal: Record<string, any>): { name: string; phone
     };
   }
 
-  // 5. Not specified
   return {
     name: "Bo'sh",
     phone: '-',
@@ -170,7 +154,6 @@ export const resolveManager = (deal: Record<string, any>): { name: string; phone
   };
 };
 
-// Resolve Showroom Name from deal fields or IDs
 export const resolveShowroomName = (deal: Record<string, any>, managerShowroom?: string): string => {
   const s = BITRIX_FIELDS.SHOWROOMS;
   
@@ -185,7 +168,6 @@ export const resolveShowroomName = (deal: Record<string, any>, managerShowroom?:
 
   const stageId = String(deal.STAGE_ID || '').trim();
   
-  // C2 - Sergeli / Toshkent
   if (stageId.startsWith('C2:')) {
     const val = getDictOrVal(deal[s.DEFAULT]);
     if (val) return val;
@@ -193,70 +175,60 @@ export const resolveShowroomName = (deal: Record<string, any>, managerShowroom?:
     return "Bo'sh";
   }
   
-  // C8 - Andijon
   if (stageId.startsWith('C8:')) {
     const val = getDictOrVal(deal[s.ANDIJAN]);
     if (val) return `Andijon (${val})`;
     return "Bo'sh";
   }
   
-  // C12 - Samarqand
   if (stageId.startsWith('C12:')) {
     const val = getDictOrVal(deal[s.SAMARKAND]);
     if (val) return `Samarqand (${val})`;
     return "Bo'sh";
   }
   
-  // C13 - Namangan
   if (stageId.startsWith('C13:')) {
     const val = getDictOrVal(deal[s.NAMANGAN]);
     if (val) return `Namangan (${val})`;
     return "Bo'sh";
   }
   
-  // C16 - Nukus / Xorazm
   if (stageId.startsWith('C16:')) {
     const val = getDictOrVal(deal[s.NUKUS]) || getDictOrVal(deal[s.KHOREZM]);
     if (val) return `Nukus (${val})`;
     return "Bo'sh";
   }
   
-  // C22 - Buxoro
   if (stageId.startsWith('C22:')) {
     const val = getDictOrVal(deal[s.BUKHARA]);
     if (val) return `Buxoro (${val})`;
     return "Bo'sh";
   }
   
-  // C24 - Surxondaryo
   if (stageId.startsWith('C24:')) {
     const val = getDictOrVal(deal[s.SURKHANDARYA]);
     if (val) return `Surxondaryo (${val})`;
     return "Bo'sh";
   }
   
-  // C27 - Farg'ona
   if (stageId.startsWith('C27:')) {
     const val = getDictOrVal(deal[s.FERGANA]);
     if (val) return `Farg'ona (${val})`;
     return "Bo'sh";
   }
   
-  // C35 - Nukus
   if (stageId.startsWith('C35:')) {
     const val = getDictOrVal(deal[s.NUKUS]);
     if (val) return `Nukus Zavod (${val})`;
     return "Bo'sh";
   }
 
-  // Fallback
   const defaultVal = getDictOrVal(deal[s.DEFAULT]);
   if (defaultVal) return defaultVal;
   if (managerShowroom && managerShowroom !== '263/11') return managerShowroom;
   return "Bo'sh";
 };
 
-// Resolve Client Phone Number accurately
 export const resolveClientPhone = (deal: Record<string, any>, contact?: Record<string, any>): string => {
   if (contact?.PHONE) {
     if (Array.isArray(contact.PHONE) && contact.PHONE.length > 0) {
@@ -283,7 +255,6 @@ export const resolveClientPhone = (deal: Record<string, any>, contact?: Record<s
   return "Bo'sh";
 };
 
-// Resolve OKK Inspector from deal
 export const resolveOkkInspector = (deal: Record<string, any>): string => {
   const okkRaw = deal[BITRIX_FIELDS.OKK_MANAGER];
   if (!okkRaw || okkRaw === '0' || okkRaw === 0) return "Bo'sh";
@@ -298,7 +269,6 @@ export const resolveOkkInspector = (deal: Record<string, any>): string => {
   return `OKK Muhandis #${okkId}`;
 };
 
-// Convert Bitrix Deal object to Application Order Object
 export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Record<string, any>): Order => {
   const dealId = String(deal.ID || '');
   const invoiceNumber = deal[BITRIX_FIELDS.ORDER_INVOICE_ID] || deal.TITLE || `SCH-${dealId}`;
@@ -307,21 +277,18 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   const status = mapBitrixStageToStatus(stageId);
   const isReady = status === 'okk_otdi' || stageId.includes('WON');
 
-  // Parse Products Series
   let rawProductIds = deal[BITRIX_FIELDS.PRODUCT_SERIES];
   if (!Array.isArray(rawProductIds)) {
     rawProductIds = (rawProductIds !== null && rawProductIds !== undefined && rawProductIds !== '') ? [rawProductIds] : [];
   }
   rawProductIds = rawProductIds.filter((id: any) => id !== null && id !== undefined && id !== '' && id !== '0' && id !== 0);
 
-  // Parse Colors
   let rawColorIds = deal[BITRIX_FIELDS.COLOR];
   if (!Array.isArray(rawColorIds)) {
     rawColorIds = (rawColorIds !== null && rawColorIds !== undefined && rawColorIds !== '') ? [rawColorIds] : [];
   }
   rawColorIds = rawColorIds.filter((id: any) => id !== null && id !== undefined && id !== '' && id !== '0' && id !== 0);
 
-  // Parse Area
   const rawArea = deal[BITRIX_FIELDS.AREA_SQM];
   const areaSqM = (rawArea !== null && rawArea !== undefined && rawArea !== '') ? (parseFloat(rawArea) || 0) : 0;
 
@@ -347,14 +314,12 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
     }
   ];
 
-  // Dates
   const factorySentDate = deal[BITRIX_FIELDS.FACTORY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.FACTORY_DATE]) : "Bo'sh";
   const estimatedReadyDate = deal[BITRIX_FIELDS.ESTIMATED_READY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.ESTIMATED_READY_DATE]) : "Bo'sh";
   const readyDate = deal[BITRIX_FIELDS.ORDER_READY_DATE] 
     ? formatBitrixDate(deal[BITRIX_FIELDS.ORDER_READY_DATE])
     : (isReady ? (estimatedReadyDate !== "Bo'sh" ? estimatedReadyDate : 'Tasdiqlangan') : "Bo'sh");
 
-  // Client info
   const clientName = contact?.NAME 
     ? `${contact.LAST_NAME || ''} ${contact.NAME} ${contact.SECOND_NAME || ''}`.trim()
     : (deal.TITLE || "Bo'sh");
@@ -421,14 +386,12 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   };
 };
 
-// Call Bitrix24 REST API
 export const callBitrixMethod = async (method: string, params: Record<string, any> = {}): Promise<any> => {
   const webhookUrl = getBitrixWebhookUrl();
   if (!webhookUrl) {
     throw new Error("Bitrix24 Webhook URL kiritilmagan.");
   }
 
-  // 1. Try server-side proxy first
   let proxyErrorMessage = '';
   try {
     const proxyRes = await fetch('/api/bitrix-proxy', {
@@ -456,7 +419,6 @@ export const callBitrixMethod = async (method: string, params: Record<string, an
     console.warn("Proxy call notice:", proxyErr.message);
   }
 
-  // 2. Direct fetch fallback
   try {
     const url = `${webhookUrl.trim().replace(/\/+$/, '')}/${method}.json`;
     const controller = new AbortController();
@@ -501,7 +463,6 @@ export const callBitrixMethod = async (method: string, params: Record<string, an
   }
 };
 
-// Fetch deal by Special Code
 export const fetchBitrixDealBySpecialCode = async (specialCode: string): Promise<Order | null> => {
   try {
     const authResult = await fetchBitrixCustomerOrdersByCredentials('', specialCode);
@@ -512,7 +473,6 @@ export const fetchBitrixDealBySpecialCode = async (specialCode: string): Promise
   }
 };
 
-// Authenticate customer by Phone Number & Special PIN Code
 export const fetchBitrixCustomerOrdersByCredentials = async (
   phoneInput: string,
   pinInput: string
@@ -535,7 +495,6 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
 
   let matchedDeals: any[] = [];
 
-  // 1. Search deals by Special PIN Code
   if (cleanPin) {
     const res = await callBitrixMethod('crm.deal.list', {
       filter: {
@@ -549,7 +508,6 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     }
   }
 
-  // 2. If not found by PIN and Phone is provided, search by phone
   if (matchedDeals.length === 0 && phoneDigits.length >= 7) {
     try {
       const contacts = await callBitrixMethod('crm.contact.list', {
@@ -584,7 +542,6 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     return null;
   }
 
-  // 3. Validate phone number
   if (phoneDigits.length >= 7) {
     const firstDeal = matchedDeals[0];
     let contactData: any = undefined;
@@ -620,13 +577,11 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     }
   }
 
-  // 4. Filter eligible deals and convert
   const eligibleDeals = matchedDeals.filter(isBitrixDealEligible);
   if (eligibleDeals.length === 0) {
     return null;
   }
 
-  // 5. Get contact data for first deal
   let contactData: any = undefined;
   if (eligibleDeals[0].CONTACT_ID) {
     try {
@@ -645,8 +600,8 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   };
 };
 
-// 🔥 ASOSIY FUNKSIYA: fetchBitrixRecentDeals - CHEGARASIZ
-export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order[]> => {
+// 🔥 FAQAT 10 TA DEAL OLADI
+export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[]> => {
   try {
     console.log('🔄 Bitrix24 dan ma\'lumot olinmoqda...');
     
@@ -664,46 +619,27 @@ export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order
       "UF_CRM_1696845428847", "UF_CRM_1761029845985"
     ];
 
-    const allDeals: any[] = [];
-    let start = 0;
-    const pageSize = 50;
-    
-    // 🔥 CHEGARASIZ - barcha deal'lar olinadi
-    while (true) {
-      const result = await callBitrixMethod('crm.deal.list', {
-        order: { DATE_CREATE: "DESC" },
-        filter: {
-          ">=DATE_CREATE": startDate,
-          "!UF_CRM_1745308434": false,
-        },
-        select: selectFields,
-        limit: pageSize,
-        start: start,
-      });
+    // 🔥 FAQAT BIRINCHI SAHIFA - 50 TA
+    const result = await callBitrixMethod('crm.deal.list', {
+      order: { DATE_CREATE: "DESC" },
+      filter: {
+        ">=DATE_CREATE": startDate,
+        "!UF_CRM_1745308434": false,
+      },
+      select: selectFields,
+      limit: 50,
+      start: 0,
+    });
 
-      if (!Array.isArray(result) || result.length === 0) {
-        break;
-      }
-
-      console.log(`📋 ${result.length} ta deal yuklandi (start: ${start})`);
-      allDeals.push(...result);
-
-      if (result.length < pageSize) {
-        break;
-      }
-
-      start += pageSize;
-    }
-
-    console.log(`✅ Jami ${allDeals.length} ta deal yuklandi`);
-
-    if (allDeals.length === 0) {
+    if (!Array.isArray(result) || result.length === 0) {
       console.log('⚠️ Hech qanday deal topilmadi');
       return [];
     }
 
-    // STAGE_ID bo'yicha filtr (malumot1.txt dagi statuslar)
-    const eligibleDeals = allDeals.filter(deal => {
+    console.log(`📋 ${result.length} ta deal yuklandi`);
+
+    // STAGE_ID bo'yicha filtr
+    const eligibleDeals = result.filter(deal => {
       const stageId = String(deal.STAGE_ID || '').trim();
       if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
         return false;
@@ -718,40 +654,27 @@ export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order
       return [];
     }
 
+    // 🔥 FAQAT 10 TA OLAMIZ
+    const limitedDeals = eligibleDeals.slice(0, 10);
+
     // Contact ma'lumotlarini olish
-    const contactIds = Array.from(new Set(eligibleDeals.map((d: any) => d.CONTACT_ID).filter((id: any) => id && id !== '0' && id !== 0)));
+    const contactIds = Array.from(new Set(limitedDeals.map((d: any) => d.CONTACT_ID).filter((id: any) => id && id !== '0' && id !== 0)));
     let contactMap: Record<string, any> = {};
 
     if (contactIds.length > 0) {
       try {
         console.log(`📞 ${contactIds.length} ta contact ma'lumoti olinmoqda...`);
-        let contactStart = 0;
-        const contactPageSize = 50;
-        const allContacts: any[] = [];
-        
-        while (true) {
-          const contacts = await callBitrixMethod('crm.contact.list', {
-            filter: {
-              "@ID": contactIds.slice(contactStart, contactStart + contactPageSize)
-            },
-            select: ["ID", "NAME", "LAST_NAME", "SECOND_NAME", "PHONE", "EMAIL"],
-            limit: contactPageSize,
-          });
-          
-          if (!Array.isArray(contacts) || contacts.length === 0) {
-            break;
+        const contacts = await callBitrixMethod('crm.contact.list', {
+          filter: {
+            "@ID": contactIds
+          },
+          select: ["ID", "NAME", "LAST_NAME", "SECOND_NAME", "PHONE", "EMAIL"],
+          limit: 50,
+        });
+        if (Array.isArray(contacts)) {
+          for (const c of contacts) {
+            contactMap[String(c.ID)] = c;
           }
-          
-          allContacts.push(...contacts);
-          
-          if (contacts.length < contactPageSize) {
-            break;
-          }
-          contactStart += contactPageSize;
-        }
-        
-        for (const c of allContacts) {
-          contactMap[String(c.ID)] = c;
         }
         console.log(`✅ ${Object.keys(contactMap).length} ta contact yuklandi`);
       } catch (cErr) {
@@ -759,7 +682,7 @@ export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order
       }
     }
 
-    const orders = eligibleDeals.map((deal: any) => {
+    const orders = limitedDeals.map((deal: any) => {
       const contact = deal.CONTACT_ID ? contactMap[String(deal.CONTACT_ID)] : undefined;
       return convertBitrixDealToOrder(deal, contact);
     });
@@ -772,7 +695,6 @@ export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order
   }
 };
 
-// Parse raw Bitrix24 JSON response
 export const parseRawBitrixJsonData = (rawInput: string | object): Order[] => {
   let data: any = rawInput;
   if (typeof rawInput === 'string') {
