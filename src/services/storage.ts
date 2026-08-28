@@ -5,57 +5,43 @@ const ORDERS_KEY = 'imzo_orders_v2';
 const TICKETS_KEY = 'imzo_tickets_v2';
 const AUTH_KEY = 'imzo_current_session';
 
+// 🔥 O'ZGARGAN QISM: getStoredOrders
 export const getStoredOrders = (): Order[] => {
   try {
     const raw = localStorage.getItem(ORDERS_KEY);
-    let orders: Order[];
+    let orders: Order[] = [];
+    
     if (!raw) {
-      try {
-        localStorage.removeItem('fabrika_orders_v1');
-      } catch (_) {}
-      localStorage.setItem(ORDERS_KEY, JSON.stringify(INITIAL_ORDERS));
-      orders = INITIAL_ORDERS;
-    } else {
-      orders = JSON.parse(raw);
+      localStorage.setItem(ORDERS_KEY, JSON.stringify([]));
+      return [];
     }
+    
+    orders = JSON.parse(raw);
 
-    let modified = false;
-
-    // Filter out invalid Bitrix orders
-    const initialLen = orders.length;
+    // 🔥 FILTR: FAQAT ruxsat etilgan statuslar
+    // Bu statuslar malumot1.txt dagi statuslarga mos keladi
+    const allowedStatuses: OrderStatus[] = [
+      'okk_otdi',           // Заказ готов, Размещено в ГП склад, В процессе установки
+      'kontrol_kachestva',  // Контроль качества
+      'yetkazib_berishda',  // На расход / Доставка, Доставлено
+      'topshirildi'         // Успешно, Сделка успешна
+    ];
+    
     orders = orders.filter((ord) => {
-      if (ord.id.startsWith('bx_') || (ord.notes && ord.notes.includes('Bitrix24 Deal ID'))) {
-        const pin = ord.credentials?.pinCode;
-        if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0 || pin === "Bo'sh") {
-          return false;
-        }
-        const allowedStatuses: OrderStatus[] = ['okk_otdi', 'kontrol_kachestva', 'yetkazib_berishda', 'topshirildi'];
-        if (!allowedStatuses.includes(ord.status)) {
-          return false;
-        }
+      // 🔥 STATUS tekshiruvi - FAQAT ruxsat etilgan statuslar
+      if (!allowedStatuses.includes(ord.status)) {
+        console.warn(`Order ${ord.id} o'chirildi: Status "${ord.status}" ruxsat etilmagan`);
+        return false;
       }
+      
+      // PIN tekshiruvi
+      const pin = ord.credentials?.pinCode;
+      if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0 || pin === "Bo'sh") {
+        console.warn(`Order ${ord.id} o'chirildi: PIN yo'q (${pin})`);
+        return false;
+      }
+      
       return true;
-    });
-
-    if (orders.length !== initialLen) {
-      modified = true;
-    }
-
-    // Force migration to 60 months warranty
-    orders = orders.map((ord) => {
-      if (ord.warranty && (ord.warranty.warrantyPeriodMonths === 36 || !ord.warranty.warrantyPeriodMonths)) {
-        modified = true;
-        return {
-          ...ord,
-          warranty: {
-            ...ord.warranty,
-            warrantyPeriodMonths: 60,
-            terms: ord.warranty.terms.map(t => t.replace(/36\s*oy/gi, '60 oy (5 yil)')),
-            qrCodeValue: (ord.warranty.qrCodeValue || '').replace('36_MONTHS', '60_MONTHS')
-          }
-        };
-      }
-      return ord;
     });
 
     // Bo'sh maydonlarni "Bo'sh" ga to'ldiramiz
@@ -79,17 +65,15 @@ export const getStoredOrders = (): Order[] => {
       }
     }));
 
-    if (modified) {
-      localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-    }
-
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
     return orders;
   } catch (e) {
     console.error('Failed to load orders from storage', e);
-    return INITIAL_ORDERS;
+    return [];
   }
 };
 
+// Qolgan funksiyalar o'zgarmagan
 export const saveStoredOrders = (orders: Order[]) => {
   try {
     localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
