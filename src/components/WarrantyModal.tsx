@@ -14,7 +14,8 @@ import {
   UserCheck, 
   Sparkles,
   Loader2,
-  Phone
+  Phone,
+  AlertCircle
 } from 'lucide-react';
 import { Order } from '../types';
 import jsPDF from 'jspdf';
@@ -33,6 +34,16 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   if (!isOpen) return null;
+
+  // 🔥 FAQAT OKK statusida bo'lsa PDF ko'rsatiladi
+  const isReady = ['okk_otdi', 'topshirildi'].includes(order.status);
+  const warrantyMonths = (order.warranty?.warrantyPeriodMonths && order.warranty.warrantyPeriodMonths >= 60) 
+    ? order.warranty.warrantyPeriodMonths 
+    : 60;
+  const inspectorName = (order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-' && order.warranty.okkManagerName !== "Bo'sh") 
+    ? order.warranty.okkManagerName 
+    : (order.okkInspectorName || "Bo'sh");
+  const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '0000'}`;
 
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) return;
@@ -74,15 +85,67 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     window.print();
   };
 
-  const isReady = ['okk_otdi', 'topshirildi'].includes(order.status);
-  const warrantyMonths = (order.warranty?.warrantyPeriodMonths && order.warranty.warrantyPeriodMonths >= 60) 
-    ? order.warranty.warrantyPeriodMonths 
-    : 60;
-  const inspectorName = (order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-') 
-    ? order.warranty.okkManagerName 
-    : (order.okkInspectorName || "OKK Muhandisi");
-  const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '0000'}`;
+  // 🔥 Agar OKK statusida bo'lmasa, eslatma ko'rsatamiz
+  if (!isReady) {
+    return (
+      <AnimatePresence>
+        <div 
+          id="warranty-modal-overlay"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 15 }}
+            className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
+          >
+            <div className="p-6 text-center space-y-4">
+              {/* Icon */}
+              <div className="flex justify-center">
+                <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+                  <AlertCircle className="w-8 h-8 text-amber-400" />
+                </div>
+              </div>
 
+              {/* Title */}
+              <h3 className="text-lg font-bold text-white">
+                Kafolat Taloni Hali Tayyor Emas
+              </h3>
+
+              {/* Message */}
+              <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                <p className="text-sm text-amber-300 font-medium">
+                  Buyurtma Sifat nazorati xodimlari tomondan <br />
+                  <strong>tasdiqlanmadi!</strong>
+                </p>
+                <p className="text-xs text-slate-400 mt-2">
+                  Iltimos, sifat nazoratidan o'tishi uchun <br />
+                  <strong>kuting!</strong>
+                </p>
+              </div>
+
+              {/* Status info */}
+              <div className="text-xs text-slate-400">
+                Hozirgi holat: <span className="text-amber-400 font-semibold">
+                  {order.status === 'kontrol_kachestva' ? 'Sifat nazorati tekshiruvida' : 'Ishlab chiqarishda'}
+                </span>
+              </div>
+
+              {/* Close button */}
+              <button
+                onClick={onClose}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Tushundim, Yopish
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </AnimatePresence>
+    );
+  }
+
+  // 🔥 OKK statusida bo'lsa, to'liq PDF ko'rsatiladi
   return (
     <AnimatePresence>
       <div 
@@ -106,7 +169,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <h3 className="text-xs sm:text-base md:text-lg font-bold text-white flex items-center gap-1.5 truncate">
                   <span>Kafolat Taloni</span>
                   <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium shrink-0">
-                    {isReady ? 'Sifat Nazoratidan O\'tgan' : 'Jarayonda'}
+                    Sifat Nazoratidan O'tgan
                   </span>
                 </h3>
                 <p className="text-[11px] sm:text-xs text-slate-400 truncate">
@@ -201,7 +264,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </p>
               </div>
 
-              {/* Info Matrix Grid */}
+              {/* Info Matrix Grid - "Ishlab chiqarish" va "Soni" o'chirildi */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4 sm:py-6 border-b border-amber-900/15 relative z-10 text-xs sm:text-sm">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -233,10 +296,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     <span className="text-slate-500 font-medium shrink-0">Fabrikaga berilgan:</span>
                     <span className="font-semibold text-slate-800 font-mono text-xs">{order.factorySentDate || order.orderDate}</span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0">Ishlab chiqarish:</span>
-                    <span className="font-semibold text-slate-800 font-mono text-xs">{order.productionStartDate || order.orderDate}</span>
-                  </div>
+                  {/* 🔥 "Ishlab chiqarish" qatori O'CHIRILDI */}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-slate-500 font-medium shrink-0">Tayyor bo'lgan sana:</span>
                     <span className="font-bold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded text-xs font-mono">
@@ -246,7 +306,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Product Specifications Table */}
+              {/* Product Specifications Table - "Soni" ustuni o'chirildi */}
               <div className="py-4 relative z-10">
                 <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#855B14] mb-2 sm:mb-3 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#B8860B]" />
@@ -261,7 +321,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                         <th className="py-2 px-2.5 sm:px-3 text-[11px]">Mahsulot va Model</th>
                         <th className="py-2 px-2.5 sm:px-3 text-[11px]">Rangi</th>
                         <th className="py-2 px-2.5 sm:px-3 text-[11px]">Hajm</th>
-                        <th className="py-2 px-2.5 sm:px-3 text-right text-[11px]">Soni</th>
+                        {/* 🔥 "Soni" ustuni O'CHIRILDI */}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-amber-900/10 text-slate-800">
@@ -270,11 +330,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           <td className="py-2 px-2.5 sm:px-3 font-mono text-slate-500 text-[11px]">{idx + 1}</td>
                           <td className="py-2 px-2.5 sm:px-3">
                             <span className="font-bold block text-slate-900 text-xs">{item.name}</span>
-                            <span className="text-[10px] text-slate-600 block">{item.model && item.model !== '-' ? item.model : (item.dimensions && item.dimensions !== '-' ? item.dimensions : '')}</span>
+                            <span className="text-[10px] text-slate-600 block">{item.model && item.model !== 'Bo\'sh' ? item.model : (item.dimensions && item.dimensions !== 'Bo\'sh' ? item.dimensions : '')}</span>
                           </td>
-                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.color && item.color !== '-' ? item.color : '-'}</td>
-                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.areaSqM > 0 ? `${item.areaSqM} m²` : '-'}</td>
-                          <td className="py-2 px-2.5 sm:px-3 text-right font-bold text-xs">{item.quantity} dona</td>
+                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.color && item.color !== 'Bo\'sh' ? item.color : 'Bo\'sh'}</td>
+                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.areaSqM > 0 ? `${item.areaSqM} m²` : 'Bo\'sh'}</td>
+                          {/* 🔥 "Soni" ustuni O'CHIRILDI */}
                         </tr>
                       ))}
                     </tbody>
@@ -305,7 +365,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Bottom Verification, Signatures & Stamps (Responsive Stacking for Mobile & PC) */}
+              {/* Bottom Verification, Signatures & Stamps */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
                 {/* Left: Inspector Info */}
                 <div className="text-center sm:text-left">
@@ -329,7 +389,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                       <path d="M10 40 C30 10, 45 55, 60 20 C70 -5, 80 50, 95 30 C105 15, 120 40, 150 25 M30 35 L140 33" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                     <span className="absolute bottom-0 text-[8px] text-slate-400 font-mono uppercase">
-                      Imzo: {inspectorName.split(' ')[0]}
+                      Imzo: {inspectorName.split(' ')[0] || 'OKK'}
                     </span>
                   </div>
 
