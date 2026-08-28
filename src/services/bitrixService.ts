@@ -45,14 +45,12 @@ export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
                   String(specialCode).trim() !== '0' && 
                   String(specialCode).trim() !== 'false';
   if (!hasCode) {
-    console.warn(`Deal ${deal.ID} filtrlandi: SPECIAL_CODE yo'q (${specialCode})`);
     return false;
   }
 
   // 2. STAGE_ID ruxsat etilgan ro'yxatda bo'lishi kerak
   const stageId = String(deal.STAGE_ID || '').trim();
   if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
-    console.warn(`Deal ${deal.ID} filtrlandi: STAGE_ID "${stageId}" ruxsat etilmagan`);
     return false;
   }
 
@@ -113,8 +111,7 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'okk_otdi';
   }
 
-  // RUXSAT ETILMAGAN STATUSLAR - FILTRDAN O'TKAZILMAYDI
-  // C2:UC_ISZX1 (Новая - Колл центр) va boshqalar
+  // RUXSAT ETILMAGAN STATUSLAR
   return 'yangi';
 };
 
@@ -519,6 +516,19 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   const cleanPhone = phoneInput.trim();
   const phoneDigits = cleanPhone.replace(/\D/g, '');
 
+  // 🔥 OPTIMALLASHTIRILGAN: SELECT bilan to'g'ridan-to'g'ri olish
+  const selectFields = [
+    "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY", "CURRENCY_ID",
+    "CONTACT_ID", "ASSIGNED_BY_ID", "CREATED_BY_ID", "MODIFY_BY_ID",
+    "UF_CRM_1745308434", "UF_CRM_1651306406137", "UF_CRM_1656483960",
+    "UF_CRM_1656484012", "UF_CRM_1648100319007", "UF_CRM_1701497119",
+    "UF_CRM_1682695332152", "UF_CRM_1682761006746", "UF_CRM_1682760962387",
+    "UF_CRM_1646213205", "UF_CRM_1690286173", "UF_CRM_1647931321",
+    "UF_CRM_1713332718568", "UF_CRM_1649332403191", "UF_CRM_1653148491",
+    "UF_CRM_1655321621579", "UF_CRM_1659691369246", "UF_CRM_1671518012095",
+    "UF_CRM_1696845428847", "UF_CRM_1761029845985"
+  ];
+
   let matchedDeals: any[] = [];
 
   // 1. Search deals by Special PIN Code
@@ -527,19 +537,11 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
       filter: {
         [`=${BITRIX_FIELDS.SPECIAL_CODE}`]: cleanPin
       },
-      select: ["ID"]
+      select: selectFields,
+      limit: 50,
     });
     if (Array.isArray(res) && res.length > 0) {
-      for (const item of res) {
-        try {
-          const fullDeal = await callBitrixMethod('crm.deal.get', { id: item.ID });
-          if (fullDeal) {
-            matchedDeals.push(fullDeal);
-          }
-        } catch (err) {
-          console.warn(`Deal ${item.ID} ni olishda xatolik:`, err);
-        }
-      }
+      matchedDeals = res;
     }
   }
 
@@ -558,21 +560,14 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
           filter: {
             "=CONTACT_ID": contactId
           },
-          select: ["ID"]
+          select: selectFields,
+          limit: 50,
         });
         if (Array.isArray(deals) && deals.length > 0) {
-          for (const item of deals) {
-            try {
-              const fullDeal = await callBitrixMethod('crm.deal.get', { id: item.ID });
-              if (fullDeal) {
-                const dealPin = (fullDeal[BITRIX_FIELDS.SPECIAL_CODE] || '').toString().trim();
-                if (dealPin === cleanPin || !cleanPin) {
-                  matchedDeals.push(fullDeal);
-                }
-              }
-            } catch (err) {
-              console.warn(`Deal ${item.ID} ni olishda xatolik:`, err);
-            }
+          if (cleanPin) {
+            matchedDeals = deals.filter(d => (d[BITRIX_FIELDS.SPECIAL_CODE] || '').toString().trim() === cleanPin);
+          } else {
+            matchedDeals = deals;
           }
         }
       }
@@ -646,93 +641,136 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   };
 };
 
-// Fetch real deals list with batch contact hydration
-export const fetchBitrixRecentDeals = async (limit: number = 50): Promise<Order[]> => {
+// 🔥 ASOSIY OPTIMALLASHTIRILGAN FUNKSIYA: fetchBitrixRecentDeals
+export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order[]> => {
   try {
     console.log('🔄 Bitrix24 dan ma\'lumot olinmoqda...');
     
-    // 1. Avval deal ID larini olamiz (SELECT siz)
-    const listResult = await callBitrixMethod('crm.deal.list', {
-      order: { DATE_CREATE: "DESC" },
-      select: ["ID"],
-      limit: limit * 2,
-    });
+    // 2026-yil 1-yanvardan boshlab
+    const startDate = '2026-01-01T00:00:00+05:00';
+    
+    // BARCHA KERAKLI MAYDONLARNI SELECT qilamiz
+    const selectFields = [
+      "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY", "CURRENCY_ID",
+      "CONTACT_ID", "ASSIGNED_BY_ID", "CREATED_BY_ID", "MODIFY_BY_ID",
+      "UF_CRM_1745308434",           // SPECIAL_CODE
+      "UF_CRM_1651306406137",        // ORDER_INVOICE_ID
+      "UF_CRM_1656483960",           // PRODUCT_SERIES
+      "UF_CRM_1656484012",           // COLOR
+      "UF_CRM_1648100319007",        // AREA_SQM
+      "UF_CRM_1701497119",           // FACTORY_DATE
+      "UF_CRM_1682695332152",        // ESTIMATED_READY_DATE
+      "UF_CRM_1682761006746",        // READY_TO_PROD_DATE
+      "UF_CRM_1682760962387",        // ORDER_READY_DATE
+      "UF_CRM_1646213205",           // RESPONSIBLE_MANAGER
+      "UF_CRM_1690286173",           // OKK_MANAGER
+      "UF_CRM_1647931321",           // SHOWROOM_DEFAULT
+      "UF_CRM_1713332718568",        // SHOWROOM_FERGANA
+      "UF_CRM_1649332403191",        // SHOWROOM_ANDIJAN
+      "UF_CRM_1653148491",           // SHOWROOM_SAMARKAND
+      "UF_CRM_1655321621579",        // SHOWROOM_NAMANGAN
+      "UF_CRM_1659691369246",        // SHOWROOM_NUKUS
+      "UF_CRM_1671518012095",        // SHOWROOM_BUKHARA
+      "UF_CRM_1696845428847",        // SHOWROOM_SURKHANDARYA
+      "UF_CRM_1761029845985",        // SHOWROOM_KHOREZM
+    ];
 
-    console.log(`📋 Jami ${listResult?.length || 0} ta deal topildi`);
+    // 1. Barcha deal'larni pagination bilan olamiz
+    const allDeals: any[] = [];
+    let start = 0;
+    const pageSize = 50;
+    
+    while (true) {
+      const result = await callBitrixMethod('crm.deal.list', {
+        order: { DATE_CREATE: "DESC" },
+        filter: {
+          ">=DATE_CREATE": startDate,
+          "!UF_CRM_1745308434": false, // SPECIAL_CODE bo'sh bo'lmaganlar
+        },
+        select: selectFields,
+        limit: pageSize,
+        start: start,
+      });
 
-    if (!Array.isArray(listResult) || listResult.length === 0) {
+      if (!Array.isArray(result) || result.length === 0) {
+        break;
+      }
+
+      console.log(`📋 ${result.length} ta deal yuklandi (start: ${start})`);
+      allDeals.push(...result);
+
+      if (result.length < pageSize) {
+        break;
+      }
+
+      start += pageSize;
+      
+      // Xavfsizlik: cheksiz siklga tushib qolmaslik uchun
+      if (start > 2000) {
+        console.warn('⚠️ Juda ko\'p deal, to\'xtatilmoqda (2000+)');
+        break;
+      }
+    }
+
+    console.log(`✅ Jami ${allDeals.length} ta deal yuklandi (2026-yildan boshlab)`);
+
+    if (allDeals.length === 0) {
       console.log('⚠️ Hech qanday deal topilmadi');
       return [];
     }
 
-    // 2. Har bir dealni to'liq ma'lumot bilan olamiz (crm.deal.get)
-    const allDeals: any[] = [];
-    let processedCount = 0;
-    
-    for (const item of listResult) {
-      try {
-        processedCount++;
-        const fullDeal = await callBitrixMethod('crm.deal.get', { id: item.ID });
-        if (fullDeal) {
-          allDeals.push(fullDeal);
-        }
-        if (processedCount % 10 === 0) {
-          console.log(`⏳ ${processedCount} ta deal qayta ishlandi...`);
-        }
-      } catch (err) {
-        console.warn(`Deal ${item.ID} ni olishda xatolik:`, err);
-      }
-    }
-
-    console.log(`✅ ${allDeals.length} ta deal to'liq yuklandi`);
-
-    // 3. SPECIAL_CODE va STAGE_ID ni tekshiramiz
+    // 2. STAGE_ID bo'yicha filtr (malumot1.txt dagi statuslar)
     const eligibleDeals = allDeals.filter(deal => {
-      // SPECIAL_CODE tekshiruvi
-      const code = deal.UF_CRM_1745308434;
-      const hasCode = code !== null && 
-                      code !== undefined && 
-                      String(code).trim().length > 0 && 
-                      String(code).trim() !== '0';
-      if (!hasCode) {
-        console.warn(`Deal ${deal.ID} filtrlandi: SPECIAL_CODE yo'q (${code})`);
-        return false;
-      }
-      
-      // STAGE_ID tekshiruvi - malumot1.txt dagi statuslar
       const stageId = String(deal.STAGE_ID || '').trim();
       if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
-        console.warn(`Deal ${deal.ID} filtrlandi: STAGE_ID "${stageId}" ruxsat etilmagan`);
         return false;
       }
-      
       return true;
     });
 
-    console.log(`🎯 ${eligibleDeals.length} ta deal SPECIAL_CODE va ruxsat etilgan statusga ega`);
+    console.log(`🎯 ${eligibleDeals.length} ta deal ruxsat etilgan statusga ega`);
 
     if (eligibleDeals.length === 0) {
       console.log('⚠️ Hech qanday mos deal topilmadi');
       return [];
     }
 
-    // 4. Contact ma'lumotlarini olamiz
+    // 3. Contact ma'lumotlarini BATCH (guruhlab) olamiz
     const contactIds = Array.from(new Set(eligibleDeals.map((d: any) => d.CONTACT_ID).filter((id: any) => id && id !== '0' && id !== 0)));
     let contactMap: Record<string, any> = {};
 
     if (contactIds.length > 0) {
       try {
         console.log(`📞 ${contactIds.length} ta contact ma'lumoti olinmoqda...`);
-        const contacts = await callBitrixMethod('crm.contact.list', {
-          filter: {
-            "@ID": contactIds
-          },
-          select: ["ID", "NAME", "LAST_NAME", "SECOND_NAME", "PHONE", "EMAIL"]
-        });
-        if (Array.isArray(contacts)) {
-          for (const c of contacts) {
-            contactMap[String(c.ID)] = c;
+        
+        // Contactlarni ham batch (guruhlab) olamiz
+        let contactStart = 0;
+        const contactPageSize = 50;
+        const allContacts: any[] = [];
+        
+        while (true) {
+          const contacts = await callBitrixMethod('crm.contact.list', {
+            filter: {
+              "@ID": contactIds.slice(contactStart, contactStart + contactPageSize)
+            },
+            select: ["ID", "NAME", "LAST_NAME", "SECOND_NAME", "PHONE", "EMAIL"],
+            limit: contactPageSize,
+          });
+          
+          if (!Array.isArray(contacts) || contacts.length === 0) {
+            break;
           }
+          
+          allContacts.push(...contacts);
+          
+          if (contacts.length < contactPageSize) {
+            break;
+          }
+          contactStart += contactPageSize;
+        }
+        
+        for (const c of allContacts) {
+          contactMap[String(c.ID)] = c;
         }
         console.log(`✅ ${Object.keys(contactMap).length} ta contact yuklandi`);
       } catch (cErr) {
@@ -740,7 +778,7 @@ export const fetchBitrixRecentDeals = async (limit: number = 50): Promise<Order[
       }
     }
 
-    // 5. Order'larga o'tkazamiz
+    // 4. Order'larga o'tkazamiz
     const orders = eligibleDeals.map((deal: any) => {
       const contact = deal.CONTACT_ID ? contactMap[String(deal.CONTACT_ID)] : undefined;
       return convertBitrixDealToOrder(deal, contact);
