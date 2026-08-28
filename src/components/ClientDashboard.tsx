@@ -38,7 +38,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
   const [serviceModalMode, setServiceModalMode] = useState<'options' | 'form'>('options');
   const [tickets, setTickets] = useState<ServiceTicket[]>([]);
 
-  // Load all client orders belonging to this user
   useEffect(() => {
     const allMatching = getClientOrders(initialOrder.credentials.login || initialOrder.clientPhone || initialOrder.invoiceNumber);
     if (allMatching.length > 0) {
@@ -77,7 +76,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
   const isOrderReady = (ord: Order) => ['okk_otdi', 'topshirildi'].includes(ord.status);
   const activeIsReady = isOrderReady(activeOrder);
 
-  // Calculate total area and models accurately
   const totalArea = activeOrder.products.reduce((sum, p) => sum + (p.areaSqM || 0), 0);
   const seriesList = activeOrder.products.map(p => p.model).filter(m => m && m !== '-' && m !== "Bo'sh");
   const seriesNames = seriesList.length > 0 ? Array.from(new Set(seriesList)).join(', ') : "Bo'sh";
@@ -88,7 +86,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
   return (
     <div className="w-full max-w-4xl mx-auto space-y-3 sm:space-y-4 pb-16 px-2.5 sm:px-4">
       
-      {/* 1. Header Bar: Profile info & Logout */}
       <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-3.5 sm:p-5 flex items-center justify-between shadow-lg gap-2">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm sm:text-base shrink-0">
@@ -114,7 +111,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
         </button>
       </div>
 
-      {/* 2. Jami Berilgan Buyurtmalar Soni Kartasi */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
         <button
           id="btn-toggle-orders-list"
@@ -151,7 +147,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
           </div>
         </button>
 
-        {/* Buyurtmalar Ro'yxati */}
         <AnimatePresence initial={false}>
           {isOrdersListOpen && (
             <motion.div
@@ -198,7 +193,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
                         </p>
                       </div>
 
-                      {/* Status Badges */}
                       <div className="shrink-0">
                         {isReady ? (
                           <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] sm:text-xs font-bold whitespace-nowrap">
@@ -221,14 +215,12 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
         </AnimatePresence>
       </div>
 
-      {/* 3. Tanlangan Buyurtma Bo'yicha To'liq Ma'lumot Kartasi */}
       <motion.div 
         key={activeOrder.id}
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 sm:p-5 md:p-6 shadow-xl space-y-4 sm:space-y-5"
       >
-        {/* Top order headline */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
             <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
@@ -259,10 +251,8 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
           </div>
         </div>
 
-        {/* 8 Requested Parameters in Clean Responsive Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-2.5 sm:gap-3 text-xs sm:text-sm">
           
-          {/* 1. Schet Raqami */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Schet Raqami:</span>
             <span className="text-amber-300 font-mono font-bold text-sm sm:text-base mt-0.5">
@@ -270,7 +260,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             </span>
           </div>
 
-          {/* 2. Mahsulot & Seriya */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Seriya / Model:</span>
             <span className={`font-semibold mt-0.5 truncate ${seriesNames !== "Bo'sh" ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
@@ -278,7 +267,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             </span>
           </div>
 
-          {/* 3. Profil Rangi */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Profil Rangi:</span>
             <span className="text-white font-semibold flex items-center gap-1.5 mt-0.5 truncate">
@@ -289,7 +277,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             </span>
           </div>
 
-          {/* 4. Maydon (kv.m) */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Umumiy Maydoni (kv.m):</span>
             <span className={`font-bold text-sm sm:text-base font-mono mt-0.5 ${totalArea > 0 ? 'text-emerald-400' : 'text-slate-500 font-normal italic'}`}>
@@ -297,7 +284,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             </span>
           </div>
 
-          {/* 5. Qachon Zakaz Berilgan */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Zakaz Berilgan Sana:</span>
             <span className="text-slate-200 font-semibold font-mono flex items-center gap-1.5 mt-0.5">
@@ -306,7 +292,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             </span>
           </div>
 
-          {/* 6. Qachon Tayyor Bo'lgan */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Tayyor Bo'lgan Sana:</span>
             <span className="text-slate-200 font-semibold font-mono flex items-center gap-1.5 mt-0.5">
@@ -315,7 +300,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             </span>
           </div>
 
-          {/* 7. Showroom Nomi - O'ZGARTIRILGAN QISM */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Showroom Filiali:</span>
             <span className="text-white font-semibold flex items-center gap-1.5 mt-0.5 truncate">
@@ -326,7 +310,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             </span>
           </div>
 
-          {/* 8. Mas'ul Menedjer - O'ZGARTIRILGAN QISM */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Mas'ul Menedjer:</span>
             <div>
@@ -346,7 +329,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
 
         </div>
 
-        {/* Mahsulotlar tarkibi */}
+        {/* 🔥 Mahsulotlar tarkibi - "Soni" o'chirildi */}
         {activeOrder.products.length > 0 && (
           <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-850 space-y-2">
             <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -360,8 +343,9 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
                     <span className="font-medium text-slate-200 truncate">{item.name}</span>
                     <span className="text-slate-500 text-[11px]">({item.dimensions && item.dimensions !== 'Bo\'sh' ? item.dimensions : "Bo'sh"})</span>
                   </div>
+                  {/* 🔥 "Soni" (quantity) o'chirildi, faqat maydon va rang qoldi */}
                   <div className="font-mono font-semibold text-slate-300 text-[11px] sm:text-xs pl-5 sm:pl-0">
-                    {item.quantity} dona • {item.areaSqM > 0 ? item.areaSqM : "Bo'sh"} kv.m • {item.color && item.color !== 'Bo\'sh' ? item.color : "Bo'sh"}
+                    {item.areaSqM > 0 ? `${item.areaSqM} kv.m` : "Bo'sh"} • {item.color && item.color !== 'Bo\'sh' ? item.color : "Bo'sh"}
                   </div>
                 </div>
               ))}
@@ -369,7 +353,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
           </div>
         )}
 
-        {/* 4. Asosiy 2 ta Harakat Tugmasi */}
         <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
           <button
             id="btn-open-warranty-pdf"
@@ -396,7 +379,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
         </div>
       </motion.div>
 
-      {/* 5. Servis Arizalari Tarixi */}
       {tickets.length > 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 sm:p-5 shadow-xl">
           <div className="flex items-center justify-between mb-3">
@@ -409,7 +391,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
         </div>
       )}
 
-      {/* 6. Modals */}
       <WarrantyModal
         order={activeOrder}
         isOpen={isWarrantyOpen}
