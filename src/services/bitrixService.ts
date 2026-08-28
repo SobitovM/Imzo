@@ -344,8 +344,11 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   const showroom = resolveShowroomName(deal, manager.showroom);
   const okkInspector = resolveOkkInspector(deal);
 
-  const specialCode = String(deal[BITRIX_FIELDS.SPECIAL_CODE] || dealId.slice(-4) || '0000');
-  const login = `SCH${dealId.slice(-4) || '0000'}`;
+  const rawSpecialCode = deal[BITRIX_FIELDS.SPECIAL_CODE];
+  const specialCode = (rawSpecialCode !== null && rawSpecialCode !== undefined && String(rawSpecialCode).trim().length > 0) 
+    ? String(rawSpecialCode).trim() 
+    : '';
+  const login = `SCH${dealId}`;
   const pin = specialCode;
   const token = `tok_${login.toLowerCase()}_${dealId}`;
 
