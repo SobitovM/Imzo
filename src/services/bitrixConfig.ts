@@ -129,73 +129,72 @@ export const STAGE_NAMES: Record<string, string> = {
   "C35:WON":               "✅ Сделка успешна",
 };
 
-// Ruxsat etilgan Bitrix24 bosqichlari (Zakaz tayyor va undan keyingi bosqichlar)
+// 🔥 O'ZGARGAN QISM: ALLOWED_BITRIX_STAGES - faqat malumot1.txt dagi statuslar
 export const ALLOWED_BITRIX_STAGES: Set<string> = new Set([
-  // C2:
-  "C2:UC_MNKRA5",
-  "C2:1",
-  "C2:2",
-  "C2:UC_6R66T3",
-  "C2:5",
-  "C2:6",
-  "C2:UC_ELI1KU",
-  "C2:WON",
+  // C2
+  "C2:1",                  // Размещено в ГП склад
+  "C2:2",                  // На расход / Доставка
+  "C2:UC_6R66T3",          // Доставлено
+  "C2:5",                  // В процессе установки
+  "C2:6",                  // Контроль качества
+  "C2:UC_ELI1KU",          // Заказ не прошел ОКК
+  "C2:WON",                // Успешно
 
-  // C8:
-  "C8:UC_Q4UARA",
-  "C8:UC_KI81ZC",
-  "C8:UC_KCNRMF",
-  "C8:UC_EE5QBV",
-  "C8:WON",
+  // C8
+  "C8:UC_Q4UARA",          // Заказ готов
+  "C8:UC_KI81ZC",          // На расход
+  "C8:UC_KCNRMF",          // В процессе установки
+  "C8:UC_EE5QBV",          // Контроль качества
+  "C8:WON",                // Сделка успешна
 
-  // C12:
-  "C12:UC_ZRA1WC",
-  "C12:UC_I2P8V1",
-  "C12:UC_U36QBE",
-  "C12:UC_QOH2K1",
-  "C12:WON",
+  // C12
+  "C12:UC_ZRA1WC",         // Заказ готов
+  "C12:UC_I2P8V1",         // На расход
+  "C12:UC_U36QBE",         // В процессе установки
+  "C12:UC_QOH2K1",         // Контроль качества
+  "C12:WON",               // Сделка успешна
 
-  // C13:
-  "C13:6",
-  "C13:7",
-  "C13:10",
-  "C13:11",
-  "C13:WON",
+  // C13
+  "C13:6",                 // Заказ готов
+  "C13:7",                 // На расход
+  "C13:10",                // В процессе установки
+  "C13:11",                // Контроль качества
+  "C13:WON",               // Сделка успешна
 
-  // C16:
-  "C16:UC_G7GQBV",
-  "C16:UC_NA1A9O",
-  "C16:UC_H9CTB9",
-  "C16:2",
-  "C16:WON",
+  // C16
+  "C16:UC_G7GQBV",         // Заказ готов
+  "C16:UC_NA1A9O",         // На расход
+  "C16:UC_H9CTB9",         // В процессе установки
+  "C16:2",                 // Контроль качества
+  "C16:WON",               // Сделка успешна
 
-  // C22:
-  "C22:UC_IC6QYV",
-  "C22:UC_H6AOUS",
-  "C22:UC_2JO4UN",
-  "C22:UC_I6QM65",
-  "C22:WON",
+  // C22
+  "C22:UC_IC6QYV",         // Заказ готов
+  "C22:UC_H6AOUS",         // На расход
+  "C22:UC_2JO4UN",         // В процессе установки
+  "C22:UC_I6QM65",         // Контроль качества
+  "C22:WON",               // Сделка успешна
 
-  // C24:
-  "C24:UC_Q8F0S3",
-  "C24:UC_JZPAV2",
-  "C24:UC_0YXSW9",
-  "C24:UC_H9797W",
-  "C24:WON",
+  // C24
+  "C24:UC_Q8F0S3",         // Заказ готов
+  "C24:UC_JZPAV2",         // На расход
+  "C24:UC_0YXSW9",         // В процессе установки
+  "C24:UC_H9797W",         // Контроль качества
+  "C24:WON",               // Сделка успешна
 
-  // C27:
-  "C27:UC_B2NTSZ",
-  "C27:UC_E9E5IW",
-  "C27:UC_6G3PNP",
-  "C27:UC_1UTXNE",
-  "C27:WON",
+  // C27
+  "C27:UC_B2NTSZ",         // Заказ готов
+  "C27:UC_E9E5IW",         // На расход
+  "C27:UC_6G3PNP",         // В процессе установки
+  "C27:UC_1UTXNE",         // Контроль качества
+  "C27:WON",               // Сделка успешна
 
-  // C35:
-  "C35:UC_8G1TNE",
-  "C35:UC_XXO9DM",
-  "C35:UC_6LACIU",
-  "C35:FINAL_INVOICE",
-  "C35:WON",
+  // C35
+  "C35:UC_8G1TNE",         // Заказ готов
+  "C35:UC_XXO9DM",         // На расход
+  "C35:UC_6LACIU",         // В процессе установки
+  "C35:FINAL_INVOICE",     // Контроль качества
+  "C35:WON",               // Сделка успешна
 ]);
 
 // 4. Showroomlar Katalogi (Bitrix24 Showrooms Dictionary)
