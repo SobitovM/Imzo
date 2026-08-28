@@ -5,7 +5,6 @@ const ORDERS_KEY = 'imzo_orders_v2';
 const TICKETS_KEY = 'imzo_tickets_v2';
 const AUTH_KEY = 'imzo_current_session';
 
-// 🔥 getStoredOrders EKSPORT QILINGAN
 export const getStoredOrders = (): Order[] => {
   try {
     const raw = localStorage.getItem(ORDERS_KEY);
@@ -18,7 +17,6 @@ export const getStoredOrders = (): Order[] => {
     
     orders = JSON.parse(raw);
 
-    // FAQAT ruxsat etilgan statuslar
     const allowedStatuses: OrderStatus[] = [
       'okk_otdi',
       'kontrol_kachestva',
@@ -39,7 +37,6 @@ export const getStoredOrders = (): Order[] => {
       return true;
     });
 
-    // Bo'sh maydonlarni "Bo'sh" ga to'ldiramiz
     orders = orders.map((ord) => ({
       ...ord,
       showroomName: ord.showroomName && ord.showroomName.trim() !== '' && ord.showroomName !== '-' ? ord.showroomName : "Bo'sh",
@@ -67,7 +64,6 @@ export const getStoredOrders = (): Order[] => {
   }
 };
 
-// 🔥 saveStoredOrders EKSPORT QILINGAN
 export const saveStoredOrders = (orders: Order[]) => {
   try {
     const MAX_ORDERS = 200;
@@ -88,12 +84,6 @@ export const saveStoredOrders = (orders: Order[]) => {
   }
 };
 
-// 🔥 normalizePhone EKSPORT QILINGAN
-export const normalizePhone = (phone: string): string => {
-  return (phone || '').replace(/\D/g, '');
-};
-
-// 🔥 getStoredTickets EKSPORT QILINGAN
 export const getStoredTickets = (): ServiceTicket[] => {
   try {
     const raw = localStorage.getItem(TICKETS_KEY);
@@ -115,6 +105,10 @@ export const saveStoredTickets = (tickets: ServiceTicket[]) => {
   } catch (e) {
     console.error('Failed to save tickets', e);
   }
+};
+
+export const normalizePhone = (phone: string): string => {
+  return (phone || '').replace(/\D/g, '');
 };
 
 export const getClientOrders = (identifier: string): Order[] => {
