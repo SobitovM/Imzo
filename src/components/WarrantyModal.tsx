@@ -78,8 +78,10 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   const warrantyMonths = (order.warranty?.warrantyPeriodMonths && order.warranty.warrantyPeriodMonths >= 60) 
     ? order.warranty.warrantyPeriodMonths 
     : 60;
-  const inspectorName = order.warranty?.okkManagerName || order.okkInspectorName || "Xolmatov S.A.";
-  const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '8841'}`;
+  const inspectorName = (order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-') 
+    ? order.warranty.okkManagerName 
+    : (order.okkInspectorName || "OKK Muhandisi");
+  const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '0000'}`;
 
   return (
     <AnimatePresence>
@@ -268,10 +270,10 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           <td className="py-2 px-2.5 sm:px-3 font-mono text-slate-500 text-[11px]">{idx + 1}</td>
                           <td className="py-2 px-2.5 sm:px-3">
                             <span className="font-bold block text-slate-900 text-xs">{item.name}</span>
-                            <span className="text-[10px] text-slate-600 block">{item.model || item.dimensions}</span>
+                            <span className="text-[10px] text-slate-600 block">{item.model && item.model !== '-' ? item.model : (item.dimensions && item.dimensions !== '-' ? item.dimensions : '')}</span>
                           </td>
-                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.color}</td>
-                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.areaSqM} m²</td>
+                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.color && item.color !== '-' ? item.color : '-'}</td>
+                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.areaSqM > 0 ? `${item.areaSqM} m²` : '-'}</td>
                           <td className="py-2 px-2.5 sm:px-3 text-right font-bold text-xs">{item.quantity} dona</td>
                         </tr>
                       ))}
