@@ -85,7 +85,7 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
 
     try {
       setIsSyncingBitrix(true);
-      const bitrixDeals = await fetchBitrixRecentDeals(50);
+      const bitrixDeals = await fetchBitrixRecentDeals(100);
       
       const currentStored = getStoredOrders();
       const manualOrders = currentStored.filter(o => !o.id.startsWith('bx_') && (!o.notes || !o.notes.includes('Bitrix24 Deal ID')));
@@ -107,11 +107,20 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
     }
   };
 
+  // 🔥 AVTOMATIK YANGILASH QO'SHILDI
   useEffect(() => {
     loadData();
     if (getBitrixWebhookUrl()) {
       handleSyncWithBitrix(true);
     }
+
+    // HAR 5 MINUTDA AVTOMATIK YANGILASH
+    const interval = setInterval(() => {
+      if (getBitrixWebhookUrl()) {
+        console.log('🔄 Avtomatik yangilash...');
+        handleSyncWithBitrix(true);
+      }
+    }, 5 * 60 * 1000); // 5 daqiqa
 
     const handleOrders = () => setOrders(getStoredOrders());
     const handleTickets = () => setTickets(getStoredTickets());
@@ -120,6 +129,7 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
     window.addEventListener('tickets_updated', handleTickets);
 
     return () => {
+      clearInterval(interval);
       window.removeEventListener('orders_updated', handleOrders);
       window.removeEventListener('tickets_updated', handleTickets);
     };
@@ -363,7 +373,6 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
                         {order.clientFullName && order.clientFullName !== 'Bo\'sh' ? order.clientFullName : "Bo'sh"}
                       </h3>
                       
-                      {/* O'ZGARTIRILGAN QISM: Showroom va Manager */}
                       <p className="text-xs text-slate-400 flex flex-wrap items-center gap-2 mt-0.5">
                         <span>Tel: <strong className={`font-mono ${order.clientPhone && order.clientPhone !== 'Bo\'sh' ? 'text-slate-300' : 'text-slate-500 font-normal italic'}`}>
                           {order.clientPhone && order.clientPhone !== 'Bo\'sh' ? order.clientPhone : "Bo'sh"}
