@@ -98,12 +98,7 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'kontrol_kachestva';
   }
 
-  // 4. Ishlab chiqarishda
-  if (s === 'C2:UC_MNKRA5') {
-    return 'ishlab_chiqarishda';
-  }
-
-  // 5. Заказ готов / Размещено в ГП склад / В процессе установки
+  // 4. Заказ готов / Размещено в ГП склад / В процессе установки
   if (
     s === 'C2:1' || s === 'C2:5' ||
     s === 'C8:UC_Q4UARA' || s === 'C8:UC_KCNRMF' ||
@@ -118,6 +113,8 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'okk_otdi';
   }
 
+  // RUXSAT ETILMAGAN STATUSLAR - FILTRDAN O'TKAZILMAYDI
+  // C2:UC_ISZX1 (Новая - Колл центр) va boshqalar
   return 'yangi';
 };
 
@@ -368,7 +365,7 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   const rawSpecialCode = deal[BITRIX_FIELDS.SPECIAL_CODE];
   const specialCode = (rawSpecialCode !== null && rawSpecialCode !== undefined && String(rawSpecialCode).trim().length > 0) 
     ? String(rawSpecialCode).trim() 
-    : Math.floor(1000 + Math.random() * 9000).toString(); // 🔥 PIN yaratamiz agar bo'sh bo'lsa
+    : Math.floor(1000 + Math.random() * 9000).toString();
   const login = `SCH${dealId}`;
   const pin = specialCode;
   const token = `tok_${login.toLowerCase()}_${dealId}`;
@@ -530,10 +527,9 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
       filter: {
         [`=${BITRIX_FIELDS.SPECIAL_CODE}`]: cleanPin
       },
-      select: ["ID"] // Faqat ID olamiz
+      select: ["ID"]
     });
     if (Array.isArray(res) && res.length > 0) {
-      // Har bir dealni to'liq olamiz
       for (const item of res) {
         try {
           const fullDeal = await callBitrixMethod('crm.deal.get', { id: item.ID });
@@ -650,7 +646,7 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   };
 };
 
-// 🔥 ASOSIY TUZATILGAN FUNKSIYA: fetchBitrixRecentDeals
+// Fetch real deals list with batch contact hydration
 export const fetchBitrixRecentDeals = async (limit: number = 50): Promise<Order[]> => {
   try {
     console.log('🔄 Bitrix24 dan ma\'lumot olinmoqda...');
@@ -658,7 +654,7 @@ export const fetchBitrixRecentDeals = async (limit: number = 50): Promise<Order[
     // 1. Avval deal ID larini olamiz (SELECT siz)
     const listResult = await callBitrixMethod('crm.deal.list', {
       order: { DATE_CREATE: "DESC" },
-      select: ["ID"],  // Faqat ID larni olamiz
+      select: ["ID"],
       limit: limit * 2,
     });
 
@@ -680,7 +676,6 @@ export const fetchBitrixRecentDeals = async (limit: number = 50): Promise<Order[
         if (fullDeal) {
           allDeals.push(fullDeal);
         }
-        // Har 10 ta dealda progress ko'rsatamiz
         if (processedCount % 10 === 0) {
           console.log(`⏳ ${processedCount} ta deal qayta ishlandi...`);
         }
@@ -691,8 +686,9 @@ export const fetchBitrixRecentDeals = async (limit: number = 50): Promise<Order[
 
     console.log(`✅ ${allDeals.length} ta deal to'liq yuklandi`);
 
-    // 3. SPECIAL_CODE ni tekshiramiz (endi ishlaydi!)
+    // 3. SPECIAL_CODE va STAGE_ID ni tekshiramiz
     const eligibleDeals = allDeals.filter(deal => {
+      // SPECIAL_CODE tekshiruvi
       const code = deal.UF_CRM_1745308434;
       const hasCode = code !== null && 
                       code !== undefined && 
@@ -702,13 +698,21 @@ export const fetchBitrixRecentDeals = async (limit: number = 50): Promise<Order[
         console.warn(`Deal ${deal.ID} filtrlandi: SPECIAL_CODE yo'q (${code})`);
         return false;
       }
+      
+      // STAGE_ID tekshiruvi - malumot1.txt dagi statuslar
+      const stageId = String(deal.STAGE_ID || '').trim();
+      if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
+        console.warn(`Deal ${deal.ID} filtrlandi: STAGE_ID "${stageId}" ruxsat etilmagan`);
+        return false;
+      }
+      
       return true;
     });
 
-    console.log(`🎯 ${eligibleDeals.length} ta deal SPECIAL_CODE ga ega`);
+    console.log(`🎯 ${eligibleDeals.length} ta deal SPECIAL_CODE va ruxsat etilgan statusga ega`);
 
     if (eligibleDeals.length === 0) {
-      console.log('⚠️ SPECIAL_CODE ga ega hech qanday deal topilmadi');
+      console.log('⚠️ Hech qanday mos deal topilmadi');
       return [];
     }
 
