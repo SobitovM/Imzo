@@ -111,7 +111,12 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'okk_otdi';
   }
 
-  // RUXSAT ETILMAGAN STATUSLAR
+  // 5. Ishlab chiqarishda (В производстве)
+  if (s === 'C2:UC_MNKRA5' || s === 'C27:UC_EVAKIV') {
+    return 'ishlab_chiqarishda';
+  }
+
+  // RUXSAT ETILMAGAN STATUSLAR - FILTRDAN O'TKAZILMAYDI
   return 'yangi';
 };
 
@@ -516,7 +521,6 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   const cleanPhone = phoneInput.trim();
   const phoneDigits = cleanPhone.replace(/\D/g, '');
 
-  // 🔥 OPTIMALLASHTIRILGAN: SELECT bilan to'g'ridan-to'g'ri olish
   const selectFields = [
     "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY", "CURRENCY_ID",
     "CONTACT_ID", "ASSIGNED_BY_ID", "CREATED_BY_ID", "MODIFY_BY_ID",
@@ -641,51 +645,36 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   };
 };
 
-// 🔥 ASOSIY OPTIMALLASHTIRILGAN FUNKSIYA: fetchBitrixRecentDeals
+// 🔥 ASOSIY FUNKSIYA: fetchBitrixRecentDeals - CHEGARASIZ
 export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order[]> => {
   try {
     console.log('🔄 Bitrix24 dan ma\'lumot olinmoqda...');
     
-    // 2026-yil 1-yanvardan boshlab
     const startDate = '2026-01-01T00:00:00+05:00';
     
-    // BARCHA KERAKLI MAYDONLARNI SELECT qilamiz
     const selectFields = [
       "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY", "CURRENCY_ID",
       "CONTACT_ID", "ASSIGNED_BY_ID", "CREATED_BY_ID", "MODIFY_BY_ID",
-      "UF_CRM_1745308434",           // SPECIAL_CODE
-      "UF_CRM_1651306406137",        // ORDER_INVOICE_ID
-      "UF_CRM_1656483960",           // PRODUCT_SERIES
-      "UF_CRM_1656484012",           // COLOR
-      "UF_CRM_1648100319007",        // AREA_SQM
-      "UF_CRM_1701497119",           // FACTORY_DATE
-      "UF_CRM_1682695332152",        // ESTIMATED_READY_DATE
-      "UF_CRM_1682761006746",        // READY_TO_PROD_DATE
-      "UF_CRM_1682760962387",        // ORDER_READY_DATE
-      "UF_CRM_1646213205",           // RESPONSIBLE_MANAGER
-      "UF_CRM_1690286173",           // OKK_MANAGER
-      "UF_CRM_1647931321",           // SHOWROOM_DEFAULT
-      "UF_CRM_1713332718568",        // SHOWROOM_FERGANA
-      "UF_CRM_1649332403191",        // SHOWROOM_ANDIJAN
-      "UF_CRM_1653148491",           // SHOWROOM_SAMARKAND
-      "UF_CRM_1655321621579",        // SHOWROOM_NAMANGAN
-      "UF_CRM_1659691369246",        // SHOWROOM_NUKUS
-      "UF_CRM_1671518012095",        // SHOWROOM_BUKHARA
-      "UF_CRM_1696845428847",        // SHOWROOM_SURKHANDARYA
-      "UF_CRM_1761029845985",        // SHOWROOM_KHOREZM
+      "UF_CRM_1745308434", "UF_CRM_1651306406137", "UF_CRM_1656483960",
+      "UF_CRM_1656484012", "UF_CRM_1648100319007", "UF_CRM_1701497119",
+      "UF_CRM_1682695332152", "UF_CRM_1682761006746", "UF_CRM_1682760962387",
+      "UF_CRM_1646213205", "UF_CRM_1690286173", "UF_CRM_1647931321",
+      "UF_CRM_1713332718568", "UF_CRM_1649332403191", "UF_CRM_1653148491",
+      "UF_CRM_1655321621579", "UF_CRM_1659691369246", "UF_CRM_1671518012095",
+      "UF_CRM_1696845428847", "UF_CRM_1761029845985"
     ];
 
-    // 1. Barcha deal'larni pagination bilan olamiz
     const allDeals: any[] = [];
     let start = 0;
     const pageSize = 50;
     
+    // 🔥 CHEGARASIZ - barcha deal'lar olinadi
     while (true) {
       const result = await callBitrixMethod('crm.deal.list', {
         order: { DATE_CREATE: "DESC" },
         filter: {
           ">=DATE_CREATE": startDate,
-          "!UF_CRM_1745308434": false, // SPECIAL_CODE bo'sh bo'lmaganlar
+          "!UF_CRM_1745308434": false,
         },
         select: selectFields,
         limit: pageSize,
@@ -704,22 +693,16 @@ export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order
       }
 
       start += pageSize;
-      
-      // Xavfsizlik: cheksiz siklga tushib qolmaslik uchun
-      if (start > 2000) {
-        console.warn('⚠️ Juda ko\'p deal, to\'xtatilmoqda (2000+)');
-        break;
-      }
     }
 
-    console.log(`✅ Jami ${allDeals.length} ta deal yuklandi (2026-yildan boshlab)`);
+    console.log(`✅ Jami ${allDeals.length} ta deal yuklandi`);
 
     if (allDeals.length === 0) {
       console.log('⚠️ Hech qanday deal topilmadi');
       return [];
     }
 
-    // 2. STAGE_ID bo'yicha filtr (malumot1.txt dagi statuslar)
+    // STAGE_ID bo'yicha filtr (malumot1.txt dagi statuslar)
     const eligibleDeals = allDeals.filter(deal => {
       const stageId = String(deal.STAGE_ID || '').trim();
       if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
@@ -735,15 +718,13 @@ export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order
       return [];
     }
 
-    // 3. Contact ma'lumotlarini BATCH (guruhlab) olamiz
+    // Contact ma'lumotlarini olish
     const contactIds = Array.from(new Set(eligibleDeals.map((d: any) => d.CONTACT_ID).filter((id: any) => id && id !== '0' && id !== 0)));
     let contactMap: Record<string, any> = {};
 
     if (contactIds.length > 0) {
       try {
         console.log(`📞 ${contactIds.length} ta contact ma'lumoti olinmoqda...`);
-        
-        // Contactlarni ham batch (guruhlab) olamiz
         let contactStart = 0;
         const contactPageSize = 50;
         const allContacts: any[] = [];
@@ -778,14 +759,13 @@ export const fetchBitrixRecentDeals = async (limit: number = 100): Promise<Order
       }
     }
 
-    // 4. Order'larga o'tkazamiz
     const orders = eligibleDeals.map((deal: any) => {
       const contact = deal.CONTACT_ID ? contactMap[String(deal.CONTACT_ID)] : undefined;
       return convertBitrixDealToOrder(deal, contact);
     });
 
     console.log(`🎉 ${orders.length} ta order yaratildi`);
-    return orders.slice(0, limit);
+    return orders;
   } catch (err) {
     console.error("fetchBitrixRecentDeals error:", err);
     throw err;
