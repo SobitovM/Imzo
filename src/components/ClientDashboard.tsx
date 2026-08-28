@@ -77,10 +77,13 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
   const isOrderReady = (ord: Order) => ['okk_otdi', 'topshirildi'].includes(ord.status);
   const activeIsReady = isOrderReady(activeOrder);
 
-  // Calculate total area and models
+  // Calculate total area and models accurately
   const totalArea = activeOrder.products.reduce((sum, p) => sum + (p.areaSqM || 0), 0);
-  const seriesNames = Array.from(new Set(activeOrder.products.map(p => p.model || p.name))).join(', ');
-  const colorNames = Array.from(new Set(activeOrder.products.map(p => p.color))).join(', ');
+  const seriesList = activeOrder.products.map(p => p.model).filter(m => m && m !== '-');
+  const seriesNames = seriesList.length > 0 ? Array.from(new Set(seriesList)).join(', ') : "Ko'rsatilmagan";
+  
+  const colorList = activeOrder.products.map(p => p.color).filter(c => c && c !== '-');
+  const colorNames = colorList.length > 0 ? Array.from(new Set(colorList)).join(', ') : "Ko'rsatilmagan";
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-3 sm:space-y-4 pb-16 px-2.5 sm:px-4">
@@ -89,14 +92,14 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
       <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-2xl p-3.5 sm:p-5 flex items-center justify-between shadow-lg gap-2">
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-sm sm:text-base shrink-0">
-            {activeOrder.clientFullName.charAt(0)}
+            {activeOrder.clientFullName ? activeOrder.clientFullName.charAt(0) : 'M'}
           </div>
           <div className="min-w-0">
             <h1 className="text-sm sm:text-lg font-bold text-white leading-tight truncate">
-              {activeOrder.clientFullName}
+              {activeOrder.clientFullName || "Mijoz"}
             </h1>
-            <p className="text-[11px] sm:text-xs text-slate-400 font-mono truncate">
-              {activeOrder.clientPhone}
+            <p className={`text-[11px] sm:text-xs font-mono truncate ${activeOrder.clientPhone && activeOrder.clientPhone !== '-' ? 'text-slate-400' : 'text-slate-500 italic'}`}>
+              {activeOrder.clientPhone && activeOrder.clientPhone !== '-' ? activeOrder.clientPhone : "Telefon kiritilmagan"}
             </p>
           </div>
         </div>
@@ -270,8 +273,8 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
           {/* 2. Mahsulot & Seriya */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Seriya / Model:</span>
-            <span className="text-white font-semibold mt-0.5 truncate">
-              {seriesNames || 'Standart Seriya'}
+            <span className={`font-semibold mt-0.5 truncate ${seriesNames !== "Ko'rsatilmagan" ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
+              {seriesNames}
             </span>
           </div>
 
@@ -280,15 +283,17 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Profil Rangi:</span>
             <span className="text-white font-semibold flex items-center gap-1.5 mt-0.5 truncate">
               <Palette className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-              <span className="truncate">{colorNames || 'Standart'}</span>
+              <span className={`truncate ${colorNames !== "Ko'rsatilmagan" ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
+                {colorNames}
+              </span>
             </span>
           </div>
 
           {/* 4. Maydon (kv.m) */}
           <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between">
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Umumiy Maydoni (kv.m):</span>
-            <span className="text-emerald-400 font-bold text-sm sm:text-base font-mono mt-0.5">
-              {totalArea > 0 ? `${totalArea.toFixed(2)} kv.m` : `${activeOrder.products.reduce((s, p) => s + p.quantity, 0)} dona`}
+            <span className={`font-bold text-sm sm:text-base font-mono mt-0.5 ${totalArea > 0 ? 'text-emerald-400' : 'text-slate-500 font-normal italic'}`}>
+              {totalArea > 0 ? `${totalArea.toFixed(2)} kv.m` : "- kv.m"}
             </span>
           </div>
 
@@ -297,7 +302,7 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Zakaz Berilgan Sana:</span>
             <span className="text-slate-200 font-semibold font-mono flex items-center gap-1.5 mt-0.5">
               <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <span>{activeOrder.orderDate}</span>
+              <span>{activeOrder.orderDate && activeOrder.orderDate !== '-' ? activeOrder.orderDate : "Ko'rsatilmagan"}</span>
             </span>
           </div>
 
@@ -315,7 +320,9 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             <span className="text-slate-400 text-[10px] sm:text-[11px] block font-medium">Showroom Filiali:</span>
             <span className="text-white font-semibold flex items-center gap-1.5 mt-0.5 truncate">
               <Building2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-              <span className="truncate">{activeOrder.showroomName}</span>
+              <span className={`truncate ${activeOrder.showroomName && activeOrder.showroomName !== '-' ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
+                {activeOrder.showroomName && activeOrder.showroomName !== '-' ? activeOrder.showroomName : "Ko'rsatilmagan"}
+              </span>
             </span>
           </div>
 
@@ -325,11 +332,15 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
             <div>
               <span className="text-white font-semibold flex items-center gap-1.5 mt-0.5 truncate">
                 <UserCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                <span className="truncate">{activeOrder.salesManagerName}</span>
+                <span className={`truncate ${activeOrder.salesManagerName && activeOrder.salesManagerName !== '-' ? 'text-white' : 'text-slate-500 font-normal italic'}`}>
+                  {activeOrder.salesManagerName && activeOrder.salesManagerName !== '-' ? activeOrder.salesManagerName : "Biriktirilmagan"}
+                </span>
               </span>
-              <span className="text-emerald-400 text-xs font-mono block mt-0.5">
-                {activeOrder.salesManagerPhone}
-              </span>
+              {activeOrder.salesManagerPhone && activeOrder.salesManagerPhone !== '-' && (
+                <span className="text-emerald-400 text-xs font-mono block mt-0.5">
+                  {activeOrder.salesManagerPhone}
+                </span>
+              )}
             </div>
           </div>
 
