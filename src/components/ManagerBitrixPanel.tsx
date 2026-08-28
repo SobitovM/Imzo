@@ -30,12 +30,14 @@ import { Order, OrderStatus, ServiceTicket } from '../types';
 import { 
   getStoredOrders, 
   getStoredTickets, 
+  saveStoredOrders,
   updateOrderStatus, 
   markSmsSent, 
   resolveServiceTicket, 
   updateTicketStatus,
   resetDemoData 
 } from '../services/storage';
+import { fetchBitrixRecentDeals, getBitrixWebhookUrl } from '../services/bitrixService';
 import { SMSPreviewModal } from './SMSPreviewModal';
 import { WarrantyModal } from './WarrantyModal';
 import { NewOrderModal } from './NewOrderModal';
@@ -53,6 +55,8 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
   const [tickets, setTickets] = useState<ServiceTicket[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isSyncingBitrix, setIsSyncingBitrix] = useState(false);
+  const [syncStatusText, setSyncStatusText] = useState<string | null>(null);
   
   // Modals
   const [smsOrder, setSmsOrder] = useState<Order | null>(null);
@@ -70,8 +74,47 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
     setTickets(getStoredTickets());
   };
 
+  const handleSyncWithBitrix = async (silent: boolean = false) => {
+    const webhook = getBitrixWebhookUrl();
+    if (!webhook) {
+      if (!silent) {
+        setIsBitrixDocOpen(true);
+      }
+      return;
+    }
+
+    try {
+      setIsSyncingBitrix(true);
+      const bitrixDeals = await fetchBitrixRecentDeals(50);
+      
+      // Merge with non-bitrix manual orders if any, replacing bitrix orders with fresh filtered list
+      const currentStored = getStoredOrders();
+      const manualOrders = currentStored.filter(o => !o.id.startsWith('bx_') && (!o.notes || !o.notes.includes('Bitrix24 Deal ID')));
+      
+      const newOrdersList = [...bitrixDeals, ...manualOrders];
+      saveStoredOrders(newOrdersList);
+      setOrders(newOrdersList);
+
+      setSyncStatusText(`Bitrix24: ${bitrixDeals.length} ta mos keluvchi buyurtma yangilandi`);
+      setTimeout(() => setSyncStatusText(null), 4000);
+    } catch (err: any) {
+      console.warn("Bitrix sync warning:", err);
+      if (!silent) {
+        setSyncStatusText(`Xatolik: ${err.message || 'Bitrix24 bilan bog\'lanishda xatolik'}`);
+        setTimeout(() => setSyncStatusText(null), 5000);
+      }
+    } finally {
+      setIsSyncingBitrix(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
+    // Automatically perform background sync if Bitrix webhook is configured
+    if (getBitrixWebhookUrl()) {
+      handleSyncWithBitrix(true);
+    }
+
     const handleOrders = () => setOrders(getStoredOrders());
     const handleTickets = () => setTickets(getStoredTickets());
 
@@ -158,12 +201,22 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
 
           <div className="flex flex-wrap items-center gap-2">
             <button
+              id="btn-bitrix-sync"
+              onClick={() => handleSyncWithBitrix(false)}
+              disabled={isSyncingBitrix}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 text-xs font-bold rounded-xl border border-emerald-500/40 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingBitrix ? 'animate-spin' : ''}`} />
+              <span>{isSyncingBitrix ? 'Bitrix24 yangilanmoqda...' : 'Bitrix24 Sinxronizatsiya'}</span>
+            </button>
+
+            <button
               id="btn-bitrix-docs"
               onClick={() => setIsBitrixDocOpen(true)}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-900/60 to-indigo-900/60 hover:from-blue-800/80 hover:to-indigo-800/80 text-blue-300 text-xs font-bold rounded-xl border border-blue-500/40 shadow-sm transition-all cursor-pointer"
             >
               <Globe className="w-4 h-4 text-blue-400" />
-              <span>Bitrix24 Real Webhook & Maydonlar</span>
+              <span>Bitrix24 Sozlamalari</span>
             </button>
 
             <button
@@ -176,6 +229,13 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
             </button>
           </div>
         </div>
+
+        {syncStatusText && (
+          <div className="mt-3 px-3.5 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>{syncStatusText}</span>
+          </div>
+        )}
 
         {/* Tab Navigation */}
         <div className="flex items-center gap-2 mt-6 border-t border-slate-800 pt-4 overflow-x-auto">
