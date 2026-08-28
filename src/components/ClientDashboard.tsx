@@ -329,7 +329,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
 
         </div>
 
-        {/* 🔥 Mahsulotlar tarkibi - "Soni" o'chirildi */}
         {activeOrder.products.length > 0 && (
           <div className="p-3 rounded-xl bg-slate-950/40 border border-slate-850 space-y-2">
             <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
@@ -343,7 +342,6 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
                     <span className="font-medium text-slate-200 truncate">{item.name}</span>
                     <span className="text-slate-500 text-[11px]">({item.dimensions && item.dimensions !== 'Bo\'sh' ? item.dimensions : "Bo'sh"})</span>
                   </div>
-                  {/* 🔥 "Soni" (quantity) o'chirildi, faqat maydon va rang qoldi */}
                   <div className="font-mono font-semibold text-slate-300 text-[11px] sm:text-xs pl-5 sm:pl-0">
                     {item.areaSqM > 0 ? `${item.areaSqM} kv.m` : "Bo'sh"} • {item.color && item.color !== 'Bo\'sh' ? item.color : "Bo'sh"}
                   </div>
@@ -408,3 +406,4 @@ export const ClientDashboard: React.FC<ClientDashboardProps> = ({ order: initial
     </div>
   );
 };
+// Yangi qator - fayl oxiriga Enter bosing
