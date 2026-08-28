@@ -45,7 +45,7 @@ export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
                   String(specialCode).trim() !== '0' && 
                   String(specialCode).trim() !== 'false';
   if (!hasCode) {
-    console.warn(`Deal ${deal.ID} filtrlandi: SPECIAL_CODE yo'q`);
+    console.warn(`Deal ${deal.ID} filtrlandi: SPECIAL_CODE yo'q (${specialCode})`);
     return false;
   }
 
@@ -299,32 +299,6 @@ export const resolveOkkInspector = (deal: Record<string, any>): string => {
   return `OKK Muhandis #${okkId}`;
 };
 
-// All fields to select from Bitrix crm.deal.list
-export const DEAL_SELECT_FIELDS = [
-  "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY", "CURRENCY_ID",
-  "CONTACT_ID", "ASSIGNED_BY_ID", "CREATED_BY_ID", "MODIFY_BY_ID",
-  BITRIX_FIELDS.ORDER_INVOICE_ID,
-  BITRIX_FIELDS.PRODUCT_SERIES,
-  BITRIX_FIELDS.COLOR,
-  BITRIX_FIELDS.AREA_SQM,
-  BITRIX_FIELDS.FACTORY_DATE,
-  BITRIX_FIELDS.ESTIMATED_READY_DATE,
-  BITRIX_FIELDS.READY_TO_PROD_DATE,
-  BITRIX_FIELDS.ORDER_READY_DATE,
-  BITRIX_FIELDS.RESPONSIBLE_MANAGER,
-  BITRIX_FIELDS.OKK_MANAGER,
-  BITRIX_FIELDS.SPECIAL_CODE,
-  BITRIX_FIELDS.SHOWROOMS.DEFAULT,
-  BITRIX_FIELDS.SHOWROOMS.FERGANA,
-  BITRIX_FIELDS.SHOWROOMS.ANDIJAN,
-  BITRIX_FIELDS.SHOWROOMS.SAMARKAND,
-  BITRIX_FIELDS.SHOWROOMS.NAMANGAN,
-  BITRIX_FIELDS.SHOWROOMS.NUKUS,
-  BITRIX_FIELDS.SHOWROOMS.BUKHARA,
-  BITRIX_FIELDS.SHOWROOMS.SURKHANDARYA,
-  BITRIX_FIELDS.SHOWROOMS.KHOREZM,
-];
-
 // Convert Bitrix Deal object to Application Order Object
 export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Record<string, any>): Order => {
   const dealId = String(deal.ID || '');
@@ -355,7 +329,6 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   const productNames = rawProductIds.map((id: any) => PRODUCTS_DICT[id] || (typeof id === 'string' && isNaN(Number(id)) ? id : `Seriya #${id}`));
   const colorNames = rawColorIds.map((id: any) => COLORS_DICT[id] || (typeof id === 'string' && isNaN(Number(id)) ? id : `Rang #${id}`));
 
-  // Agar bo'sh bo'lsa "Bo'sh" deb yozamiz
   const seriesDisplay = productNames.length > 0 ? productNames.join(', ') : "Bo'sh";
   const colorDisplay = colorNames.length > 0 ? colorNames.join(', ') : "Bo'sh";
   const mainProductName = deal.TITLE || (productNames.length > 0 ? productNames.join(', ') : "Bo'sh");
@@ -375,14 +348,14 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
     }
   ];
 
-  // Dates - bo'sh bo'lsa "Bo'sh"
+  // Dates
   const factorySentDate = deal[BITRIX_FIELDS.FACTORY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.FACTORY_DATE]) : "Bo'sh";
   const estimatedReadyDate = deal[BITRIX_FIELDS.ESTIMATED_READY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.ESTIMATED_READY_DATE]) : "Bo'sh";
   const readyDate = deal[BITRIX_FIELDS.ORDER_READY_DATE] 
     ? formatBitrixDate(deal[BITRIX_FIELDS.ORDER_READY_DATE])
     : (isReady ? (estimatedReadyDate !== "Bo'sh" ? estimatedReadyDate : 'Tasdiqlangan') : "Bo'sh");
 
-  // Client info - bo'sh bo'lsa "Bo'sh"
+  // Client info
   const clientName = contact?.NAME 
     ? `${contact.LAST_NAME || ''} ${contact.NAME} ${contact.SECOND_NAME || ''}`.trim()
     : (deal.TITLE || "Bo'sh");
@@ -395,7 +368,7 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   const rawSpecialCode = deal[BITRIX_FIELDS.SPECIAL_CODE];
   const specialCode = (rawSpecialCode !== null && rawSpecialCode !== undefined && String(rawSpecialCode).trim().length > 0) 
     ? String(rawSpecialCode).trim() 
-    : "Bo'sh";
+    : Math.floor(1000 + Math.random() * 9000).toString(); // 🔥 PIN yaratamiz agar bo'sh bo'lsa
   const login = `SCH${dealId}`;
   const pin = specialCode;
   const token = `tok_${login.toLowerCase()}_${dealId}`;
@@ -557,10 +530,20 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
       filter: {
         [`=${BITRIX_FIELDS.SPECIAL_CODE}`]: cleanPin
       },
-      select: DEAL_SELECT_FIELDS
+      select: ["ID"] // Faqat ID olamiz
     });
     if (Array.isArray(res) && res.length > 0) {
-      matchedDeals = res;
+      // Har bir dealni to'liq olamiz
+      for (const item of res) {
+        try {
+          const fullDeal = await callBitrixMethod('crm.deal.get', { id: item.ID });
+          if (fullDeal) {
+            matchedDeals.push(fullDeal);
+          }
+        } catch (err) {
+          console.warn(`Deal ${item.ID} ni olishda xatolik:`, err);
+        }
+      }
     }
   }
 
@@ -579,12 +562,21 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
           filter: {
             "=CONTACT_ID": contactId
           },
-          select: DEAL_SELECT_FIELDS
+          select: ["ID"]
         });
         if (Array.isArray(deals) && deals.length > 0) {
-          matchedDeals = deals.filter(d => (d[BITRIX_FIELDS.SPECIAL_CODE] || '').toString().trim() === cleanPin);
-          if (matchedDeals.length === 0 && !cleanPin) {
-            matchedDeals = deals;
+          for (const item of deals) {
+            try {
+              const fullDeal = await callBitrixMethod('crm.deal.get', { id: item.ID });
+              if (fullDeal) {
+                const dealPin = (fullDeal[BITRIX_FIELDS.SPECIAL_CODE] || '').toString().trim();
+                if (dealPin === cleanPin || !cleanPin) {
+                  matchedDeals.push(fullDeal);
+                }
+              }
+            } catch (err) {
+              console.warn(`Deal ${item.ID} ni olishda xatolik:`, err);
+            }
           }
         }
       }
@@ -597,19 +589,18 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     return null;
   }
 
-  // 3. Fetch Contact details
-  const firstDeal = matchedDeals[0];
-  let contactData: any = undefined;
-  if (firstDeal.CONTACT_ID) {
-    try {
-      contactData = await callBitrixMethod('crm.contact.get', { id: firstDeal.CONTACT_ID });
-    } catch {
-      // ignore
-    }
-  }
-
-  // 4. Validate phone number
+  // 3. Validate phone number
   if (phoneDigits.length >= 7) {
+    const firstDeal = matchedDeals[0];
+    let contactData: any = undefined;
+    if (firstDeal.CONTACT_ID) {
+      try {
+        contactData = await callBitrixMethod('crm.contact.get', { id: firstDeal.CONTACT_ID });
+      } catch {
+        // ignore
+      }
+    }
+
     const contactPhones: string[] = contactData?.PHONE?.map((p: any) => (p.VALUE || '').replace(/\D/g, '')) || [];
     const inv = (firstDeal[BITRIX_FIELDS.ORDER_INVOICE_ID] || '').toString().trim().toUpperCase();
     const dealTitle = (firstDeal.TITLE || '').toString().trim();
@@ -634,37 +625,23 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
     }
   }
 
-  // 5. Query all other deals belonging to this client
-  let allClientDeals: any[] = [...matchedDeals];
-  if (firstDeal.CONTACT_ID) {
-    try {
-      const allContactDeals = await callBitrixMethod('crm.deal.list', {
-        filter: {
-          "=CONTACT_ID": firstDeal.CONTACT_ID
-        },
-        select: DEAL_SELECT_FIELDS
-      });
-      if (Array.isArray(allContactDeals) && allContactDeals.length > 0) {
-        const existingIds = new Set(allClientDeals.map(d => d.ID));
-        for (const cd of allContactDeals) {
-          if (!existingIds.has(cd.ID)) {
-            allClientDeals.push(cd);
-            existingIds.add(cd.ID);
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Could not fetch extra contact deals:", e);
-    }
-  }
-
-  // Filter ONLY eligible deals
-  const eligibleClientDeals = allClientDeals.filter(isBitrixDealEligible);
-  if (eligibleClientDeals.length === 0) {
+  // 4. Filter eligible deals and convert
+  const eligibleDeals = matchedDeals.filter(isBitrixDealEligible);
+  if (eligibleDeals.length === 0) {
     return null;
   }
 
-  const convertedOrders = eligibleClientDeals.map(deal => convertBitrixDealToOrder(deal, contactData));
+  // 5. Get contact data for first deal
+  let contactData: any = undefined;
+  if (eligibleDeals[0].CONTACT_ID) {
+    try {
+      contactData = await callBitrixMethod('crm.contact.get', { id: eligibleDeals[0].CONTACT_ID });
+    } catch {
+      // ignore
+    }
+  }
+
+  const convertedOrders = eligibleDeals.map(deal => convertBitrixDealToOrder(deal, contactData));
   const mainOrder = convertedOrders[0];
 
   return {
@@ -673,50 +650,100 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   };
 };
 
-// Fetch real deals list with batch contact hydration
+// 🔥 ASOSIY TUZATILGAN FUNKSIYA: fetchBitrixRecentDeals
 export const fetchBitrixRecentDeals = async (limit: number = 50): Promise<Order[]> => {
   try {
-    const result = await callBitrixMethod('crm.deal.list', {
+    console.log('🔄 Bitrix24 dan ma\'lumot olinmoqda...');
+    
+    // 1. Avval deal ID larini olamiz (SELECT siz)
+    const listResult = await callBitrixMethod('crm.deal.list', {
       order: { DATE_CREATE: "DESC" },
-      select: DEAL_SELECT_FIELDS
+      select: ["ID"],  // Faqat ID larni olamiz
+      limit: limit * 2,
     });
 
-    if (Array.isArray(result) && result.length > 0) {
-      const eligibleDeals = result.filter(isBitrixDealEligible);
-      const deals = eligibleDeals.slice(0, limit);
-      
-      if (deals.length === 0) {
-        return [];
-      }
-      
-      // Batch fetch contacts
-      const contactIds = Array.from(new Set(deals.map((d: any) => d.CONTACT_ID).filter((id: any) => id && id !== '0' && id !== 0)));
-      let contactMap: Record<string, any> = {};
+    console.log(`📋 Jami ${listResult?.length || 0} ta deal topildi`);
 
-      if (contactIds.length > 0) {
-        try {
-          const contacts = await callBitrixMethod('crm.contact.list', {
-            filter: {
-              "@ID": contactIds
-            },
-            select: ["ID", "NAME", "LAST_NAME", "SECOND_NAME", "PHONE", "EMAIL"]
-          });
-          if (Array.isArray(contacts)) {
-            for (const c of contacts) {
-              contactMap[String(c.ID)] = c;
-            }
-          }
-        } catch (cErr) {
-          console.warn("Batch contacts fetch notice:", cErr);
-        }
-      }
-
-      return deals.map((deal: any) => {
-        const contact = deal.CONTACT_ID ? contactMap[String(deal.CONTACT_ID)] : undefined;
-        return convertBitrixDealToOrder(deal, contact);
-      });
+    if (!Array.isArray(listResult) || listResult.length === 0) {
+      console.log('⚠️ Hech qanday deal topilmadi');
+      return [];
     }
-    return [];
+
+    // 2. Har bir dealni to'liq ma'lumot bilan olamiz (crm.deal.get)
+    const allDeals: any[] = [];
+    let processedCount = 0;
+    
+    for (const item of listResult) {
+      try {
+        processedCount++;
+        const fullDeal = await callBitrixMethod('crm.deal.get', { id: item.ID });
+        if (fullDeal) {
+          allDeals.push(fullDeal);
+        }
+        // Har 10 ta dealda progress ko'rsatamiz
+        if (processedCount % 10 === 0) {
+          console.log(`⏳ ${processedCount} ta deal qayta ishlandi...`);
+        }
+      } catch (err) {
+        console.warn(`Deal ${item.ID} ni olishda xatolik:`, err);
+      }
+    }
+
+    console.log(`✅ ${allDeals.length} ta deal to'liq yuklandi`);
+
+    // 3. SPECIAL_CODE ni tekshiramiz (endi ishlaydi!)
+    const eligibleDeals = allDeals.filter(deal => {
+      const code = deal.UF_CRM_1745308434;
+      const hasCode = code !== null && 
+                      code !== undefined && 
+                      String(code).trim().length > 0 && 
+                      String(code).trim() !== '0';
+      if (!hasCode) {
+        console.warn(`Deal ${deal.ID} filtrlandi: SPECIAL_CODE yo'q (${code})`);
+        return false;
+      }
+      return true;
+    });
+
+    console.log(`🎯 ${eligibleDeals.length} ta deal SPECIAL_CODE ga ega`);
+
+    if (eligibleDeals.length === 0) {
+      console.log('⚠️ SPECIAL_CODE ga ega hech qanday deal topilmadi');
+      return [];
+    }
+
+    // 4. Contact ma'lumotlarini olamiz
+    const contactIds = Array.from(new Set(eligibleDeals.map((d: any) => d.CONTACT_ID).filter((id: any) => id && id !== '0' && id !== 0)));
+    let contactMap: Record<string, any> = {};
+
+    if (contactIds.length > 0) {
+      try {
+        console.log(`📞 ${contactIds.length} ta contact ma'lumoti olinmoqda...`);
+        const contacts = await callBitrixMethod('crm.contact.list', {
+          filter: {
+            "@ID": contactIds
+          },
+          select: ["ID", "NAME", "LAST_NAME", "SECOND_NAME", "PHONE", "EMAIL"]
+        });
+        if (Array.isArray(contacts)) {
+          for (const c of contacts) {
+            contactMap[String(c.ID)] = c;
+          }
+        }
+        console.log(`✅ ${Object.keys(contactMap).length} ta contact yuklandi`);
+      } catch (cErr) {
+        console.warn("Batch contacts fetch notice:", cErr);
+      }
+    }
+
+    // 5. Order'larga o'tkazamiz
+    const orders = eligibleDeals.map((deal: any) => {
+      const contact = deal.CONTACT_ID ? contactMap[String(deal.CONTACT_ID)] : undefined;
+      return convertBitrixDealToOrder(deal, contact);
+    });
+
+    console.log(`🎉 ${orders.length} ta order yaratildi`);
+    return orders.slice(0, limit);
   } catch (err) {
     console.error("fetchBitrixRecentDeals error:", err);
     throw err;
