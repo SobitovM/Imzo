@@ -129,7 +129,7 @@ export const STAGE_NAMES: Record<string, string> = {
   "C35:WON":               "✅ Сделка успешна",
 };
 
-// 🔥 O'ZGARGAN QISM: ALLOWED_BITRIX_STAGES - faqat malumot1.txt dagi statuslar
+// 🔥 ALLOWED_BITRIX_STAGES - faqat malumot1.txt dagi statuslar
 export const ALLOWED_BITRIX_STAGES: Set<string> = new Set([
   // C2
   "C2:1",                  // Размещено в ГП склад
@@ -332,34 +332,32 @@ export const SHOWROOMS_DICT: Record<number | string, string> = {
 
 // 5. Bitrix24 Maxsus Maydonlar Kodlari (Fields Mapping)
 export const BITRIX_FIELDS = {
-  SPECIAL_CODE: "UF_CRM_1745308434",            // Maxsus kod / PIN kod
-  ORDER_INVOICE_ID: "UF_CRM_1651306406137",     // ID заказа : (Schet raqami)
-  RESPONSIBLE_MANAGER: "UF_CRM_1646213205",     // Ответственный менеджер
-  OKK_MANAGER: "UF_CRM_1690286173",             // Ответственный отдела контроля качества
-  AREA_SQM: "UF_CRM_1648100319007",            // Квадратура м2 :
-  PRODUCT_SERIES: "UF_CRM_1656483960",          // Серия профиля : (обновлённая) (ID list)
-  COLOR: "UF_CRM_1656484012",                   // Цвет профиля : (обновлённая) (ID list)
-  FACTORY_DATE: "UF_CRM_1701497119",            // Фабрикага келган вақт
-  ESTIMATED_READY_DATE: "UF_CRM_1682695332152", // Тахминий тайёр бўлиш вақти
-  READY_TO_PROD_DATE: "UF_CRM_1682761006746",   // "Готов к производству" статусига ўтган вақт
-  ORDER_READY_DATE: "UF_CRM_1682760962387",     // "Заказ готов" статусига ўтган вақт
+  SPECIAL_CODE: "UF_CRM_1745308434",
+  ORDER_INVOICE_ID: "UF_CRM_1651306406137",
+  RESPONSIBLE_MANAGER: "UF_CRM_1646213205",
+  OKK_MANAGER: "UF_CRM_1690286173",
+  AREA_SQM: "UF_CRM_1648100319007",
+  PRODUCT_SERIES: "UF_CRM_1656483960",
+  COLOR: "UF_CRM_1656484012",
+  FACTORY_DATE: "UF_CRM_1701497119",
+  ESTIMATED_READY_DATE: "UF_CRM_1682695332152",
+  READY_TO_PROD_DATE: "UF_CRM_1682761006746",
+  ORDER_READY_DATE: "UF_CRM_1682760962387",
 
-  // Showroom fields by regions
   SHOWROOMS: {
-    DEFAULT: "UF_CRM_1647931321",          // Шоурум (Toshkent / Sergeli)
-    SERGELI: "UF_CRM_1647931321",          // Шоурум :
-    ANDIJAN: "UF_CRM_1649332403191",       // Шоу-рум :(андижан)
-    SAMARKAND: "UF_CRM_1653148491",        // Шоу-рум : (самарканд)
-    NAMANGAN: "UF_CRM_1655321621579",       // Шоу-рум Наманган
-    NUKUS: "UF_CRM_1659691369246",          // Шоу-рум  "НУКУС" завод
-    BUKHARA: "UF_CRM_1671518012095",        // Шоу-рум Бухара
-    SURKHANDARYA: "UF_CRM_1696845428847",   // Шоу-рум Сурхандарё
-    FERGANA: "UF_CRM_1713332718568",        // Шоу-рум (Фарғона) :
-    KHOREZM: "UF_CRM_1761029845985"         // Шоу-рум Хоразм
+    DEFAULT: "UF_CRM_1647931321",
+    SERGELI: "UF_CRM_1647931321",
+    ANDIJAN: "UF_CRM_1649332403191",
+    SAMARKAND: "UF_CRM_1653148491",
+    NAMANGAN: "UF_CRM_1655321621579",
+    NUKUS: "UF_CRM_1659691369246",
+    BUKHARA: "UF_CRM_1671518012095",
+    SURKHANDARYA: "UF_CRM_1696845428847",
+    FERGANA: "UF_CRM_1713332718568",
+    KHOREZM: "UF_CRM_1761029845985"
   }
 };
 
-// Sana formatlash yordamchisi (DD.MM.YYYY)
 export const formatBitrixDate = (dateStr: string | null | undefined): string => {
   if (!dateStr) return "-";
   try {
