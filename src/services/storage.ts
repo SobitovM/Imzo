@@ -17,26 +17,21 @@ export const getStoredOrders = (): Order[] => {
     
     orders = JSON.parse(raw);
 
-    // 🔥 FAQAT ruxsat etilgan statuslar
-    // Bu statuslar malumot1.txt dagi statuslarga mos keladi
+    // FAQAT ruxsat etilgan statuslar
     const allowedStatuses: OrderStatus[] = [
-      'okk_otdi',           // Заказ готов, Размещено в ГП склад, В процессе установки
-      'kontrol_kachestva',  // Контроль качества
-      'yetkazib_berishda',  // На расход / Доставка, Доставлено
-      'topshirildi'         // Успешно, Сделка успешна
+      'okk_otdi',
+      'kontrol_kachestva',
+      'yetkazib_berishda',
+      'topshirildi'
     ];
     
     orders = orders.filter((ord) => {
-      // 1. STATUS tekshiruvi - FAQAT ruxsat etilgan statuslar
       if (!allowedStatuses.includes(ord.status)) {
-        console.warn(`Order ${ord.id} (${ord.invoiceNumber}) o'chirildi: Status "${ord.status}" ruxsat etilmagan`);
         return false;
       }
       
-      // 2. PIN tekshiruvi
       const pin = ord.credentials?.pinCode;
       if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0 || pin === "Bo'sh") {
-        console.warn(`Order ${ord.id} (${ord.invoiceNumber}) o'chirildi: PIN yo'q (${pin})`);
         return false;
       }
       
@@ -64,7 +59,6 @@ export const getStoredOrders = (): Order[] => {
       }
     }));
 
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
     return orders;
   } catch (e) {
     console.error('Failed to load orders from storage', e);
@@ -74,10 +68,23 @@ export const getStoredOrders = (): Order[] => {
 
 export const saveStoredOrders = (orders: Order[]) => {
   try {
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+    // 🔥 Faqat oxirgi 200 ta order'ni saqlaymiz (localStorage sig'imi uchun)
+    const MAX_ORDERS = 200;
+    const limitedOrders = orders.slice(0, MAX_ORDERS);
+    
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(limitedOrders));
     window.dispatchEvent(new Event('orders_updated'));
   } catch (e) {
     console.error('Failed to save orders', e);
+    // Agar localStorage to'lsa, faqat 100 ta saqlaymiz
+    try {
+      const MAX_ORDERS_FALLBACK = 100;
+      const fallbackOrders = orders.slice(0, MAX_ORDERS_FALLBACK);
+      localStorage.setItem(ORDERS_KEY, JSON.stringify(fallbackOrders));
+      window.dispatchEvent(new Event('orders_updated'));
+    } catch (e2) {
+      console.error('Even fallback failed', e2);
+    }
   }
 };
 
@@ -104,12 +111,10 @@ export const saveStoredTickets = (tickets: ServiceTicket[]) => {
   }
 };
 
-// Phone normalizer
 export const normalizePhone = (phone: string): string => {
   return (phone || '').replace(/\D/g, '');
 };
 
-// Get all orders for a client
 export const getClientOrders = (identifier: string): Order[] => {
   const orders = getStoredOrders();
   if (!identifier) return [];
@@ -127,19 +132,16 @@ export const getClientOrders = (identifier: string): Order[] => {
   });
 };
 
-// Generate random pin code
 export const generatePinCode = (): string => {
   return Math.floor(1000 + Math.random() * 9000).toString();
 };
 
-// Generate unique order token
 export const generateOrderToken = (invoiceNumber: string): string => {
   const cleanInv = invoiceNumber.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
   const rand = Math.random().toString(36).substring(2, 7);
   return `tok_${cleanInv}_${rand}`;
 };
 
-// Change Order Status
 export const updateOrderStatus = (
   orderId: string, 
   newStatus: OrderStatus, 
@@ -187,7 +189,6 @@ export const updateOrderStatus = (
   return updated;
 };
 
-// Send SMS Simulation
 export const markSmsSent = (orderId: string, customText?: string): Order | null => {
   const orders = getStoredOrders();
   const index = orders.findIndex(o => o.id === orderId);
@@ -207,7 +208,6 @@ export const markSmsSent = (orderId: string, customText?: string): Order | null 
   return orders[index];
 };
 
-// Add new service ticket
 export const createServiceTicket = (
   order: Order,
   category: string,
@@ -244,7 +244,6 @@ export const createServiceTicket = (
   return newTicket;
 };
 
-// Update ticket status
 export const updateTicketStatus = (
   ticketId: string,
   status: 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi',
@@ -268,7 +267,6 @@ export const updateTicketStatus = (
   return tickets[index];
 };
 
-// Resolve Service Ticket
 export const resolveServiceTicket = (
   ticketId: string,
   resolvedByManager: string,
@@ -296,7 +294,6 @@ export const resolveServiceTicket = (
   return updated;
 };
 
-// Rate Service Ticket
 export const rateServiceTicket = (
   ticketId: string,
   rating: number,
@@ -320,7 +317,6 @@ export const rateServiceTicket = (
   return tickets[index];
 };
 
-// Add New Order
 export const createNewOrder = (orderData: Partial<Order>): Order => {
   const orders = getStoredOrders();
   const now = new Date();
@@ -398,7 +394,6 @@ export const createNewOrder = (orderData: Partial<Order>): Order => {
   return newOrder;
 };
 
-// Reset to factory defaults
 export const resetDemoData = () => {
   localStorage.setItem(ORDERS_KEY, JSON.stringify(INITIAL_ORDERS));
   localStorage.setItem(TICKETS_KEY, JSON.stringify(INITIAL_SERVICE_TICKETS));
