@@ -20,8 +20,27 @@ export const getStoredOrders = (): Order[] => {
       orders = JSON.parse(raw);
     }
 
-    // Force migration of all orders to 60 months warranty
     let modified = false;
+
+    // Filter out old invalid Bitrix orders that had missing/placeholder PIN or non-allowed status
+    const initialLen = orders.length;
+    orders = orders.filter((ord) => {
+      // If it's a Bitrix order, ensure it has a valid PIN code
+      if (ord.id.startsWith('bx_') || (ord.notes && ord.notes.includes('Bitrix24 Deal ID'))) {
+        const pin = ord.credentials?.pinCode;
+        if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0) {
+          // If it was an old dummy or had no real special code
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (orders.length !== initialLen) {
+      modified = true;
+    }
+
+    // Force migration of all orders to 60 months warranty
     orders = orders.map((ord) => {
       if (ord.warranty && (ord.warranty.warrantyPeriodMonths === 36 || !ord.warranty.warrantyPeriodMonths)) {
         modified = true;
