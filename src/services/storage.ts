@@ -1,760 +1,405 @@
-import { Order, OrderStatus, ProductItem } from '../types';
-import { 
-  PRODUCTS_DICT, 
-  COLORS_DICT, 
-  SHOWROOMS_DICT,
-  STAGE_NAMES, 
-  ALLOWED_BITRIX_STAGES,
-  BITRIX_FIELDS, 
-  formatBitrixDate 
-} from './bitrixConfig';
-import { MANAGERS_DICT } from './managersDict';
+import { Order, ServiceTicket, OrderStatus, ProductItem } from '../types';
+import { INITIAL_ORDERS, INITIAL_SERVICE_TICKETS } from '../data/mockData';
 
-const BITRIX_WEBHOOK_KEY = 'bitrix_webhook_url';
-const BITRIX_AUTO_SYNC_KEY = 'bitrix_auto_sync_enabled';
+const ORDERS_KEY = 'imzo_orders_v2';
+const TICKETS_KEY = 'imzo_tickets_v2';
+const AUTH_KEY = 'imzo_current_session';
 
-export const DEFAULT_BITRIX_WEBHOOK = 'https://bitrix.imzo.uz/rest/244/lhfi8leh3yqxl3sc/';
-
-export const getBitrixWebhookUrl = (): string => {
-  return localStorage.getItem(BITRIX_WEBHOOK_KEY) || DEFAULT_BITRIX_WEBHOOK;
-};
-
-export const setBitrixWebhookUrl = (url: string) => {
-  const clean = (url || '').trim().replace(/\/+$/, '') + '/';
-  localStorage.setItem(BITRIX_WEBHOOK_KEY, clean);
-  window.dispatchEvent(new Event('bitrix_config_updated'));
-};
-
-export const getBitrixAutoSync = (): boolean => {
-  return localStorage.getItem(BITRIX_AUTO_SYNC_KEY) === 'true';
-};
-
-export const setBitrixAutoSync = (enabled: boolean) => {
-  localStorage.setItem(BITRIX_AUTO_SYNC_KEY, enabled ? 'true' : 'false');
-};
-
-// Check if a deal is eligible
-export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
-  if (!deal || typeof deal !== 'object') return false;
-
-  // 1. UF_CRM_1745308434 (Maxsus kod) to'ldirilgan bo'lishi kerak
-  const specialCode = deal[BITRIX_FIELDS.SPECIAL_CODE];
-  const hasCode = specialCode !== null && 
-                  specialCode !== undefined && 
-                  String(specialCode).trim().length > 0 && 
-                  String(specialCode).trim() !== '0' && 
-                  String(specialCode).trim() !== 'false';
-  if (!hasCode) {
-    return false;
-  }
-
-  // 2. STAGE_ID ruxsat etilgan ro'yxatda bo'lishi kerak
-  const stageId = String(deal.STAGE_ID || '').trim();
-  if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
-    return false;
-  }
-
-  return true;
-};
-
-// Map STAGE_ID to internal OrderStatus
-export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
-  const s = (stageId || '').trim();
-
-  // 1. Muvaffaqiyatli / Yakunlangan
-  if (s.endsWith(':WON')) {
-    return 'topshirildi';
-  }
-
-  // 2. Yetkazilmoqda / На расход / Доставка / Доставлено
-  if (
-    s === 'C2:2' || s === 'C2:UC_6R66T3' ||
-    s === 'C8:UC_KI81ZC' ||
-    s === 'C12:UC_I2P8V1' ||
-    s === 'C13:7' ||
-    s === 'C16:UC_NA1A9O' ||
-    s === 'C22:UC_H6AOUS' ||
-    s === 'C24:UC_JZPAV2' ||
-    s === 'C27:UC_E9E5IW' ||
-    s === 'C35:UC_XXO9DM'
-  ) {
-    return 'yetkazib_berishda';
-  }
-
-  // 3. Sifat nazorati / Контроль качества / OKK tekshiruvi / Заказ не прошел ОКК
-  if (
-    s === 'C2:6' || s === 'C2:UC_ELI1KU' ||
-    s === 'C8:UC_EE5QBV' ||
-    s === 'C12:UC_QOH2K1' ||
-    s === 'C13:11' ||
-    s === 'C16:2' ||
-    s === 'C22:UC_I6QM65' ||
-    s === 'C24:UC_H9797W' ||
-    s === 'C27:UC_1UTXNE' ||
-    s === 'C35:FINAL_INVOICE'
-  ) {
-    return 'kontrol_kachestva';
-  }
-
-  // 4. Заказ готов / Размещено в ГП склад / В процессе установки
-  if (
-    s === 'C2:1' || s === 'C2:5' ||
-    s === 'C8:UC_Q4UARA' || s === 'C8:UC_KCNRMF' ||
-    s === 'C12:UC_ZRA1WC' || s === 'C12:UC_U36QBE' ||
-    s === 'C13:6' || s === 'C13:10' ||
-    s === 'C16:UC_G7GQBV' || s === 'C16:UC_H9CTB9' ||
-    s === 'C22:UC_IC6QYV' || s === 'C22:UC_2JO4UN' ||
-    s === 'C24:UC_Q8F0S3' || s === 'C24:UC_0YXSW9' ||
-    s === 'C27:UC_B2NTSZ' || s === 'C27:UC_6G3PNP' ||
-    s === 'C35:UC_8G1TNE' || s === 'C35:UC_6LACIU'
-  ) {
-    return 'okk_otdi';
-  }
-
-  // 5. Ishlab chiqarishda
-  if (s === 'C2:UC_MNKRA5' || s === 'C27:UC_EVAKIV') {
-    return 'ishlab_chiqarishda';
-  }
-
-  // RUXSAT ETILMAGAN STATUSLAR
-  return 'yangi';
-};
-
-// Resolve Responsible Manager
-export const resolveManager = (deal: Record<string, any>): { name: string; phone: string; showroom: string } => {
-  const assignedId = String(deal.ASSIGNED_BY_ID || '').trim();
-  const customManagerField = deal[BITRIX_FIELDS.RESPONSIBLE_MANAGER];
-  const customManagerId = (customManagerField !== null && customManagerField !== undefined) ? String(customManagerField).trim() : '';
-
-  if (assignedId && MANAGERS_DICT[assignedId]) {
-    return {
-      name: MANAGERS_DICT[assignedId].name,
-      phone: '-',
-      showroom: MANAGERS_DICT[assignedId].showroom || "Bo'sh"
-    };
-  }
-
-  if (customManagerId && MANAGERS_DICT[customManagerId]) {
-    return {
-      name: MANAGERS_DICT[customManagerId].name,
-      phone: '-',
-      showroom: MANAGERS_DICT[customManagerId].showroom || "Bo'sh"
-    };
-  }
-
-  if (customManagerField && typeof customManagerField === 'string' && isNaN(Number(customManagerField)) && customManagerField.trim().length > 0) {
-    return {
-      name: customManagerField.trim(),
-      phone: '-',
-      showroom: "Bo'sh"
-    };
-  }
-
-  if (assignedId && assignedId !== '0' && assignedId !== '') {
-    return {
-      name: `Menejer #${assignedId}`,
-      phone: '-',
-      showroom: "Bo'sh"
-    };
-  }
-
-  return {
-    name: "Bo'sh",
-    phone: '-',
-    showroom: "Bo'sh"
-  };
-};
-
-// Resolve Showroom Name
-export const resolveShowroomName = (deal: Record<string, any>, managerShowroom?: string): string => {
-  const s = BITRIX_FIELDS.SHOWROOMS;
-  
-  const getDictOrVal = (rawVal: any) => {
-    if (rawVal === undefined || rawVal === null || rawVal === '' || rawVal === 0 || rawVal === '0') return null;
-    const id = Array.isArray(rawVal) ? rawVal[0] : rawVal;
-    if (id === undefined || id === null || id === '' || id === 0 || id === '0') return null;
-    if (SHOWROOMS_DICT[id]) return SHOWROOMS_DICT[id];
-    if (typeof id === 'string' && isNaN(Number(id)) && id.trim().length > 0) return id.trim();
-    return null;
-  };
-
-  const stageId = String(deal.STAGE_ID || '').trim();
-  
-  if (stageId.startsWith('C2:')) {
-    const val = getDictOrVal(deal[s.DEFAULT]);
-    if (val) return val;
-    if (managerShowroom && managerShowroom !== '263/11') return managerShowroom;
-    return "Bo'sh";
-  }
-  
-  if (stageId.startsWith('C8:')) {
-    const val = getDictOrVal(deal[s.ANDIJAN]);
-    if (val) return `Andijon (${val})`;
-    return "Bo'sh";
-  }
-  
-  if (stageId.startsWith('C12:')) {
-    const val = getDictOrVal(deal[s.SAMARKAND]);
-    if (val) return `Samarqand (${val})`;
-    return "Bo'sh";
-  }
-  
-  if (stageId.startsWith('C13:')) {
-    const val = getDictOrVal(deal[s.NAMANGAN]);
-    if (val) return `Namangan (${val})`;
-    return "Bo'sh";
-  }
-  
-  if (stageId.startsWith('C16:')) {
-    const val = getDictOrVal(deal[s.NUKUS]) || getDictOrVal(deal[s.KHOREZM]);
-    if (val) return `Nukus (${val})`;
-    return "Bo'sh";
-  }
-  
-  if (stageId.startsWith('C22:')) {
-    const val = getDictOrVal(deal[s.BUKHARA]);
-    if (val) return `Buxoro (${val})`;
-    return "Bo'sh";
-  }
-  
-  if (stageId.startsWith('C24:')) {
-    const val = getDictOrVal(deal[s.SURKHANDARYA]);
-    if (val) return `Surxondaryo (${val})`;
-    return "Bo'sh";
-  }
-  
-  if (stageId.startsWith('C27:')) {
-    const val = getDictOrVal(deal[s.FERGANA]);
-    if (val) return `Farg'ona (${val})`;
-    return "Bo'sh";
-  }
-  
-  if (stageId.startsWith('C35:')) {
-    const val = getDictOrVal(deal[s.NUKUS]);
-    if (val) return `Nukus Zavod (${val})`;
-    return "Bo'sh";
-  }
-
-  const defaultVal = getDictOrVal(deal[s.DEFAULT]);
-  if (defaultVal) return defaultVal;
-  if (managerShowroom && managerShowroom !== '263/11') return managerShowroom;
-  return "Bo'sh";
-};
-
-export const resolveClientPhone = (deal: Record<string, any>, contact?: Record<string, any>): string => {
-  if (contact?.PHONE) {
-    if (Array.isArray(contact.PHONE) && contact.PHONE.length > 0) {
-      const val = contact.PHONE[0]?.VALUE;
-      if (val && String(val).trim()) return String(val).trim();
-    } else if (typeof contact.PHONE === 'string' && contact.PHONE.trim()) {
-      return contact.PHONE.trim();
-    }
-  }
-
-  if (deal.PHONE) {
-    if (Array.isArray(deal.PHONE) && deal.PHONE.length > 0) {
-      const val = deal.PHONE[0]?.VALUE;
-      if (val && String(val).trim()) return String(val).trim();
-    } else if (typeof deal.PHONE === 'string' && deal.PHONE.trim()) {
-      return deal.PHONE.trim();
-    }
-  }
-
-  if (deal.CONTACT_PHONE && typeof deal.CONTACT_PHONE === 'string' && deal.CONTACT_PHONE.trim()) {
-    return deal.CONTACT_PHONE.trim();
-  }
-
-  return "Bo'sh";
-};
-
-export const resolveOkkInspector = (deal: Record<string, any>): string => {
-  const okkRaw = deal[BITRIX_FIELDS.OKK_MANAGER];
-  if (!okkRaw || okkRaw === '0' || okkRaw === 0) return "Bo'sh";
-  
-  const okkId = String(okkRaw).trim();
-  if (MANAGERS_DICT[okkId]) {
-    return MANAGERS_DICT[okkId].name;
-  }
-  if (typeof okkRaw === 'string' && isNaN(Number(okkRaw)) && okkRaw.trim().length > 0) {
-    return okkRaw.trim();
-  }
-  return `OKK Muhandis #${okkId}`;
-};
-
-export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Record<string, any>): Order => {
-  const dealId = String(deal.ID || '');
-  const invoiceNumber = deal[BITRIX_FIELDS.ORDER_INVOICE_ID] || deal.TITLE || `SCH-${dealId}`;
-  const stageId = deal.STAGE_ID || 'C27:NEW';
-  const stageHumanName = STAGE_NAMES[stageId] || stageId;
-  const status = mapBitrixStageToStatus(stageId);
-  const isReady = status === 'okk_otdi' || stageId.includes('WON');
-
-  let rawProductIds = deal[BITRIX_FIELDS.PRODUCT_SERIES];
-  if (!Array.isArray(rawProductIds)) {
-    rawProductIds = (rawProductIds !== null && rawProductIds !== undefined && rawProductIds !== '') ? [rawProductIds] : [];
-  }
-  rawProductIds = rawProductIds.filter((id: any) => id !== null && id !== undefined && id !== '' && id !== '0' && id !== 0);
-
-  let rawColorIds = deal[BITRIX_FIELDS.COLOR];
-  if (!Array.isArray(rawColorIds)) {
-    rawColorIds = (rawColorIds !== null && rawColorIds !== undefined && rawColorIds !== '') ? [rawColorIds] : [];
-  }
-  rawColorIds = rawColorIds.filter((id: any) => id !== null && id !== undefined && id !== '' && id !== '0' && id !== 0);
-
-  const rawArea = deal[BITRIX_FIELDS.AREA_SQM];
-  const areaSqM = (rawArea !== null && rawArea !== undefined && rawArea !== '') ? (parseFloat(rawArea) || 0) : 0;
-
-  const productNames = rawProductIds.map((id: any) => PRODUCTS_DICT[id] || (typeof id === 'string' && isNaN(Number(id)) ? id : `Seriya #${id}`));
-  const colorNames = rawColorIds.map((id: any) => COLORS_DICT[id] || (typeof id === 'string' && isNaN(Number(id)) ? id : `Rang #${id}`));
-
-  const seriesDisplay = productNames.length > 0 ? productNames.join(', ') : "Bo'sh";
-  const colorDisplay = colorNames.length > 0 ? colorNames.join(', ') : "Bo'sh";
-  const mainProductName = deal.TITLE || (productNames.length > 0 ? productNames.join(', ') : "Bo'sh");
-
-  const productsList: ProductItem[] = [
-    {
-      id: `p-${dealId}-1`,
-      name: mainProductName,
-      category: productNames.length > 0 ? 'Alyumin va PVX Konstruktsiya' : "Bo'sh",
-      model: seriesDisplay,
-      color: colorDisplay,
-      areaSqM: areaSqM,
-      dimensions: areaSqM > 0 ? `${areaSqM} kv.m` : "Bo'sh",
-      quantity: 1,
-      unitPrice: parseFloat(deal.OPPORTUNITY) || 0,
-      totalPrice: parseFloat(deal.OPPORTUNITY) || 0,
-    }
-  ];
-
-  const factorySentDate = deal[BITRIX_FIELDS.FACTORY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.FACTORY_DATE]) : "Bo'sh";
-  const estimatedReadyDate = deal[BITRIX_FIELDS.ESTIMATED_READY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.ESTIMATED_READY_DATE]) : "Bo'sh";
-  const readyDate = deal[BITRIX_FIELDS.ORDER_READY_DATE] 
-    ? formatBitrixDate(deal[BITRIX_FIELDS.ORDER_READY_DATE])
-    : (isReady ? (estimatedReadyDate !== "Bo'sh" ? estimatedReadyDate : 'Tasdiqlangan') : "Bo'sh");
-
-  const clientName = contact?.NAME 
-    ? `${contact.LAST_NAME || ''} ${contact.NAME} ${contact.SECOND_NAME || ''}`.trim()
-    : (deal.TITLE || "Bo'sh");
-    
-  const clientPhone = resolveClientPhone(deal, contact) || "Bo'sh";
-  const manager = resolveManager(deal);
-  const showroom = resolveShowroomName(deal, manager.showroom);
-  const okkInspector = resolveOkkInspector(deal) || "Bo'sh";
-
-  const rawSpecialCode = deal[BITRIX_FIELDS.SPECIAL_CODE];
-  const specialCode = (rawSpecialCode !== null && rawSpecialCode !== undefined && String(rawSpecialCode).trim().length > 0) 
-    ? String(rawSpecialCode).trim() 
-    : Math.floor(1000 + Math.random() * 9000).toString();
-  const login = `SCH${dealId}`;
-  const pin = specialCode;
-  const token = `tok_${login.toLowerCase()}_${dealId}`;
-
-  return {
-    id: `bx_${dealId}`,
-    invoiceNumber: String(invoiceNumber),
-    clientFullName: clientName || "Bo'sh",
-    clientPhone: clientPhone || "Bo'sh",
-    clientAddress: showroom || "Bo'sh",
-    showroomName: showroom || "Bo'sh",
-    showroomId: 'bx_sh',
-    salesManagerName: manager.name || "Bo'sh",
-    salesManagerPhone: manager.phone || "Bo'sh",
-    orderDate: formatBitrixDate(deal.DATE_CREATE) || "Bo'sh",
-    factorySentDate: factorySentDate,
-    productionStartDate: deal[BITRIX_FIELDS.READY_TO_PROD_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.READY_TO_PROD_DATE]) : "Bo'sh",
-    okkInspectionDate: isReady ? (readyDate || 'Tasdiqlangan') : "Bo'sh",
-    readyDate: readyDate,
-    status: status,
-    products: productsList,
-    totalAmount: parseFloat(deal.OPPORTUNITY) || 0,
-    paidAmount: parseFloat(deal.OPPORTUNITY) || 0,
-    credentials: {
-      login: login,
-      pinCode: pin,
-      directToken: token,
-    },
-    warranty: {
-      certificateNumber: `KT-2026-${dealId.slice(-4) || '0000'}`,
-      invoiceNumber: String(invoiceNumber),
-      orderDate: formatBitrixDate(deal.DATE_CREATE) || "Bo'sh",
-      readyDate: readyDate || "Bo'sh",
-      warrantyPeriodMonths: 60,
-      okkManagerName: okkInspector || "Bo'sh",
-      okkManagerTitle: "Sifat nazorati (OKK) Mutaxassisi",
-      qualityScore: 99.8,
-      sealStampUrl: "",
-      signatureUrl: "",
-      qrCodeValue: `https://kabinet.fabrika.uz/?token=${token}`,
-      terms: [
-        "Alyumin profil va lak-bo'yoq qatlamiga 60 oy (5 yil) to'liq kafolat beriladi.",
-        "Muntazam profilaktika va servis xizmati kafolat doirasida amalga oshiriladi.",
-        "Mexanik shikastlanish va noto'g'ri foydalanish kafolatga kirmaydi."
-      ]
-    },
-    smsSent: isReady,
-    smsSentAt: isReady ? 'Bugun' : "Bo'sh",
-    lastSmsText: `Hurmatli ${clientName.split(' ')[0]}! Sizning ${invoiceNumber} buyurtmangiz tayyor bo'ldi. Kabinet: https://kabinet.fabrika.uz/?token=${token} Login: ${login} Parol: ${pin}`,
-    notes: `Bitrix24 Deal ID: ${dealId} | Bosqich: ${stageHumanName}`
-  };
-};
-
-export const callBitrixMethod = async (method: string, params: Record<string, any> = {}): Promise<any> => {
-  const webhookUrl = getBitrixWebhookUrl();
-  if (!webhookUrl) {
-    throw new Error("Bitrix24 Webhook URL kiritilmagan.");
-  }
-
-  let proxyErrorMessage = '';
+// 🔥 getStoredOrders EKSPORT QILINGAN
+export const getStoredOrders = (): Order[] => {
   try {
-    const proxyRes = await fetch('/api/bitrix-proxy', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        webhookUrl,
-        method,
-        params,
-      }),
-    });
-
-    const data = await proxyRes.json().catch(() => null);
-
-    if (proxyRes.ok && data && !data.error) {
-      return data.result;
-    }
-
-    if (data && data.error_description) {
-      proxyErrorMessage = data.error_description;
-    }
-  } catch (proxyErr: any) {
-    console.warn("Proxy call notice:", proxyErr.message);
-  }
-
-  try {
-    const url = `${webhookUrl.trim().replace(/\/+$/, '')}/${method}.json`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(params),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errText = await response.text().catch(() => '');
-      throw new Error(`Bitrix24 API xatosi (${response.status}): ${errText}`);
-    }
-
-    const json = await response.json();
-    if (json.error) {
-      throw new Error(`Bitrix24: ${json.error_description || json.error}`);
-    }
-
-    return json.result;
-  } catch (directErr: any) {
-    if (proxyErrorMessage) {
-      throw new Error(proxyErrorMessage);
-    }
+    const raw = localStorage.getItem(ORDERS_KEY);
+    let orders: Order[] = [];
     
-    if (directErr.name === 'AbortError') {
-      throw new Error(`Bitrix24 (${webhookUrl}) serveriga ulanish vaqti tugadi (5s).`);
-    }
-
-    throw new Error(
-      directErr.message?.includes('Failed to fetch') || directErr.name === 'TypeError'
-        ? `Bitrix24 serveriga (${webhookUrl}) to'g'ridan-to'g'ri ulanib bo'lmadi.`
-        : (directErr.message || "Bitrix24 ulanish xatosi")
-    );
-  }
-};
-
-export const fetchBitrixDealBySpecialCode = async (specialCode: string): Promise<Order | null> => {
-  try {
-    const authResult = await fetchBitrixCustomerOrdersByCredentials('', specialCode);
-    return authResult?.mainOrder || null;
-  } catch (err) {
-    console.error("fetchBitrixDealBySpecialCode error:", err);
-    throw err;
-  }
-};
-
-export const fetchBitrixCustomerOrdersByCredentials = async (
-  phoneInput: string,
-  pinInput: string
-): Promise<{ mainOrder: Order; allOrders: Order[] } | null> => {
-  const cleanPin = pinInput.trim();
-  const cleanPhone = phoneInput.trim();
-  const phoneDigits = cleanPhone.replace(/\D/g, '');
-
-  const selectFields = [
-    "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY", "CURRENCY_ID",
-    "CONTACT_ID", "ASSIGNED_BY_ID", "CREATED_BY_ID", "MODIFY_BY_ID",
-    "UF_CRM_1745308434", "UF_CRM_1651306406137", "UF_CRM_1656483960",
-    "UF_CRM_1656484012", "UF_CRM_1648100319007", "UF_CRM_1701497119",
-    "UF_CRM_1682695332152", "UF_CRM_1682761006746", "UF_CRM_1682760962387",
-    "UF_CRM_1646213205", "UF_CRM_1690286173", "UF_CRM_1647931321",
-    "UF_CRM_1713332718568", "UF_CRM_1649332403191", "UF_CRM_1653148491",
-    "UF_CRM_1655321621579", "UF_CRM_1659691369246", "UF_CRM_1671518012095",
-    "UF_CRM_1696845428847", "UF_CRM_1761029845985"
-  ];
-
-  let matchedDeals: any[] = [];
-
-  if (cleanPin) {
-    const res = await callBitrixMethod('crm.deal.list', {
-      filter: {
-        [`=${BITRIX_FIELDS.SPECIAL_CODE}`]: cleanPin
-      },
-      select: selectFields,
-      limit: 50,
-    });
-    if (Array.isArray(res) && res.length > 0) {
-      matchedDeals = res;
-    }
-  }
-
-  if (matchedDeals.length === 0 && phoneDigits.length >= 7) {
-    try {
-      const contacts = await callBitrixMethod('crm.contact.list', {
-        filter: {
-          "PHONE": phoneDigits.length === 9 ? `+998${phoneDigits}` : phoneDigits
-        },
-        select: ["ID", "NAME", "LAST_NAME", "SECOND_NAME", "PHONE"]
-      });
-      if (Array.isArray(contacts) && contacts.length > 0) {
-        const contactId = contacts[0].ID;
-        const deals = await callBitrixMethod('crm.deal.list', {
-          filter: {
-            "=CONTACT_ID": contactId
-          },
-          select: selectFields,
-          limit: 50,
-        });
-        if (Array.isArray(deals) && deals.length > 0) {
-          if (cleanPin) {
-            matchedDeals = deals.filter(d => (d[BITRIX_FIELDS.SPECIAL_CODE] || '').toString().trim() === cleanPin);
-          } else {
-            matchedDeals = deals;
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("Contact lookup by phone notice:", e);
-    }
-  }
-
-  if (matchedDeals.length === 0) {
-    return null;
-  }
-
-  if (phoneDigits.length >= 7) {
-    const firstDeal = matchedDeals[0];
-    let contactData: any = undefined;
-    if (firstDeal.CONTACT_ID) {
-      try {
-        contactData = await callBitrixMethod('crm.contact.get', { id: firstDeal.CONTACT_ID });
-      } catch {
-        // ignore
-      }
-    }
-
-    const contactPhones: string[] = contactData?.PHONE?.map((p: any) => (p.VALUE || '').replace(/\D/g, '')) || [];
-    const inv = (firstDeal[BITRIX_FIELDS.ORDER_INVOICE_ID] || '').toString().trim().toUpperCase();
-    const dealTitle = (firstDeal.TITLE || '').toString().trim();
-
-    const last7Digits = phoneDigits.slice(-7);
-    const last9Digits = phoneDigits.slice(-9);
-
-    const matchesPhone = contactPhones.some(cp => 
-      cp.endsWith(last7Digits) || 
-      cp.endsWith(last9Digits) || 
-      phoneDigits.endsWith(cp.slice(-7)) ||
-      cp === phoneDigits
-    );
-
-    const matchesInvoiceOrTitle = cleanPhone && (inv === cleanPhone.toUpperCase() || dealTitle.toLowerCase().includes(cleanPhone.toLowerCase()));
-
-    const dealPin = (firstDeal[BITRIX_FIELDS.SPECIAL_CODE] || '').toString().trim();
-    const matchesPin = dealPin === cleanPin;
-
-    if (!matchesPhone && !matchesInvoiceOrTitle && !matchesPin) {
-      return null;
-    }
-  }
-
-  const eligibleDeals = matchedDeals.filter(isBitrixDealEligible);
-  if (eligibleDeals.length === 0) {
-    return null;
-  }
-
-  let contactData: any = undefined;
-  if (eligibleDeals[0].CONTACT_ID) {
-    try {
-      contactData = await callBitrixMethod('crm.contact.get', { id: eligibleDeals[0].CONTACT_ID });
-    } catch {
-      // ignore
-    }
-  }
-
-  const convertedOrders = eligibleDeals.map(deal => convertBitrixDealToOrder(deal, contactData));
-  const mainOrder = convertedOrders[0];
-
-  return {
-    mainOrder,
-    allOrders: convertedOrders
-  };
-};
-
-export const fetchBitrixRecentDeals = async (limit: number = 200): Promise<Order[]> => {
-  try {
-    console.log('🔄 Bitrix24 dan ma\'lumot olinmoqda...');
-    
-    const startDate = '2026-01-01T00:00:00+05:00';
-    
-    const selectFields = [
-      "ID", "TITLE", "STAGE_ID", "DATE_CREATE", "OPPORTUNITY", "CURRENCY_ID",
-      "CONTACT_ID", "ASSIGNED_BY_ID", "CREATED_BY_ID", "MODIFY_BY_ID",
-      "UF_CRM_1745308434", "UF_CRM_1651306406137", "UF_CRM_1656483960",
-      "UF_CRM_1656484012", "UF_CRM_1648100319007", "UF_CRM_1701497119",
-      "UF_CRM_1682695332152", "UF_CRM_1682761006746", "UF_CRM_1682760962387",
-      "UF_CRM_1646213205", "UF_CRM_1690286173", "UF_CRM_1647931321",
-      "UF_CRM_1713332718568", "UF_CRM_1649332403191", "UF_CRM_1653148491",
-      "UF_CRM_1655321621579", "UF_CRM_1659691369246", "UF_CRM_1671518012095",
-      "UF_CRM_1696845428847", "UF_CRM_1761029845985"
-    ];
-
-    const allDeals: any[] = [];
-    let start = 0;
-    const pageSize = 50;
-    const MAX_DEALS = 500;
-    
-    while (true) {
-      const result = await callBitrixMethod('crm.deal.list', {
-        order: { DATE_CREATE: "DESC" },
-        filter: {
-          ">=DATE_CREATE": startDate,
-          "!UF_CRM_1745308434": false,
-        },
-        select: selectFields,
-        limit: pageSize,
-        start: start,
-      });
-
-      if (!Array.isArray(result) || result.length === 0) {
-        break;
-      }
-
-      console.log(`📋 ${result.length} ta deal yuklandi (start: ${start})`);
-      allDeals.push(...result);
-
-      if (result.length < pageSize || allDeals.length >= MAX_DEALS) {
-        break;
-      }
-
-      start += pageSize;
-    }
-
-    console.log(`✅ Jami ${allDeals.length} ta deal yuklandi`);
-
-    if (allDeals.length === 0) {
-      console.log('⚠️ Hech qanday deal topilmadi');
+    if (!raw) {
+      localStorage.setItem(ORDERS_KEY, JSON.stringify([]));
       return [];
     }
+    
+    orders = JSON.parse(raw);
 
-    const eligibleDeals = allDeals.filter(deal => {
-      const stageId = String(deal.STAGE_ID || '').trim();
-      if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
+    // FAQAT ruxsat etilgan statuslar
+    const allowedStatuses: OrderStatus[] = [
+      'okk_otdi',
+      'kontrol_kachestva',
+      'yetkazib_berishda',
+      'topshirildi'
+    ];
+    
+    orders = orders.filter((ord) => {
+      if (!allowedStatuses.includes(ord.status)) {
         return false;
       }
+      
+      const pin = ord.credentials?.pinCode;
+      if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0 || pin === "Bo'sh") {
+        return false;
+      }
+      
       return true;
     });
 
-    console.log(`🎯 ${eligibleDeals.length} ta deal ruxsat etilgan statusga ega`);
-
-    if (eligibleDeals.length === 0) {
-      console.log('⚠️ Hech qanday mos deal topilmadi');
-      return [];
-    }
-
-    const contactIds = Array.from(new Set(eligibleDeals.map((d: any) => d.CONTACT_ID).filter((id: any) => id && id !== '0' && id !== 0)));
-    let contactMap: Record<string, any> = {};
-
-    if (contactIds.length > 0) {
-      try {
-        console.log(`📞 ${contactIds.length} ta contact ma'lumoti olinmoqda...`);
-        let contactStart = 0;
-        const contactPageSize = 50;
-        const allContacts: any[] = [];
-        
-        while (true) {
-          const contacts = await callBitrixMethod('crm.contact.list', {
-            filter: {
-              "@ID": contactIds.slice(contactStart, contactStart + contactPageSize)
-            },
-            select: ["ID", "NAME", "LAST_NAME", "SECOND_NAME", "PHONE", "EMAIL"],
-            limit: contactPageSize,
-          });
-          
-          if (!Array.isArray(contacts) || contacts.length === 0) {
-            break;
-          }
-          
-          allContacts.push(...contacts);
-          
-          if (contacts.length < contactPageSize) {
-            break;
-          }
-          contactStart += contactPageSize;
-        }
-        
-        for (const c of allContacts) {
-          contactMap[String(c.ID)] = c;
-        }
-        console.log(`✅ ${Object.keys(contactMap).length} ta contact yuklandi`);
-      } catch (cErr) {
-        console.warn("Batch contacts fetch notice:", cErr);
+    // Bo'sh maydonlarni "Bo'sh" ga to'ldiramiz
+    orders = orders.map((ord) => ({
+      ...ord,
+      showroomName: ord.showroomName && ord.showroomName.trim() !== '' && ord.showroomName !== '-' ? ord.showroomName : "Bo'sh",
+      salesManagerName: ord.salesManagerName && ord.salesManagerName.trim() !== '' && ord.salesManagerName !== '-' ? ord.salesManagerName : "Bo'sh",
+      clientPhone: ord.clientPhone && ord.clientPhone.trim() !== '' && ord.clientPhone !== '-' ? ord.clientPhone : "Bo'sh",
+      clientFullName: ord.clientFullName && ord.clientFullName.trim() !== '' ? ord.clientFullName : "Bo'sh",
+      clientAddress: ord.clientAddress && ord.clientAddress.trim() !== '' && ord.clientAddress !== '-' ? ord.clientAddress : "Bo'sh",
+      salesManagerPhone: ord.salesManagerPhone && ord.salesManagerPhone.trim() !== '' && ord.salesManagerPhone !== '-' ? ord.salesManagerPhone : "Bo'sh",
+      products: ord.products.map(p => ({
+        ...p,
+        model: p.model && p.model.trim() !== '' && p.model !== '-' ? p.model : "Bo'sh",
+        color: p.color && p.color.trim() !== '' && p.color !== '-' ? p.color : "Bo'sh",
+        dimensions: p.dimensions && p.dimensions.trim() !== '' && p.dimensions !== '-' ? p.dimensions : "Bo'sh",
+      })),
+      warranty: {
+        ...ord.warranty,
+        okkManagerName: ord.warranty.okkManagerName && ord.warranty.okkManagerName.trim() !== '' && ord.warranty.okkManagerName !== '-' ? ord.warranty.okkManagerName : "Bo'sh",
       }
-    }
+    }));
 
-    const orders = eligibleDeals.map((deal: any) => {
-      const contact = deal.CONTACT_ID ? contactMap[String(deal.CONTACT_ID)] : undefined;
-      return convertBitrixDealToOrder(deal, contact);
-    });
-
-    const limitedOrders = orders.slice(0, limit);
-    console.log(`🎉 ${limitedOrders.length} ta order yaratildi (oxirgi ${limit} ta)`);
-    return limitedOrders;
-  } catch (err) {
-    console.error("fetchBitrixRecentDeals error:", err);
-    throw err;
+    return orders;
+  } catch (e) {
+    console.error('Failed to load orders from storage', e);
+    return [];
   }
 };
 
-export const parseRawBitrixJsonData = (rawInput: string | object): Order[] => {
-  let data: any = rawInput;
-  if (typeof rawInput === 'string') {
-    data = JSON.parse(rawInput);
+// 🔥 saveStoredOrders EKSPORT QILINGAN
+export const saveStoredOrders = (orders: Order[]) => {
+  try {
+    const MAX_ORDERS = 200;
+    const limitedOrders = orders.slice(0, MAX_ORDERS);
+    
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(limitedOrders));
+    window.dispatchEvent(new Event('orders_updated'));
+  } catch (e) {
+    console.error('Failed to save orders', e);
+    try {
+      const MAX_ORDERS_FALLBACK = 100;
+      const fallbackOrders = orders.slice(0, MAX_ORDERS_FALLBACK);
+      localStorage.setItem(ORDERS_KEY, JSON.stringify(fallbackOrders));
+      window.dispatchEvent(new Event('orders_updated'));
+    } catch (e2) {
+      console.error('Even fallback failed', e2);
+    }
+  }
+};
+
+// 🔥 normalizePhone EKSPORT QILINGAN
+export const normalizePhone = (phone: string): string => {
+  return (phone || '').replace(/\D/g, '');
+};
+
+// 🔥 getStoredTickets EKSPORT QILINGAN
+export const getStoredTickets = (): ServiceTicket[] => {
+  try {
+    const raw = localStorage.getItem(TICKETS_KEY);
+    if (!raw) {
+      localStorage.setItem(TICKETS_KEY, JSON.stringify(INITIAL_SERVICE_TICKETS));
+      return INITIAL_SERVICE_TICKETS;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Failed to load tickets', e);
+    return INITIAL_SERVICE_TICKETS;
+  }
+};
+
+export const saveStoredTickets = (tickets: ServiceTicket[]) => {
+  try {
+    localStorage.setItem(TICKETS_KEY, JSON.stringify(tickets));
+    window.dispatchEvent(new Event('tickets_updated'));
+  } catch (e) {
+    console.error('Failed to save tickets', e);
+  }
+};
+
+export const getClientOrders = (identifier: string): Order[] => {
+  const orders = getStoredOrders();
+  if (!identifier) return [];
+  const clean = identifier.trim().toUpperCase();
+  const digits = normalizePhone(identifier);
+
+  return orders.filter((o) => {
+    const oDigits = normalizePhone(o.clientPhone);
+    const matchesLogin = o.credentials.login.toUpperCase() === clean;
+    const matchesInvoice = o.invoiceNumber.toUpperCase() === clean;
+    const matchesPhone = digits.length >= 7 && (oDigits.endsWith(digits) || digits.endsWith(oDigits));
+    const matchesToken = o.credentials.directToken === identifier.trim();
+    const matchesName = o.clientFullName.toLowerCase() === identifier.trim().toLowerCase();
+    return matchesLogin || matchesInvoice || matchesPhone || matchesToken || matchesName;
+  });
+};
+
+export const generatePinCode = (): string => {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+};
+
+export const generateOrderToken = (invoiceNumber: string): string => {
+  const cleanInv = invoiceNumber.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  const rand = Math.random().toString(36).substring(2, 7);
+  return `tok_${cleanInv}_${rand}`;
+};
+
+export const updateOrderStatus = (
+  orderId: string, 
+  newStatus: OrderStatus, 
+  okkInspectorName: string = 'Alisher Rustamov'
+): Order | null => {
+  const orders = getStoredOrders();
+  const index = orders.findIndex(o => o.id === orderId);
+  if (index === -1) return null;
+
+  const currentOrder = orders[index];
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+  const timeStr = `${dateStr} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+  const updated: Order = {
+    ...currentOrder,
+    status: newStatus,
+  };
+
+  if (newStatus === 'kontrol_kachestva') {
+    updated.okkInspectionDate = dateStr;
   }
 
-  let dealsArray: any[] = [];
-  if (Array.isArray(data)) {
-    dealsArray = data;
-  } else if (data && Array.isArray(data.result)) {
-    dealsArray = data.result;
-  } else if (data && data.result && typeof data.result === 'object') {
-    dealsArray = Object.values(data.result);
-  } else if (data && typeof data === 'object' && data.ID) {
-    dealsArray = [data];
+  if (newStatus === 'okk_otdi') {
+    updated.readyDate = dateStr;
+    if (!updated.credentials.pinCode || updated.credentials.pinCode === "Bo'sh") {
+      updated.credentials.pinCode = generatePinCode();
+    }
+    if (!updated.credentials.directToken) {
+      updated.credentials.directToken = generateOrderToken(updated.invoiceNumber);
+    }
+    updated.warranty = {
+      ...updated.warranty,
+      readyDate: dateStr,
+      okkManagerName: okkInspectorName || "Bo'sh",
+      certificateNumber: `KT-${dateStr.replace(/-/g, '').slice(0, 6)}-${updated.invoiceNumber.replace(/[^0-9]/g, '') || '01'}`,
+    };
+
+    const directLink = `${window.location.origin}/?token=${updated.credentials.directToken}`;
+    updated.lastSmsText = `Hurmatli ${updated.clientFullName.split(' ')[0]}! Sizning ${updated.invoiceNumber} buyurtmangiz OKK sifat nazoratidan muvaffaqiyatli o'tdi va tayyor bo'ldi. Kafolat taloni va kabinet havolasi: ${directLink} Login: ${updated.credentials.login} Parol: ${updated.credentials.pinCode}`;
   }
 
-  const eligibleDeals = dealsArray.filter(isBitrixDealEligible);
+  orders[index] = updated;
+  saveStoredOrders(orders);
+  return updated;
+};
 
-  return eligibleDeals.map((deal: any) => convertBitrixDealToOrder(deal));
+export const markSmsSent = (orderId: string, customText?: string): Order | null => {
+  const orders = getStoredOrders();
+  const index = orders.findIndex(o => o.id === orderId);
+  if (index === -1) return null;
+
+  const now = new Date();
+  const timeStr = `${now.toISOString().split('T')[0]} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+  orders[index] = {
+    ...orders[index],
+    smsSent: true,
+    smsSentAt: timeStr,
+    lastSmsText: customText || orders[index].lastSmsText,
+  };
+
+  saveStoredOrders(orders);
+  return orders[index];
+};
+
+export const createServiceTicket = (
+  order: Order,
+  category: string,
+  problemDetails: string,
+  customInvoiceNumber?: string,
+  customPhone?: string,
+  photos?: string[]
+): ServiceTicket => {
+  const tickets = getStoredTickets();
+  const allOrders = getStoredOrders();
+  const now = new Date();
+  const timeStr = `${now.toISOString().split('T')[0]} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+  const finalInvoice = (customInvoiceNumber || order.invoiceNumber).trim();
+  const matchedOrder = allOrders.find(
+    (o) => o.invoiceNumber.toUpperCase() === finalInvoice.toUpperCase()
+  );
+
+  const newTicket: ServiceTicket = {
+    id: `srv-${Date.now().toString().slice(-4)}`,
+    orderId: matchedOrder ? matchedOrder.id : order.id,
+    invoiceNumber: finalInvoice,
+    clientFullName: matchedOrder ? matchedOrder.clientFullName : order.clientFullName,
+    clientPhone: customPhone || (matchedOrder ? matchedOrder.clientPhone : order.clientPhone),
+    category,
+    problemDetails,
+    photoUrls: photos || [],
+    createdAt: timeStr,
+    status: 'yangi',
+  };
+
+  tickets.unshift(newTicket);
+  saveStoredTickets(tickets);
+  return newTicket;
+};
+
+export const updateTicketStatus = (
+  ticketId: string,
+  status: 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi',
+  assignedSpecialist?: string
+): ServiceTicket | null => {
+  const tickets = getStoredTickets();
+  const index = tickets.findIndex(t => t.id === ticketId);
+  if (index === -1) return null;
+
+  const now = new Date();
+  const timeStr = `${now.toISOString().split('T')[0]} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+  tickets[index] = {
+    ...tickets[index],
+    status,
+    assignedSpecialist: assignedSpecialist || tickets[index].assignedSpecialist,
+    ...(status === 'hal_qilindi' && !tickets[index].resolvedAt ? { resolvedAt: timeStr, resolvedByManager: assignedSpecialist || 'Servis Menejeri' } : {})
+  };
+
+  saveStoredTickets(tickets);
+  return tickets[index];
+};
+
+export const resolveServiceTicket = (
+  ticketId: string,
+  resolvedByManager: string,
+  resolutionNotes: string,
+  assignedSpecialist?: string
+): ServiceTicket | null => {
+  const tickets = getStoredTickets();
+  const index = tickets.findIndex(t => t.id === ticketId);
+  if (index === -1) return null;
+
+  const now = new Date();
+  const timeStr = `${now.toISOString().split('T')[0]} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+  const updated: ServiceTicket = {
+    ...tickets[index],
+    status: 'hal_qilindi',
+    resolvedAt: timeStr,
+    resolvedByManager,
+    resolutionNotes,
+    assignedSpecialist: assignedSpecialist || tickets[index].assignedSpecialist || resolvedByManager,
+  };
+
+  tickets[index] = updated;
+  saveStoredTickets(tickets);
+  return updated;
+};
+
+export const rateServiceTicket = (
+  ticketId: string,
+  rating: number,
+  feedback?: string
+): ServiceTicket | null => {
+  const tickets = getStoredTickets();
+  const index = tickets.findIndex(t => t.id === ticketId);
+  if (index === -1) return null;
+
+  const now = new Date();
+  const timeStr = `${now.toISOString().split('T')[0]} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+  tickets[index] = {
+    ...tickets[index],
+    clientRating: rating,
+    clientFeedback: feedback || '',
+    ratedAt: timeStr,
+  };
+
+  saveStoredTickets(tickets);
+  return tickets[index];
+};
+
+export const createNewOrder = (orderData: Partial<Order>): Order => {
+  const orders = getStoredOrders();
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+  const invNum = orderData.invoiceNumber || `SCH-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+  
+  const existingClientOrder = orders.find(
+    (o) =>
+      (orderData.clientPhone && normalizePhone(o.clientPhone) === normalizePhone(orderData.clientPhone)) ||
+      (orderData.clientFullName && o.clientFullName.toLowerCase().trim() === orderData.clientFullName.toLowerCase().trim())
+  );
+
+  const login = existingClientOrder ? existingClientOrder.credentials.login : invNum.replace(/[^a-zA-Z0-9]/g, '');
+  const pin = existingClientOrder ? existingClientOrder.credentials.pinCode : generatePinCode();
+  const directToken = generateOrderToken(invNum);
+
+  const newOrder: Order = {
+    id: `ord-${Date.now()}`,
+    invoiceNumber: invNum,
+    clientFullName: orderData.clientFullName || 'Yangi Xaridor',
+    clientPhone: orderData.clientPhone || '+998 90 000 00 00',
+    clientAddress: orderData.clientAddress || 'Toshkent shahar',
+    showroomName: orderData.showroomName || 'Toshkent "Chilonzor-9" Flagship Showroom',
+    showroomId: orderData.showroomId || 'sh-1',
+    salesManagerName: orderData.salesManagerName || 'Bobur Karimov',
+    salesManagerPhone: '+998 90 123-45-67',
+    orderDate: dateStr,
+    factorySentDate: dateStr,
+    productionStartDate: dateStr,
+    status: orderData.status || 'ishlab_chiqarishda',
+    products: orderData.products || [
+      {
+        id: `p-${Date.now()}`,
+        name: 'MDF Emal Ichki Eshiklar',
+        category: 'Eshiklar',
+        model: 'Modern Classic-01',
+        color: 'Oq Emal',
+        areaSqM: 12.0,
+        dimensions: '2100x800x120 mm',
+        quantity: 4,
+        unitPrice: 2800000,
+        totalPrice: 11200000,
+      }
+    ],
+    totalAmount: orderData.totalAmount || 11200000,
+    paidAmount: orderData.paidAmount || 11200000,
+    credentials: {
+      login,
+      pinCode: pin,
+      directToken,
+    },
+    warranty: {
+      certificateNumber: `KT-${dateStr.replace(/-/g, '').slice(0, 6)}-${login.slice(-4)}`,
+      invoiceNumber: invNum,
+      orderDate: dateStr,
+      readyDate: dateStr,
+      warrantyPeriodMonths: 60,
+      okkManagerName: 'Alisher Rustamov',
+      okkManagerTitle: 'Bosh sifat nazorati muhandisi (OKK boshlig\'i)',
+      qualityScore: 99.8,
+      sealStampUrl: 'stamp_verified',
+      signatureUrl: 'sig_alisher',
+      qrCodeValue: `VERIFY:${invNum}:ALISHER_RUSTAMOV:OKK_PASS:60_MONTHS`,
+      terms: [
+        'Ishlab chiqarish nuqsonlari va furnituraga 60 oy (5 yil) to\'liq kafolat taqdim etiladi.',
+        'Muntazam bepul profilaktika va servis xizmati kafolatlanadi.',
+      ],
+    },
+    smsSent: false,
+    notes: orderData.notes || '',
+  };
+
+  orders.unshift(newOrder);
+  saveStoredOrders(orders);
+  return newOrder;
+};
+
+export const resetDemoData = () => {
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(INITIAL_ORDERS));
+  localStorage.setItem(TICKETS_KEY, JSON.stringify(INITIAL_SERVICE_TICKETS));
+  localStorage.removeItem(AUTH_KEY);
+  window.dispatchEvent(new Event('orders_updated'));
+  window.dispatchEvent(new Event('tickets_updated'));
 };
