@@ -5,7 +5,6 @@ const ORDERS_KEY = 'imzo_orders_v2';
 const TICKETS_KEY = 'imzo_tickets_v2';
 const AUTH_KEY = 'imzo_current_session';
 
-// 🔥 O'ZGARGAN QISM: getStoredOrders
 export const getStoredOrders = (): Order[] => {
   try {
     const raw = localStorage.getItem(ORDERS_KEY);
@@ -18,7 +17,7 @@ export const getStoredOrders = (): Order[] => {
     
     orders = JSON.parse(raw);
 
-    // 🔥 FILTR: FAQAT ruxsat etilgan statuslar
+    // 🔥 FAQAT ruxsat etilgan statuslar
     // Bu statuslar malumot1.txt dagi statuslarga mos keladi
     const allowedStatuses: OrderStatus[] = [
       'okk_otdi',           // Заказ готов, Размещено в ГП склад, В процессе установки
@@ -28,16 +27,16 @@ export const getStoredOrders = (): Order[] => {
     ];
     
     orders = orders.filter((ord) => {
-      // 🔥 STATUS tekshiruvi - FAQAT ruxsat etilgan statuslar
+      // 1. STATUS tekshiruvi - FAQAT ruxsat etilgan statuslar
       if (!allowedStatuses.includes(ord.status)) {
-        console.warn(`Order ${ord.id} o'chirildi: Status "${ord.status}" ruxsat etilmagan`);
+        console.warn(`Order ${ord.id} (${ord.invoiceNumber}) o'chirildi: Status "${ord.status}" ruxsat etilmagan`);
         return false;
       }
       
-      // PIN tekshiruvi
+      // 2. PIN tekshiruvi
       const pin = ord.credentials?.pinCode;
       if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0 || pin === "Bo'sh") {
-        console.warn(`Order ${ord.id} o'chirildi: PIN yo'q (${pin})`);
+        console.warn(`Order ${ord.id} (${ord.invoiceNumber}) o'chirildi: PIN yo'q (${pin})`);
         return false;
       }
       
@@ -73,7 +72,6 @@ export const getStoredOrders = (): Order[] => {
   }
 };
 
-// Qolgan funksiyalar o'zgarmagan
 export const saveStoredOrders = (orders: Order[]) => {
   try {
     localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
