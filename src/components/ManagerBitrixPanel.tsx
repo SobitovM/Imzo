@@ -88,7 +88,8 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
 
     try {
       setIsSyncingBitrix(true);
-      const bitrixDeals = await fetchBitrixRecentDeals(200);
+      // 🔥 FAQAT 10 TA DEAL OLAMIZ
+      const bitrixDeals = await fetchBitrixRecentDeals(10);
       
       const currentStored = getStoredOrders();
       const manualOrders = currentStored.filter(o => !o.id.startsWith('bx_') && (!o.notes || !o.notes.includes('Bitrix24 Deal ID')));
@@ -116,7 +117,7 @@ export const ManagerBitrixPanel: React.FC<ManagerBitrixPanelProps> = ({
       handleSyncWithBitrix(true);
     }
 
-    // 🔥 Avtomatik yangilash O'CHIRILDI (faqat qo'lda)
+    // 🔥 AVTOMATIK YANGILASH O'CHIRILDI
 
     const handleOrders = () => setOrders(getStoredOrders());
     const handleTickets = () => setTickets(getStoredTickets());
