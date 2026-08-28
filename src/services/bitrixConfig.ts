@@ -62,84 +62,141 @@ export const COLORS_DICT: Record<number | string, string> = {
 
 // 3. Bitrix24 Voronkalar & Bosqichlar (STAGE_ID nomlari)
 export const STAGE_NAMES: Record<string, string> = {
-  // C27 varonka uchun Far (Farg'ona)
-  "C27:NEW":               "🆕 Новая - Колл центр",
-  "C27:PREPARATION":       "🧾 Первичные переговоры",
-  "C27:PREPAYMENT_INVOIC": "🧾 Подготовка к обмену",
-  "C27:EXECUTING":         "🧾 ФИНАНСИСТ",
-  "C27:FINAL_INVOICE":     "🧾 ЦОД",
-  "C27:UC_FY5BYD":         "🔧 Ishlab chiqarishga tayyorlanmoqda",
-  "C27:UC_EVAKIV":         "🛠 Ishlab chiqarishda",
-  "C27:UC_B2NTSZ":         "📦 Buyurtma tayyor",
-  "C27:UC_E9E5IW":         "🚚 Yetkazilmoqda",
-  "C27:UC_6G3PNP":         "🔩 O‘rnatish jarayonida",
-  "C27:UC_1UTXNE":         "🧐 Sifat nazorati tekshiruvida",
-  "C27:WON":               "✅ Muvaffaqiyatli yakunlandi",
+  // C2: Sergeli / Toshkent
+  "C2:UC_MNKRA5":          "🛠 В производстве",
+  "C2:1":                  "📦 Размещено в ГП склад",
+  "C2:2":                  "🚚 На расход / Доставка",
+  "C2:UC_6R66T3":          "🚚 Доставлено",
+  "C2:5":                  "🔩 В процессе установки",
+  "C2:6":                  "🧐 Контроль качества",
+  "C2:UC_ELI1KU":          "⚠️ Заказ не прошел ОКК",
+  "C2:WON":                "✅ Успешно",
 
-  // C24 varonka uchun Sur (Surxondaryo)
-  "C24:UC_2F6AME":         "🔧 Ishlab chiqarishga tayyorlanmoqda",
-  "C24:UC_FDPYQG":         "🛠 Ishlab chiqarishda",
-  "C24:UC_Q8F0S3":         "📦 Buyurtma tayyor",
-  "C24:UC_JZPAV2":         "🚚 Yetkazilmoqda",
-  "C24:UC_0YXSW9":         "🔩 O‘rnatish jarayonida",
-  "C24:UC_H9797W":         "🧐 Sifat nazorati tekshiruvida",
-  "C24:WON":               "✅ Muvaffaqiyatli yakunlandi",
+  // C8: Andijon
+  "C8:UC_Q4UARA":          "📦 Заказ готов",
+  "C8:UC_KI81ZC":          "🚚 На расход",
+  "C8:UC_KCNRMF":          "🔩 В процессе установки",
+  "C8:UC_EE5QBV":          "🧐 Контроль качества",
+  "C8:WON":                "✅ Сделка успешна",
 
-  // C2 varonka uchun Ser (Sergeli / Toshkent)
-  "C2:UC_79W77Q":          "🔧 Ishlab chiqarishga tayyorlanmoqda",
-  "C2:UC_MNKRA5":          "🛠 Ishlab chiqarishda",
-  "C2:1":                  "📦 Buyurtma tayyor",
-  "C2:2":                  "🚚 Yetkazilmoqda",
-  "C2:UC_6R66T3":          "🚚 Yetkazilmoqda",
-  "C2:5":                  "🔩 O‘rnatish jarayonida",
-  "C2:6":                  "🧐 Sifat nazorati tekshiruvida",
-  "C2:WON":                "✅ Muvaffaqiyatli yakunlandi",
+  // C12: Samarqand
+  "C12:UC_ZRA1WC":         "📦 Заказ готов",
+  "C12:UC_I2P8V1":         "🚚 На расход",
+  "C12:UC_U36QBE":         "🔩 В процессе установки",
+  "C12:UC_QOH2K1":         "🧐 Контроль качества",
+  "C12:WON":               "✅ Сделка успешна",
 
-  // C8 varonka uchun And (Andijon)
-  "C8:UC_4PW13O":          "🔧 Ishlab chiqarishga tayyorlanmoqda",
-  "C8:UC_BAEGUV":          "🛠 Ishlab chiqarishda",
-  "C8:UC_Q4UARA":          "📦 Buyurtma tayyor",
-  "C8:UC_KI81ZC":          "🚚 Yetkazilmoqda",
-  "C8:UC_KCNRMF":          "🔩 O‘rnatish jarayonida",
-  "C8:UC_EE5QBV":          "🧐 Sifat nazorati tekshiruvida",
-  "C8:WON":                "✅ Muvaffaqiyatli yakunlandi",
+  // C13: Namangan
+  "C13:6":                 "📦 Заказ готов",
+  "C13:7":                 "🚚 На расход",
+  "C13:10":                "🔩 В процессе установки",
+  "C13:11":                "🧐 Контроль качества",
+  "C13:WON":               "✅ Сделка успешна",
 
-  // C12 varonka uchun Sam (Samarqand)
-  "C12:UC_2LPK18":         "🔧 Ishlab chiqarishga tayyorlanmoqda",
-  "C12:UC_O89JRS":         "🛠 Ishlab chiqarishda",
-  "C12:UC_ZRA1WC":         "📦 Buyurtma tayyor",
-  "C12:UC_I2P8V1":         "🚚 Yetkazilmoqda",
-  "C12:UC_U36QBE":         "🔩 O‘rnatish jarayonida",
-  "C12:UC_QOH2K1":         "🧐 Sifat nazorati tekshiruvida",
-  "C12:WON":               "✅ Muvaffaqiyatli yakunlandi",
+  // C16: Nukus
+  "C16:UC_G7GQBV":         "📦 Заказ готов",
+  "C16:UC_NA1A9O":         "🚚 На расход",
+  "C16:UC_H9CTB9":         "🔩 В процессе установки",
+  "C16:2":                 "🧐 Контроль качества",
+  "C16:WON":               "✅ Сделка успешна",
 
-  // C13 varonka uchun Nam (Namangan)
-  "C13:UC_NNKT3Z":         "🔧 Ishlab chiqarishga tayyorlanmoqda",
-  "C13:4":                 "🛠 Ishlab chiqarishda",
-  "C13:6":                 "📦 Buyurtma tayyor",
-  "C13:7":                 "🚚 Yetkazilmoqda",
-  "C13:10":                "🔩 O‘rnatish jarayonida",
-  "C13:11":                "🧐 Sifat nazorati tekshiruvida",
-  "C13:WON":               "✅ Muvaffaqiyatli yakunlandi",
+  // C22: Buxoro
+  "C22:UC_IC6QYV":         "📦 Заказ готов",
+  "C22:UC_H6AOUS":         "🚚 На расход",
+  "C22:UC_2JO4UN":         "🔩 В процессе установки",
+  "C22:UC_I6QM65":         "🧐 Контроль качества",
+  "C22:WON":               "✅ Сделка успешна",
 
-  // C16 varonka uchun Nuk (Nukus)
-  "C16:UC_GMYK9L":         "🔧 Ishlab chiqarishga tayyorlanmoqda",
-  "C16:UC_8QXI94":         "🛠 Ishlab chiqarishda",
-  "C16:UC_G7GQBV":         "📦 Buyurtma tayyor",
-  "C16:UC_NA1A9O":         "🚚 Yetkazilmoqda",
-  "C16:UC_H9CTB9":         "🔩 O‘rnatish jarayonida",
-  "C16:2":                 "🧐 Sifat nazorati tekshiruvida",
-  "C16:WON":               "✅ Muvaffaqiyatli yakunlandi",
+  // C24: Surxondaryo
+  "C24:UC_Q8F0S3":         "📦 Заказ готов",
+  "C24:UC_JZPAV2":         "🚚 На расход",
+  "C24:UC_0YXSW9":         "🔩 В процессе установки",
+  "C24:UC_H9797W":         "🧐 Контроль качества",
+  "C24:WON":               "✅ Сделка успешна",
 
-  // C22 varonka uchun Bux (Buxoro)
-  "C22:UC_D0TXXE":         "🔧 Ishlab chiqarishga tayyorlanmoqda",
-  "C22:UC_O5ZBMD":         "🛠 Ishlab chiqarishda",
-  "C22:UC_IC6QYV":         "📦 Buyurtma tayyor",
-  "C22:UC_H6AOUS":         "🚚 Yetkazilmoqda",
-  "C22:UC_2JO4UN":         "🔩 O‘rnatish jarayonida",
-  "C22:UC_I6QM65":         "🧐 Sifat nazorati tekshiruvida",
-  "C22:WON":               "✅ Muvaffaqiyatli yakunlandi",
+  // C27: Farg'ona
+  "C27:UC_B2NTSZ":         "📦 Заказ готов",
+  "C27:UC_E9E5IW":         "🚚 На расход",
+  "C27:UC_6G3PNP":         "🔩 В процессе установки",
+  "C27:UC_1UTXNE":         "🧐 Контроль качества",
+  "C27:WON":               "✅ Сделка успешна",
+
+  // C35:
+  "C35:UC_8G1TNE":         "📦 Заказ готов",
+  "C35:UC_XXO9DM":         "🚚 На расход",
+  "C35:UC_6LACIU":         "🔩 В процессе установки",
+  "C35:FINAL_INVOICE":     "🧐 Контроль качества",
+  "C35:WON":               "✅ Сделка успешна",
 };
+
+// Ruxsat etilgan Bitrix24 bosqichlari (Zakaz tayyor va undan keyingi bosqichlar)
+export const ALLOWED_BITRIX_STAGES: Set<string> = new Set([
+  // C2:
+  "C2:UC_MNKRA5",
+  "C2:1",
+  "C2:2",
+  "C2:UC_6R66T3",
+  "C2:5",
+  "C2:6",
+  "C2:UC_ELI1KU",
+  "C2:WON",
+
+  // C8:
+  "C8:UC_Q4UARA",
+  "C8:UC_KI81ZC",
+  "C8:UC_KCNRMF",
+  "C8:UC_EE5QBV",
+  "C8:WON",
+
+  // C12:
+  "C12:UC_ZRA1WC",
+  "C12:UC_I2P8V1",
+  "C12:UC_U36QBE",
+  "C12:UC_QOH2K1",
+  "C12:WON",
+
+  // C13:
+  "C13:6",
+  "C13:7",
+  "C13:10",
+  "C13:11",
+  "C13:WON",
+
+  // C16:
+  "C16:UC_G7GQBV",
+  "C16:UC_NA1A9O",
+  "C16:UC_H9CTB9",
+  "C16:2",
+  "C16:WON",
+
+  // C22:
+  "C22:UC_IC6QYV",
+  "C22:UC_H6AOUS",
+  "C22:UC_2JO4UN",
+  "C22:UC_I6QM65",
+  "C22:WON",
+
+  // C24:
+  "C24:UC_Q8F0S3",
+  "C24:UC_JZPAV2",
+  "C24:UC_0YXSW9",
+  "C24:UC_H9797W",
+  "C24:WON",
+
+  // C27:
+  "C27:UC_B2NTSZ",
+  "C27:UC_E9E5IW",
+  "C27:UC_6G3PNP",
+  "C27:UC_1UTXNE",
+  "C27:WON",
+
+  // C35:
+  "C35:UC_8G1TNE",
+  "C35:UC_XXO9DM",
+  "C35:UC_6LACIU",
+  "C35:FINAL_INVOICE",
+  "C35:WON",
+]);
 
 // 4. Showroomlar Katalogi (Bitrix24 Showrooms Dictionary)
 export const SHOWROOMS_DICT: Record<number | string, string> = {
@@ -290,6 +347,7 @@ export const BITRIX_FIELDS = {
 
   // Showroom fields by regions
   SHOWROOMS: {
+    DEFAULT: "UF_CRM_1647931321",          // Шоурум (Toshkent / Sergeli)
     SERGELI: "UF_CRM_1647931321",          // Шоурум :
     ANDIJAN: "UF_CRM_1649332403191",       // Шоу-рум :(андижан)
     SAMARKAND: "UF_CRM_1653148491",        // Шоу-рум : (самарканд)
