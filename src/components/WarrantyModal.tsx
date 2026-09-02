@@ -415,11 +415,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   </div>
                 </div>
 
-                {/* 🔥 Right: Sertifikat raqami - SPECIAL_CODE dan */}
+                {/* 🔥 Right: Faqat sertifikat raqami - "Sertifikat raqami" yozuvi olib tashlandi */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
                   <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg shadow-sm text-center w-full max-w-[180px]">
                     <p className="text-xs font-mono text-amber-800 font-bold break-all">{certNumber}</p>
-                    <p className="text-[10px] text-amber-600 mt-1">Sertifikat raqami</p>
+                    {/* 🔥 "Sertifikat raqami" yozuvi olib tashlandi */}
                   </div>
                 </div>
               </div>
