@@ -21,7 +21,8 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ImzoLogo } from './ImzoLogo';
 import { getShowroomPhone } from '../services/bitrixService';
-import QRCode from 'qrcode.react';
+// 🔥 TO'G'RILANGAN IMPORT - default emas, named export
+import { QRCode } from 'qrcode.react';
 
 interface WarrantyModalProps {
   order: Order;
@@ -371,7 +372,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Barcha standartlarga to'liq mos keladi
                   </p>
-                  <div className="mt-2 sm:mt-3">
+                  <div className="mt-2">
                     <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
                     <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
                   </div>
@@ -389,8 +390,8 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </span>
                   </div>
 
-                  {/* 🔥 PECHAT RASMI - /images.png */}
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-0 flex items-center justify-center text-center shadow-inner bg-white/90">
+                  {/* 🔥 PECHAT RASMI - /images.png (kattaroq va chiziqlarsiz) */}
+                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-0 flex items-center justify-center shadow-inner bg-white/90">
                     <img 
                       src="/images.png" 
                       alt="Imzo Sifat Nazorati" 
@@ -402,6 +403,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 {/* Right: QR Code Online Verification */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
                   <div className="p-1.5 bg-white border border-slate-300 rounded-lg shadow-sm">
+                    {/* 🔥 ISHLAYdIGAN QR KOD - named export */}
                     <QRCode 
                       value={`https://imzo-kabinet.vercel.app/verify/${certNumber}`}
                       size={80}
