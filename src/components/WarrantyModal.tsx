@@ -44,10 +44,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     ? order.warranty.okkManagerName 
     : (order.okkInspectorName || "Bo'sh");
   
-  // 🔥 SERTIFIKAT RAQAMI - SPECIAL_CODE dan olinadi (UF_CRM_1745308434)
-  const specialCode = order.credentials?.pinCode || order.id.slice(-5);
-  const certNumber = `Imzo-${new Date().getFullYear()}-${specialCode}`;
-  
   const showroomPhone = getShowroomPhone(order.showroomName);
 
   const handleDownloadPdf = async () => {
@@ -252,7 +248,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   KAFOLAT TALONI
                 </h1>
                 <p className="text-[11px] sm:text-xs font-serif italic text-amber-950/70 mt-0.5">
-                  Sertifikat raqami: <strong className="text-amber-900 font-mono font-bold">{certNumber}</strong>
+                  Sertifikat raqami: <strong className="text-amber-900 font-mono font-bold">Imzo-{new Date().getFullYear()}</strong>
                 </p>
               </div>
 
@@ -358,23 +354,20 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Bottom */}
-              <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
-                {/* Left */}
+              {/* 🔥 Bottom - Pastdagi sertifikat raqami va "Sertifikat raqami" yozuvi olib tashlandi */}
+              <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
+                {/* Left: Sifat nazorati xulosasi */}
                 <div className="text-center sm:text-left">
                   <p className="text-[11px] text-slate-500 font-medium">Sifat nazorati xulosasi:</p>
                   <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Barcha standartlarga to'liq mos keladi
                   </p>
-                  <div className="mt-2">
-                    <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
-                    <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
-                  </div>
                 </div>
 
-                {/* Middle: Pechatlar */}
-                <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
+                {/* 🔥 Right: Pechatlar va imzolar */}
+                <div className="flex flex-row items-center justify-end gap-6 sm:gap-10 py-1">
+                  {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
                     <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
                       <img 
@@ -394,6 +387,8 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                       Mahsulot kafolati
                     </p>
                   </div>
+
+                  {/* 2 - Sifat Nazorati */}
                   <div className="flex flex-col items-center">
                     <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
                       <img 
@@ -412,14 +407,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
                       Sifat nazorati
                     </p>
-                  </div>
-                </div>
-
-                {/* 🔥 Right: Faqat sertifikat raqami - "Sertifikat raqami" yozuvi olib tashlandi */}
-                <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
-                  <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg shadow-sm text-center w-full max-w-[180px]">
-                    <p className="text-xs font-mono text-amber-800 font-bold break-all">{certNumber}</p>
-                    {/* 🔥 "Sertifikat raqami" yozuvi olib tashlandi */}
                   </div>
                 </div>
               </div>
