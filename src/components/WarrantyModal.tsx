@@ -39,9 +39,12 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   const warrantyMonths = (order.warranty?.warrantyPeriodMonths && order.warranty.warrantyPeriodMonths >= 60) 
     ? order.warranty.warrantyPeriodMonths 
     : 60;
+  
+  // 🔥 Sifat nazorati Mutaxassisi - UF_CRM_1690286173 dan olinadi
   const inspectorName = (order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-' && order.warranty.okkManagerName !== "Bo'sh") 
     ? order.warranty.okkManagerName 
     : (order.okkInspectorName || "Bo'sh");
+  
   const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '0000'}`;
   const showroomPhone = getShowroomPhone(order.showroomName);
 
@@ -353,24 +356,19 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 BOTTOM - FAQAT "Sifat nazorati Mutaxassisi" QOLDI */}
+              {/* 🔥 BOTTOM - FAQAT "Sifat nazorati Mutaxassisi" qoldi */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
-                {/* Left: Inspector Info */}
+                {/* Left: Sifat nazorati xulosasi */}
                 <div className="text-center sm:text-left">
                   <p className="text-[11px] text-slate-500 font-medium">Sifat nazorati xulosasi:</p>
                   <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Barcha standartlarga to'liq mos keladi
                   </p>
-                  <div className="mt-2 sm:mt-3">
-                    <p className="text-[10px] text-slate-500">Sifat Nazorati Mas'ul Muhandisi:</p>
-                    <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
-                    <p className="text-[10px] text-slate-500">{order.warranty?.okkManagerTitle || 'Bosh sifat nazoratchisi'}</p>
-                  </div>
-                  {/* 🔥 FAQAT "Sifat nazorati Mutaxassisi" QOLDI */}
+                  {/* 🔥 FAQAT "Sifat nazorati Mutaxassisi" qoldi */}
                   <div className="mt-2">
                     <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
-                    <p className="font-bold text-slate-900 text-xs">OKK-{certNumber.slice(-6)}</p>
+                    <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
                   </div>
                 </div>
 
