@@ -60,141 +60,141 @@ export const COLORS_DICT: Record<number | string, string> = {
   1470: "Черно матовый"
 };
 
-// 3. Bitrix24 Voronkalar & Bosqichlar (STAGE_ID nomlari)
+// 3. Bitrix24 Voronkalar & Bosqichlar (STAGE_ID nomlari) - KO'RSATILADIGAN NOMLAR
 export const STAGE_NAMES: Record<string, string> = {
-  // C2: Sergeli / Toshkent
-  "C2:UC_MNKRA5":          "🛠 В производстве",
-  "C2:1":                  "📦 Размещено в ГП склад",
-  "C2:2":                  "🚚 На расход / Доставка",
-  "C2:UC_6R66T3":          "🚚 Доставлено",
-  "C2:5":                  "🔩 В процессе установки",
-  "C2:6":                  "🧐 Контроль качества",
-  "C2:UC_ELI1KU":          "⚠️ Заказ не прошел ОКК",
-  "C2:WON":                "✅ Успешно",
+  // C2 - Sergeli / Toshkent
+  "C2:UC_MNKRA5":          "🛠 Ishlab chiqarishda",
+  "C2:1":                  "📦 Buyurtma tayyor",
+  "C2:2":                  "🚚 Yetkazilmoqda",
+  "C2:UC_6R66T3":          "✅ Yetkazildi",
+  "C2:5":                  "🔩 O'rnatish jarayonida",
+  "C2:6":                  "🧐 Sifat nazorati tekshiruvida",
+  "C2:UC_ELI1KU":          "⚠️ Sifat nazoratidan o'tmadi",
+  "C2:WON":                "✅ Muvaffaqiyatli yakunlandi",
 
-  // C8: Andijon
-  "C8:UC_Q4UARA":          "📦 Заказ готов",
-  "C8:UC_KI81ZC":          "🚚 На расход",
-  "C8:UC_KCNRMF":          "🔩 В процессе установки",
-  "C8:UC_EE5QBV":          "🧐 Контроль качества",
-  "C8:WON":                "✅ Сделка успешна",
+  // C8 - Andijon
+  "C8:UC_Q4UARA":          "📦 Buyurtma tayyor",
+  "C8:UC_KI81ZC":          "🚚 Yetkazilmoqda",
+  "C8:UC_KCNRMF":          "🔩 O'rnatish jarayonida",
+  "C8:UC_EE5QBV":          "🧐 Sifat nazorati tekshiruvida",
+  "C8:WON":                "✅ Muvaffaqiyatli yakunlandi",
 
-  // C12: Samarqand
-  "C12:UC_ZRA1WC":         "📦 Заказ готов",
-  "C12:UC_I2P8V1":         "🚚 На расход",
-  "C12:UC_U36QBE":         "🔩 В процессе установки",
-  "C12:UC_QOH2K1":         "🧐 Контроль качества",
-  "C12:WON":               "✅ Сделка успешна",
+  // C12 - Samarqand
+  "C12:UC_ZRA1WC":         "📦 Buyurtma tayyor",
+  "C12:UC_I2P8V1":         "🚚 Yetkazilmoqda",
+  "C12:UC_U36QBE":         "🔩 O'rnatish jarayonida",
+  "C12:UC_QOH2K1":         "🧐 Sifat nazorati tekshiruvida",
+  "C12:WON":               "✅ Muvaffaqiyatli yakunlandi",
 
-  // C13: Namangan
-  "C13:6":                 "📦 Заказ готов",
-  "C13:7":                 "🚚 На расход",
-  "C13:10":                "🔩 В процессе установки",
-  "C13:11":                "🧐 Контроль качества",
-  "C13:WON":               "✅ Сделка успешна",
+  // C13 - Namangan
+  "C13:6":                 "📦 Buyurtma tayyor",
+  "C13:7":                 "🚚 Yetkazilmoqda",
+  "C13:10":                "🔩 O'rnatish jarayonida",
+  "C13:11":                "🧐 Sifat nazorati tekshiruvida",
+  "C13:WON":               "✅ Muvaffaqiyatli yakunlandi",
 
-  // C16: Nukus
-  "C16:UC_G7GQBV":         "📦 Заказ готов",
-  "C16:UC_NA1A9O":         "🚚 На расход",
-  "C16:UC_H9CTB9":         "🔩 В процессе установки",
-  "C16:2":                 "🧐 Контроль качества",
-  "C16:WON":               "✅ Сделка успешна",
+  // C16 - Nukus
+  "C16:UC_G7GQBV":         "📦 Buyurtma tayyor",
+  "C16:UC_NA1A9O":         "🚚 Yetkazilmoqda",
+  "C16:UC_H9CTB9":         "🔩 O'rnatish jarayonida",
+  "C16:2":                 "🧐 Sifat nazorati tekshiruvida",
+  "C16:WON":               "✅ Muvaffaqiyatli yakunlandi",
 
-  // C22: Buxoro
-  "C22:UC_IC6QYV":         "📦 Заказ готов",
-  "C22:UC_H6AOUS":         "🚚 На расход",
-  "C22:UC_2JO4UN":         "🔩 В процессе установки",
-  "C22:UC_I6QM65":         "🧐 Контроль качества",
-  "C22:WON":               "✅ Сделка успешна",
+  // C22 - Buxoro
+  "C22:UC_IC6QYV":         "📦 Buyurtma tayyor",
+  "C22:UC_H6AOUS":         "🚚 Yetkazilmoqda",
+  "C22:UC_2JO4UN":         "🔩 O'rnatish jarayonida",
+  "C22:UC_I6QM65":         "🧐 Sifat nazorati tekshiruvida",
+  "C22:WON":               "✅ Muvaffaqiyatli yakunlandi",
 
-  // C24: Surxondaryo
-  "C24:UC_Q8F0S3":         "📦 Заказ готов",
-  "C24:UC_JZPAV2":         "🚚 На расход",
-  "C24:UC_0YXSW9":         "🔩 В процессе установки",
-  "C24:UC_H9797W":         "🧐 Контроль качества",
-  "C24:WON":               "✅ Сделка успешна",
+  // C24 - Surxondaryo
+  "C24:UC_Q8F0S3":         "📦 Buyurtma tayyor",
+  "C24:UC_JZPAV2":         "🚚 Yetkazilmoqda",
+  "C24:UC_0YXSW9":         "🔩 O'rnatish jarayonida",
+  "C24:UC_H9797W":         "🧐 Sifat nazorati tekshiruvida",
+  "C24:WON":               "✅ Muvaffaqiyatli yakunlandi",
 
-  // C27: Farg'ona
-  "C27:UC_B2NTSZ":         "📦 Заказ готов",
-  "C27:UC_E9E5IW":         "🚚 На расход",
-  "C27:UC_6G3PNP":         "🔩 В процессе установки",
-  "C27:UC_1UTXNE":         "🧐 Контроль качества",
-  "C27:WON":               "✅ Сделка успешна",
+  // C27 - Farg'ona
+  "C27:UC_B2NTSZ":         "📦 Buyurtma tayyor",
+  "C27:UC_E9E5IW":         "🚚 Yetkazilmoqda",
+  "C27:UC_6G3PNP":         "🔩 O'rnatish jarayonida",
+  "C27:UC_1UTXNE":         "🧐 Sifat nazorati tekshiruvida",
+  "C27:WON":               "✅ Muvaffaqiyatli yakunlandi",
 
-  // C35:
-  "C35:UC_8G1TNE":         "📦 Заказ готов",
-  "C35:UC_XXO9DM":         "🚚 На расход",
-  "C35:UC_6LACIU":         "🔩 В процессе установки",
-  "C35:FINAL_INVOICE":     "🧐 Контроль качества",
-  "C35:WON":               "✅ Сделка успешна",
+  // C35 - Nukus
+  "C35:UC_8G1TNE":         "📦 Buyurtma tayyor",
+  "C35:UC_XXO9DM":         "🚚 Yetkazilmoqda",
+  "C35:UC_6LACIU":         "🔩 O'rnatish jarayonida",
+  "C35:FINAL_INVOICE":     "🧐 Sifat nazorati tekshiruvida",
+  "C35:WON":               "✅ Muvaffaqiyatli yakunlandi",
 };
 
-// 🔥 ALLOWED_BITRIX_STAGES - faqat malumot1.txt dagi statuslar
+// 🔥 ALLOWED_BITRIX_STAGES - FAQAT malumot1.txt dagi statuslar
 export const ALLOWED_BITRIX_STAGES: Set<string> = new Set([
   // C2
-  "C2:1",                  // Размещено в ГП склад
-  "C2:2",                  // На расход / Доставка
-  "C2:UC_6R66T3",          // Доставлено
-  "C2:5",                  // В процессе установки
-  "C2:6",                  // Контроль качества
-  "C2:UC_ELI1KU",          // Заказ не прошел ОКК
-  "C2:WON",                // Успешно
+  "C2:1",                  // Buyurtma tayyor
+  "C2:2",                  // Yetkazilmoqda
+  "C2:UC_6R66T3",          // Yetkazildi
+  "C2:5",                  // O'rnatish jarayonida
+  "C2:6",                  // Sifat nazorati tekshiruvida
+  "C2:UC_ELI1KU",          // Sifat nazoratidan o'tmadi
+  "C2:WON",                // Muvaffaqiyatli yakunlandi
 
   // C8
-  "C8:UC_Q4UARA",          // Заказ готов
-  "C8:UC_KI81ZC",          // На расход
-  "C8:UC_KCNRMF",          // В процессе установки
-  "C8:UC_EE5QBV",          // Контроль качества
-  "C8:WON",                // Сделка успешна
+  "C8:UC_Q4UARA",          // Buyurtma tayyor
+  "C8:UC_KI81ZC",          // Yetkazilmoqda
+  "C8:UC_KCNRMF",          // O'rnatish jarayonida
+  "C8:UC_EE5QBV",          // Sifat nazorati tekshiruvida
+  "C8:WON",                // Muvaffaqiyatli yakunlandi
 
   // C12
-  "C12:UC_ZRA1WC",         // Заказ готов
-  "C12:UC_I2P8V1",         // На расход
-  "C12:UC_U36QBE",         // В процессе установки
-  "C12:UC_QOH2K1",         // Контроль качества
-  "C12:WON",               // Сделка успешна
+  "C12:UC_ZRA1WC",         // Buyurtma tayyor
+  "C12:UC_I2P8V1",         // Yetkazilmoqda
+  "C12:UC_U36QBE",         // O'rnatish jarayonida
+  "C12:UC_QOH2K1",         // Sifat nazorati tekshiruvida
+  "C12:WON",               // Muvaffaqiyatli yakunlandi
 
   // C13
-  "C13:6",                 // Заказ готов
-  "C13:7",                 // На расход
-  "C13:10",                // В процессе установки
-  "C13:11",                // Контроль качества
-  "C13:WON",               // Сделка успешна
+  "C13:6",                 // Buyurtma tayyor
+  "C13:7",                 // Yetkazilmoqda
+  "C13:10",                // O'rnatish jarayonida
+  "C13:11",                // Sifat nazorati tekshiruvida
+  "C13:WON",               // Muvaffaqiyatli yakunlandi
 
   // C16
-  "C16:UC_G7GQBV",         // Заказ готов
-  "C16:UC_NA1A9O",         // На расход
-  "C16:UC_H9CTB9",         // В процессе установки
-  "C16:2",                 // Контроль качества
-  "C16:WON",               // Сделка успешна
+  "C16:UC_G7GQBV",         // Buyurtma tayyor
+  "C16:UC_NA1A9O",         // Yetkazilmoqda
+  "C16:UC_H9CTB9",         // O'rnatish jarayonida
+  "C16:2",                 // Sifat nazorati tekshiruvida
+  "C16:WON",               // Muvaffaqiyatli yakunlandi
 
   // C22
-  "C22:UC_IC6QYV",         // Заказ готов
-  "C22:UC_H6AOUS",         // На расход
-  "C22:UC_2JO4UN",         // В процессе установки
-  "C22:UC_I6QM65",         // Контроль качества
-  "C22:WON",               // Сделка успешна
+  "C22:UC_IC6QYV",         // Buyurtma tayyor
+  "C22:UC_H6AOUS",         // Yetkazilmoqda
+  "C22:UC_2JO4UN",         // O'rnatish jarayonida
+  "C22:UC_I6QM65",         // Sifat nazorati tekshiruvida
+  "C22:WON",               // Muvaffaqiyatli yakunlandi
 
   // C24
-  "C24:UC_Q8F0S3",         // Заказ готов
-  "C24:UC_JZPAV2",         // На расход
-  "C24:UC_0YXSW9",         // В процессе установки
-  "C24:UC_H9797W",         // Контроль качества
-  "C24:WON",               // Сделка успешна
+  "C24:UC_Q8F0S3",         // Buyurtma tayyor
+  "C24:UC_JZPAV2",         // Yetkazilmoqda
+  "C24:UC_0YXSW9",         // O'rnatish jarayonida
+  "C24:UC_H9797W",         // Sifat nazorati tekshiruvida
+  "C24:WON",               // Muvaffaqiyatli yakunlandi
 
   // C27
-  "C27:UC_B2NTSZ",         // Заказ готов
-  "C27:UC_E9E5IW",         // На расход
-  "C27:UC_6G3PNP",         // В процессе установки
-  "C27:UC_1UTXNE",         // Контроль качества
-  "C27:WON",               // Сделка успешна
+  "C27:UC_B2NTSZ",         // Buyurtma tayyor
+  "C27:UC_E9E5IW",         // Yetkazilmoqda
+  "C27:UC_6G3PNP",         // O'rnatish jarayonida
+  "C27:UC_1UTXNE",         // Sifat nazorati tekshiruvida
+  "C27:WON",               // Muvaffaqiyatli yakunlandi
 
   // C35
-  "C35:UC_8G1TNE",         // Заказ готов
-  "C35:UC_XXO9DM",         // На расход
-  "C35:UC_6LACIU",         // В процессе установки
-  "C35:FINAL_INVOICE",     // Контроль качества
-  "C35:WON",               // Сделка успешна
+  "C35:UC_8G1TNE",         // Buyurtma tayyor
+  "C35:UC_XXO9DM",         // Yetkazilmoqda
+  "C35:UC_6LACIU",         // O'rnatish jarayonida
+  "C35:FINAL_INVOICE",     // Sifat nazorati tekshiruvida
+  "C35:WON",               // Muvaffaqiyatli yakunlandi
 ]);
 
 // 4. Showroomlar Katalogi (Bitrix24 Showrooms Dictionary)
@@ -332,32 +332,34 @@ export const SHOWROOMS_DICT: Record<number | string, string> = {
 
 // 5. Bitrix24 Maxsus Maydonlar Kodlari (Fields Mapping)
 export const BITRIX_FIELDS = {
-  SPECIAL_CODE: "UF_CRM_1745308434",
-  ORDER_INVOICE_ID: "UF_CRM_1651306406137",
-  RESPONSIBLE_MANAGER: "UF_CRM_1646213205",
-  OKK_MANAGER: "UF_CRM_1690286173",
-  AREA_SQM: "UF_CRM_1648100319007",
-  PRODUCT_SERIES: "UF_CRM_1656483960",
-  COLOR: "UF_CRM_1656484012",
-  FACTORY_DATE: "UF_CRM_1701497119",
-  ESTIMATED_READY_DATE: "UF_CRM_1682695332152",
-  READY_TO_PROD_DATE: "UF_CRM_1682761006746",
-  ORDER_READY_DATE: "UF_CRM_1682760962387",
+  SPECIAL_CODE: "UF_CRM_1745308434",            // Maxsus kod / PIN kod
+  ORDER_INVOICE_ID: "UF_CRM_1651306406137",     // ID заказа : (Schet raqami)
+  RESPONSIBLE_MANAGER: "UF_CRM_1646213205",     // Ответственный менеджер
+  OKK_MANAGER: "UF_CRM_1690286173",             // Ответственный отдела контроля качества
+  AREA_SQM: "UF_CRM_1648100319007",            // Квадратура м2 :
+  PRODUCT_SERIES: "UF_CRM_1656483960",          // Серия профиля : (обновлённая) (ID list)
+  COLOR: "UF_CRM_1656484012",                   // Цвет профиля : (обновлённая) (ID list)
+  FACTORY_DATE: "UF_CRM_1701497119",            // Фабрикага келган вақт
+  ESTIMATED_READY_DATE: "UF_CRM_1682695332152", // Тахминий тайёр бўлиш вақти
+  READY_TO_PROD_DATE: "UF_CRM_1682761006746",   // "Готов к производству" статусига ўтган вақт
+  ORDER_READY_DATE: "UF_CRM_1682760962387",     // "Заказ готов" статусига ўтган вақт
 
+  // Showroom fields by regions
   SHOWROOMS: {
-    DEFAULT: "UF_CRM_1647931321",
-    SERGELI: "UF_CRM_1647931321",
-    ANDIJAN: "UF_CRM_1649332403191",
-    SAMARKAND: "UF_CRM_1653148491",
-    NAMANGAN: "UF_CRM_1655321621579",
-    NUKUS: "UF_CRM_1659691369246",
-    BUKHARA: "UF_CRM_1671518012095",
-    SURKHANDARYA: "UF_CRM_1696845428847",
-    FERGANA: "UF_CRM_1713332718568",
-    KHOREZM: "UF_CRM_1761029845985"
+    DEFAULT: "UF_CRM_1647931321",          // Шоурум (Toshkent / Sergeli)
+    SERGELI: "UF_CRM_1647931321",          // Шоурум :
+    ANDIJAN: "UF_CRM_1649332403191",       // Шоу-рум :(андижан)
+    SAMARKAND: "UF_CRM_1653148491",        // Шоу-рум : (самарканд)
+    NAMANGAN: "UF_CRM_1655321621579",       // Шоу-рум Наманган
+    NUKUS: "UF_CRM_1659691369246",          // Шоу-рум  "НУКУС" завод
+    BUKHARA: "UF_CRM_1671518012095",        // Шоу-рум Бухара
+    SURKHANDARYA: "UF_CRM_1696845428847",   // Шоу-рум Сурхандарё
+    FERGANA: "UF_CRM_1713332718568",        // Шоу-рум (Фарғона) :
+    KHOREZM: "UF_CRM_1761029845985"         // Шоу-рум Хоразм
   }
 };
 
+// Sana formatlash yordamchisi (DD.MM.YYYY)
 export const formatBitrixDate = (dateStr: string | null | undefined): string => {
   if (!dateStr) return "-";
   try {
