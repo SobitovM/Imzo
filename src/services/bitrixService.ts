@@ -36,6 +36,7 @@ export const setBitrixAutoSync = (enabled: boolean) => {
 export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
   if (!deal || typeof deal !== 'object') return false;
 
+  // 1. UF_CRM_1745308434 (Maxsus kod) to'ldirilgan bo'lishi kerak
   const specialCode = deal[BITRIX_FIELDS.SPECIAL_CODE];
   const hasCode = specialCode !== null && 
                   specialCode !== undefined && 
@@ -43,11 +44,14 @@ export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
                   String(specialCode).trim() !== '0' && 
                   String(specialCode).trim() !== 'false';
   if (!hasCode) {
+    console.warn(`Deal ${deal.ID} filtrlandi: SPECIAL_CODE yo'q (${specialCode})`);
     return false;
   }
 
+  // 2. STAGE_ID ruxsat etilgan ro'yxatda bo'lishi kerak
   const stageId = String(deal.STAGE_ID || '').trim();
   if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
+    console.warn(`Deal ${deal.ID} filtrlandi: STAGE_ID "${stageId}" ruxsat etilmagan`);
     return false;
   }
 
@@ -607,7 +611,7 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   };
 };
 
-// 🔥 FAQAT 10 TA DEAL OLADI
+// 🔥 ASOSIY FUNKSIYA: fetchBitrixRecentDeals - SPECIAL_CODE va STAGE_ID filtrlanadi
 export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[]> => {
   try {
     console.log('🔄 Bitrix24 dan ma\'lumot olinmoqda...');
@@ -626,12 +630,12 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
       "UF_CRM_1696845428847", "UF_CRM_1761029845985"
     ];
 
-    // FAQAT BIRINCHI SAHIFA - 50 TA
+    // 🔥 1. Barcha deal'larni olamiz (2026-yildan boshlab)
     const result = await callBitrixMethod('crm.deal.list', {
       order: { DATE_CREATE: "DESC" },
       filter: {
         ">=DATE_CREATE": startDate,
-        "!UF_CRM_1745308434": false,
+        // SPECIAL_CODE filterini JS da qilamiz
       },
       select: selectFields,
       limit: 50,
@@ -643,25 +647,41 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
       return [];
     }
 
-    console.log(`📋 ${result.length} ta deal yuklandi`);
+    console.log(`📋 ${result.length} ta deal yuklandi (2026-yildan boshlab)`);
 
-    // STAGE_ID bo'yicha filtr - FAQAT ALLOWED_BITRIX_STAGES dagilar
+    // 🔥 2. SPECIAL_CODE bor va STAGE_ID ruxsat etilganlarni filtrlaymiz
     const eligibleDeals = result.filter(deal => {
-      const stageId = String(deal.STAGE_ID || '').trim();
-      if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
+      // SPECIAL_CODE tekshiruvi - UF_CRM_1745308434 maydoni to'ldirilgan bo'lishi kerak
+      const specialCode = deal.UF_CRM_1745308434;
+      const hasCode = specialCode !== null && 
+                      specialCode !== undefined && 
+                      String(specialCode).trim().length > 0 && 
+                      String(specialCode).trim() !== '0' && 
+                      String(specialCode).trim() !== 'false';
+      
+      if (!hasCode) {
+        console.warn(`Deal ${deal.ID} filtrlandi: SPECIAL_CODE yo'q (${specialCode})`);
         return false;
       }
+
+      // STAGE_ID tekshiruvi - malumot1.txt dagi statuslar
+      const stageId = String(deal.STAGE_ID || '').trim();
+      if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
+        console.warn(`Deal ${deal.ID} filtrlandi: STAGE_ID "${stageId}" ruxsat etilmagan`);
+        return false;
+      }
+
       return true;
     });
 
-    console.log(`🎯 ${eligibleDeals.length} ta deal ruxsat etilgan statusga ega`);
+    console.log(`🎯 ${eligibleDeals.length} ta deal SPECIAL_CODE va ruxsat etilgan statusga ega`);
 
     if (eligibleDeals.length === 0) {
       console.log('⚠️ Hech qanday mos deal topilmadi');
       return [];
     }
 
-    // FAQAT 10 TA OLAMIZ
+    // 🔥 3. FAQAT 10 TA OLAMIZ
     const limitedDeals = eligibleDeals.slice(0, 10);
 
     // Contact ma'lumotlarini olish
