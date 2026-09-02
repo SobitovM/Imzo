@@ -1,3 +1,4 @@
+import QRCode from 'qrcode.react';
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
