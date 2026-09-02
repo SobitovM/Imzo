@@ -385,8 +385,8 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </span>
                   </div>
 
-                  {/* 🔥 PECHAT - YANADA KATTAROQ */}
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden shadow-md bg-white/90 flex items-center justify-center border-0">
+                  {/* 🔥 PECHAT - FAQAT RASM, OQ FONSIZ */}
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
                     <img 
                       src="/images.png" 
                       alt="Imzo Sifat Nazorati" 
