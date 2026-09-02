@@ -354,15 +354,20 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 Bottom - Pastdagi sertifikat raqami va "Sertifikat raqami" yozuvi olib tashlandi */}
+              {/* 🔥 Bottom */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
-                {/* Left: Sifat nazorati xulosasi */}
+                {/* Left: Sifat nazorati xulosasi + Sifat nazorati Mutaxassisi */}
                 <div className="text-center sm:text-left">
                   <p className="text-[11px] text-slate-500 font-medium">Sifat nazorati xulosasi:</p>
                   <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Barcha standartlarga to'liq mos keladi
                   </p>
+                  {/* 🔥 "Sifat nazorati Mutaxassisi: Bo'sh" qayta qo'shildi */}
+                  <div className="mt-2">
+                    <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
+                    <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
+                  </div>
                 </div>
 
                 {/* 🔥 Right: Pechatlar va imzolar */}
