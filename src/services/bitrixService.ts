@@ -325,11 +325,26 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
     }
   ];
 
+  // 🔥 DATES - TUZATILGAN QISM
   const factorySentDate = deal[BITRIX_FIELDS.FACTORY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.FACTORY_DATE]) : "Bo'sh";
   const estimatedReadyDate = deal[BITRIX_FIELDS.ESTIMATED_READY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.ESTIMATED_READY_DATE]) : "Bo'sh";
-  const readyDate = deal[BITRIX_FIELDS.ORDER_READY_DATE] 
-    ? formatBitrixDate(deal[BITRIX_FIELDS.ORDER_READY_DATE])
-    : (isReady ? (estimatedReadyDate !== "Bo'sh" ? estimatedReadyDate : 'Tasdiqlangan') : "Bo'sh");
+  
+  // 🔥 FAQAT UF_CRM_1678904672694 dan olamiz - "Заказ готов" статусига ўтган вақт
+  const orderReadyDateRaw = deal[BITRIX_FIELDS.ORDER_READY_DATE]; // UF_CRM_1678904672694
+  let readyDate = "Bo'sh";
+
+  if (orderReadyDateRaw) {
+    readyDate = formatBitrixDate(orderReadyDateRaw);
+  } else if (isReady) {
+    readyDate = 'Tasdiqlangan';
+  }
+
+  // Debug uchun
+  console.log(`Deal ${dealId} readyDate:`, {
+    orderReadyDateRaw,
+    readyDate,
+    isReady
+  });
 
   const clientName = contact?.NAME 
     ? `${contact.LAST_NAME || ''} ${contact.NAME} ${contact.SECOND_NAME || ''}`.trim()
@@ -635,7 +650,6 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
       order: { DATE_CREATE: "DESC" },
       filter: {
         ">=DATE_CREATE": startDate,
-        // SPECIAL_CODE filterini JS da qilamiz
       },
       select: selectFields,
       limit: 50,
