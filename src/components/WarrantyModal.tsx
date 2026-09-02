@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, 
@@ -22,12 +22,6 @@ import html2canvas from 'html2canvas';
 import { ImzoLogo } from './ImzoLogo';
 import { getShowroomPhone } from '../services/bitrixService';
 
-// 🔥 QR kodni canvas orqali yaratamiz (qrcode.react paketsiz)
-const generateQRCode = (text: string, size: number = 80): string => {
-  // Oddiy QR kod o'rniga matnli qilib qo'yamiz (agar paket ishlamasa)
-  return text;
-};
-
 interface WarrantyModalProps {
   order: Order;
   isOpen: boolean;
@@ -38,7 +32,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   const certificateRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
-  const [qrCodeImage, setQrCodeImage] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -54,46 +47,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   const certNumber = `Imzo-${new Date().getFullYear()}-${String(order.id).slice(-6).padStart(6, '0')}`;
   
   const showroomPhone = getShowroomPhone(order.showroomName);
-  
-  // QR kod uchun link
-  const verifyUrl = `https://imzo-kabinet.vercel.app/verify/${certNumber}`;
-
-  // QR kodni yaratish (canvas orqali)
-  useEffect(() => {
-    if (isReady && isOpen) {
-      // QR kod yaratish uchun simple canvas
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = 160;
-        canvas.height = 160;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          // Oq fon
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, 160, 160);
-          
-          // Oddiy QR kod o'rniga matn va linkni ko'rsatamiz (paketsiz)
-          ctx.fillStyle = '#1e293b';
-          ctx.font = '14px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText('QR', 80, 60);
-          ctx.font = '10px monospace';
-          ctx.fillText(verifyUrl.substring(0, 25) + '...', 80, 90);
-          ctx.font = '8px monospace';
-          ctx.fillText(certNumber, 80, 115);
-          
-          // Chegaralar
-          ctx.strokeStyle = '#1e293b';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(4, 4, 152, 152);
-          
-          setQrCodeImage(canvas.toDataURL('image/png'));
-        }
-      } catch (e) {
-        console.warn('QR kod yaratishda xatolik:', e);
-      }
-    }
-  }, [isReady, isOpen, certNumber, verifyUrl]);
 
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) return;
@@ -107,13 +60,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
         backgroundColor: '#FFFFFF',
         allowTaint: true,
         foreignObjectRendering: true,
-        onclone: (clonedDoc) => {
-          // QR kod rasmni to'g'ri ko'rsatish
-          const img = clonedDoc.querySelector('#qr-code-image') as HTMLImageElement;
-          if (img) {
-            img.crossOrigin = 'anonymous';
-          }
-        }
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -134,6 +80,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
       setTimeout(() => setDownloadSuccess(false), 3000);
     } catch (err) {
       console.error('PDF generation error', err);
+      // Agar xatolik bo'lsa, print qilishni taklif qilamiz
       window.print();
     } finally {
       setIsGeneratingPdf(false);
@@ -449,28 +396,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   </div>
                 </div>
 
-                {/* 🔥 Right: QR Code - ISHLAYdIGAN */}
+                {/* Right: Sertifikat raqami (QR kod o'rniga) */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
-                  <div className="p-1.5 bg-white border border-slate-300 rounded-lg shadow-sm">
-                    {qrCodeImage ? (
-                      <img 
-                        id="qr-code-image"
-                        src={qrCodeImage} 
-                        alt="QR kod" 
-                        className="w-20 h-20 sm:w-22 sm:h-22 object-contain"
-                        crossOrigin="anonymous"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 sm:w-22 sm:h-22 bg-slate-100 flex items-center justify-center text-xs text-slate-400">
-                        QR
-                      </div>
-                    )}
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg shadow-sm text-center w-full max-w-[200px]">
+                    <p className="text-xs font-mono text-amber-800 font-bold break-all">{certNumber}</p>
+                    <p className="text-[10px] text-amber-600 mt-1">Sertifikat raqami</p>
                   </div>
-                  <p className="text-[9px] sm:text-[10px] text-slate-500 mt-1 font-mono text-center">
-                    Onlayn QR Verifikatsiya
-                  </p>
-                  <p className="text-[8px] sm:text-[9px] text-slate-400 font-mono text-center">
-                    {certNumber}
+                  <p className="text-[9px] sm:text-[10px] text-slate-500 mt-2 font-mono text-center sm:text-right break-all">
+                    imzo-kabinet.vercel.app/verify/{certNumber}
                   </p>
                 </div>
               </div>
