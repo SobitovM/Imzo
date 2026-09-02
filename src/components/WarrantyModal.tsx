@@ -382,7 +382,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </div>
                     {/* 🔥 REAL IMOZO 1 - QO'L YOZILGAN USLUBDA */}
                     <div className="mt-0.5">
-                      <svg className="w-32 h-10 sm:w-40 sm:h-12" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg className="w-24 h-8 sm:w-24 sm:h-12" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                         {/* Asosiy imzo chizig'i */}
                         <path d="M8 35 C18 18, 28 42, 38 12 C48 -8, 58 38, 68 20 C78 2, 88 35, 98 15 C108 -5, 118 32, 128 22 C138 12, 148 30, 158 10 C168 -8, 178 28, 185 20" stroke="#1a365d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                         {/* Ikkinchi qatlam - qalinroq */}
@@ -412,7 +412,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </div>
                     {/* 🔥 REAL IMOZO 2 - QO'L YOZILGAN USLUBDA */}
                     <div className="mt-0.5">
-                      <svg className="w-32 h-10 sm:w-40 sm:h-12" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg className="w-24 h-10 sm:w-24 sm:h-12" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
                         {/* Asosiy imzo chizig'i */}
                         <path d="M10 38 C20 20, 30 44, 40 14 C50 -6, 60 40, 70 22 C80 4, 90 37, 100 17 C110 -3, 120 34, 130 24 C140 14, 150 32, 160 12 C170 -6, 180 30, 186 22" stroke="#1a365d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                         {/* Ikkinchi qatlam */}
