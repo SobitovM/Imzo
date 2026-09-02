@@ -20,7 +20,6 @@ import { Order } from '../types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ImzoLogo } from './ImzoLogo';
-import QRCode from 'qrcode.react';
 import { getShowroomPhone } from '../services/bitrixService';
 
 interface WarrantyModalProps {
@@ -391,18 +390,25 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   </div>
                 </div>
 
-                {/* Right: QR Code Online Verification */}
+                {/* Right: QR Code Online Verification - STATIK (QR kod o'chirildi) */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
-                  {/* 🔥 QR KOD - qrcode.react */}
                   <div className="p-1.5 bg-white border border-slate-300 rounded-lg shadow-sm">
-                    <QRCode 
-                      value={`https://kabinet.fabrika.uz/verify/${order.id}`} 
-                      size={80}
-                      bgColor="#ffffff" 
-                      fgColor="#1e293b" 
-                      level="H" 
-                      includeMargin={true} 
-                    />
+                    <div className="w-16 h-16 sm:w-18 sm:h-18 bg-slate-950 p-1 flex items-center justify-center rounded">
+                      <div className="grid grid-cols-4 gap-0.5 w-full h-full bg-white p-0.5">
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="border border-slate-950" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="border border-slate-950" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="border border-slate-950" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="border border-slate-950" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="bg-slate-950 rounded-xs" />
+                      </div>
+                    </div>
                   </div>
                   <p className="text-[9px] sm:text-[10px] text-slate-500 mt-1 font-mono">
                     Onlayn QR Verifikatsiya
