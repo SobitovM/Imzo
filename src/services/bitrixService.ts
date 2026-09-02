@@ -380,7 +380,7 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
       warrantyPeriodMonths: 60,
       okkManagerName: okkInspector || "Bo'sh",
       okkManagerTitle: "Sifat nazorati (OKK) Mutaxassisi",
-      qualityScore: 99.8,
+      qualityScore: 100,
       sealStampUrl: "",
       signatureUrl: "",
       qrCodeValue: `https://kabinet.fabrika.uz/?token=${token}`,
