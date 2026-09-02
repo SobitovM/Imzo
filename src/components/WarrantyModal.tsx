@@ -7,7 +7,6 @@ import {
   X, 
   CheckCircle2, 
   Award, 
-  QrCode, 
   Calendar, 
   FileText, 
   Building2, 
@@ -21,6 +20,8 @@ import { Order } from '../types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ImzoLogo } from './ImzoLogo';
+import QRCode from 'qrcode.react';
+import { getShowroomPhone } from '../services/bitrixService';
 
 interface WarrantyModalProps {
   order: Order;
@@ -44,6 +45,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     ? order.warranty.okkManagerName 
     : (order.okkInspectorName || "Bo'sh");
   const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '0000'}`;
+  const showroomPhone = getShowroomPhone(order.showroomName);
 
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) return;
@@ -100,19 +102,12 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
             className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
           >
             <div className="p-6 text-center space-y-4">
-              {/* Icon */}
               <div className="flex justify-center">
                 <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
                   <AlertCircle className="w-8 h-8 text-amber-400" />
                 </div>
               </div>
-
-              {/* Title */}
-              <h3 className="text-lg font-bold text-white">
-                Kafolat Taloni Hali Tayyor Emas
-              </h3>
-
-              {/* Message */}
+              <h3 className="text-lg font-bold text-white">Kafolat Taloni Hali Tayyor Emas</h3>
               <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
                 <p className="text-sm text-amber-300 font-medium">
                   Buyurtma Sifat nazorati xodimlari tomondan <br />
@@ -123,15 +118,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   <strong>kuting!</strong>
                 </p>
               </div>
-
-              {/* Status info */}
               <div className="text-xs text-slate-400">
                 Hozirgi holat: <span className="text-amber-400 font-semibold">
                   {order.status === 'kontrol_kachestva' ? 'Sifat nazorati tekshiruvida' : 'Ishlab chiqarishda'}
                 </span>
               </div>
-
-              {/* Close button */}
               <button
                 onClick={onClose}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors cursor-pointer"
@@ -264,7 +255,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </p>
               </div>
 
-              {/* Info Matrix Grid - "Ishlab chiqarish" va "Soni" o'chirildi */}
+              {/* Info Matrix Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4 sm:py-6 border-b border-amber-900/15 relative z-10 text-xs sm:text-sm">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -296,7 +287,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     <span className="text-slate-500 font-medium shrink-0">Fabrikaga berilgan:</span>
                     <span className="font-semibold text-slate-800 font-mono text-xs">{order.factorySentDate || order.orderDate}</span>
                   </div>
-                  {/* 🔥 "Ishlab chiqarish" qatori O'CHIRILDI */}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-slate-500 font-medium shrink-0">Tayyor bo'lgan sana:</span>
                     <span className="font-bold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded text-xs font-mono">
@@ -306,7 +296,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Product Specifications Table - "Soni" ustuni o'chirildi */}
+              {/* Product Specifications Table */}
               <div className="py-4 relative z-10">
                 <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#855B14] mb-2 sm:mb-3 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#B8860B]" />
@@ -321,7 +311,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                         <th className="py-2 px-2.5 sm:px-3 text-[11px]">Mahsulot va Model</th>
                         <th className="py-2 px-2.5 sm:px-3 text-[11px]">Rangi</th>
                         <th className="py-2 px-2.5 sm:px-3 text-[11px]">Hajm</th>
-                        {/* 🔥 "Soni" ustuni O'CHIRILDI */}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-amber-900/10 text-slate-800">
@@ -334,7 +323,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           </td>
                           <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.color && item.color !== 'Bo\'sh' ? item.color : 'Bo\'sh'}</td>
                           <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.areaSqM > 0 ? `${item.areaSqM} m²` : 'Bo\'sh'}</td>
-                          {/* 🔥 "Soni" ustuni O'CHIRILDI */}
                         </tr>
                       ))}
                     </tbody>
@@ -360,7 +348,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <div className="hidden sm:block text-right shrink-0">
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Sifat: {order.warranty?.qualityScore || 99.8}%
+                    Sifat: {order.warranty?.qualityScore || 100}%
                   </span>
                 </div>
               </div>
@@ -393,36 +381,28 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </span>
                   </div>
 
-                  {/* Round Seal Stamp */}
+                  {/* 🔥 PECHAT RASMI - /images.png */}
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-dashed border-blue-800/80 p-1 flex items-center justify-center text-center rotate-6 shadow-inner bg-blue-50/30">
-                    <div className="w-full h-full rounded-full border border-blue-900/60 flex flex-col items-center justify-center p-1 text-[7px] sm:text-[8px] font-bold text-blue-900 uppercase leading-tight">
-                      <span>* IMZO SIFAT NAZORATI *</span>
-                      <ShieldCheck className="w-3.5 h-3.5 text-blue-800 my-0.5" />
-                      <span className="text-[6px] sm:text-[7px] text-emerald-900 font-extrabold">TASDIQLANDI</span>
-                      <span>{order.readyDate || order.orderDate}</span>
-                    </div>
+                    <img 
+                      src="/images.png" 
+                      alt="Imzo Sifat Nazorati" 
+                      className="w-full h-full object-contain rounded-full"
+                    />
                   </div>
                 </div>
 
                 {/* Right: QR Code Online Verification */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
+                  {/* 🔥 QR KOD - qrcode.react */}
                   <div className="p-1.5 bg-white border border-slate-300 rounded-lg shadow-sm">
-                    <div className="w-16 h-16 sm:w-18 sm:h-18 bg-slate-950 p-1 flex items-center justify-center rounded">
-                      <div className="grid grid-cols-4 gap-0.5 w-full h-full bg-white p-0.5">
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="bg-slate-950 rounded-xs" />
-                      </div>
-                    </div>
+                    <QRCode 
+                      value={`https://kabinet.fabrika.uz/verify/${order.id}`} 
+                      size={80}
+                      bgColor="#ffffff" 
+                      fgColor="#1e293b" 
+                      level="H" 
+                      includeMargin={true} 
+                    />
                   </div>
                   <p className="text-[9px] sm:text-[10px] text-slate-500 mt-1 font-mono">
                     Onlayn QR Verifikatsiya
@@ -433,8 +413,12 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Small Footnote */}
+              {/* 🔥 Showroom Phone Qo'shildi */}
               <div className="mt-4 pt-3 border-t border-amber-900/10 text-[9px] sm:text-[10px] text-slate-500 text-center flex flex-wrap items-center justify-center gap-2 sm:gap-4">
+                <span>Showroom: {order.showroomName}</span>
+                <span>•</span>
+                <span>Tel: {showroomPhone}</span>
+                <span className="hidden sm:inline">•</span>
                 <span>Call Markaz: +998 (71) 200-88-00</span>
                 <span className="hidden sm:inline">•</span>
                 <span>portal.fabrika.uz</span>
