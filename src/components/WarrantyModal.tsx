@@ -40,12 +40,13 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     ? order.warranty.warrantyPeriodMonths 
     : 60;
   
-  // 🔥 Sifat nazorati Mutaxassisi - UF_CRM_1690286173 dan olinadi
   const inspectorName = (order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-' && order.warranty.okkManagerName !== "Bo'sh") 
     ? order.warranty.okkManagerName 
     : (order.okkInspectorName || "Bo'sh");
   
-  const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '0000'}`;
+  // 🔥 SERTIFIKAT RAQAMI - Imzo-2026-085044 formatida
+  const certNumber = `Imzo-${new Date().getFullYear()}-${String(order.id).slice(-6).padStart(6, '0')}`;
+  
   const showroomPhone = getShowroomPhone(order.showroomName);
 
   const handleDownloadPdf = async () => {
@@ -356,25 +357,23 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 BOTTOM - FAQAT "Sifat nazorati Mutaxassisi" qoldi */}
+              {/* 🔥 BOTTOM */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
-                {/* Left: Sifat nazorati xulosasi */}
+                {/* Left */}
                 <div className="text-center sm:text-left">
                   <p className="text-[11px] text-slate-500 font-medium">Sifat nazorati xulosasi:</p>
                   <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Barcha standartlarga to'liq mos keladi
                   </p>
-                  {/* 🔥 FAQAT "Sifat nazorati Mutaxassisi" qoldi */}
                   <div className="mt-2">
                     <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
                     <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
                   </div>
                 </div>
 
-                {/* 🔥 Middle: IKKITA PECHAT (KATTAROQ) VA IKKITA IMOZO */}
+                {/* Middle: Pechatlar */}
                 <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
-                  {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
                     <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
                       <img 
@@ -394,8 +393,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                       Mahsulot kafolati
                     </p>
                   </div>
-
-                  {/* 2 - Sifat Nazorati */}
                   <div className="flex flex-col items-center">
                     <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
                       <img 
@@ -417,32 +414,12 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   </div>
                 </div>
 
-                {/* Right: QR Code */}
+                {/* Right: QR Code o'chirildi */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
-                  <div className="p-1.5 bg-white border border-slate-300 rounded-lg shadow-sm">
-                    <div className="w-16 h-16 sm:w-18 sm:h-18 bg-slate-950 p-1 flex items-center justify-center rounded">
-                      <div className="grid grid-cols-4 gap-0.5 w-full h-full bg-white p-0.5">
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="bg-slate-950 rounded-xs" />
-                      </div>
-                    </div>
+                  <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg shadow-sm text-center w-full max-w-[180px]">
+                    <p className="text-xs font-mono text-amber-800 font-bold break-all">{certNumber}</p>
+                    <p className="text-[10px] text-amber-600 mt-1">Sertifikat raqami</p>
                   </div>
-                  <p className="text-[9px] sm:text-[10px] text-slate-500 mt-1 font-mono">
-                    Onlayn QR Verifikatsiya
-                  </p>
-                  <p className="text-[8px] sm:text-[9px] text-slate-400 font-mono">
-                    {certNumber}
-                  </p>
                 </div>
               </div>
 
@@ -452,6 +429,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <span className="hidden sm:inline">•</span>
                 <span>imzo.uz</span>
                 <span className="hidden sm:inline">•</span>
+                <span>O'z DSt standartlariga muvofiq</span>
               </div>
             </div>
           </div>
