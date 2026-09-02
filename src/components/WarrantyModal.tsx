@@ -271,7 +271,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     <span className="text-slate-500 font-medium shrink-0">Showroom filiali:</span>
                     <span className="font-semibold text-slate-800 text-right">{order.showroomName}</span>
                   </div>
-                  {/* 🔥 SHOWROOM TELEFON RAQAMI - SHOWROOM FILIALI TAGIGA QO'SHILDI */}
+                  {/* 🔥 SHOWROOM TELEFON RAQAMI */}
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-slate-500 font-medium shrink-0">Showroom telefon:</span>
                     <span className="font-semibold text-slate-800 font-mono text-sm">{showroomPhone}</span>
@@ -385,12 +385,12 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </span>
                   </div>
 
-                  {/* 🔥 PECHAT RASMI - /images.png */}
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-dashed border-blue-800/80 p-1 flex items-center justify-center text-center rotate-6 shadow-inner bg-blue-50/30">
+                  {/* 🔥 PECHAT - YANADA KATTAROQ */}
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden shadow-md bg-white/90 flex items-center justify-center border-0">
                     <img 
                       src="/images.png" 
                       alt="Imzo Sifat Nazorati" 
-                      className="w-full h-full object-contain rounded-full"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                 </div>
@@ -424,7 +424,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 FOOTER - Showroom, Call Markaz, portal.fabrika.uz */}
+              {/* 🔥 FOOTER */}
               <div className="mt-4 pt-3 border-t border-amber-900/10 text-[9px] sm:text-[10px] text-slate-500 text-center flex flex-wrap items-center justify-center gap-2 sm:gap-4">
                 <span>Call Markaz: +998 (71) 200-88-00</span>
                 <span className="hidden sm:inline">•</span>
