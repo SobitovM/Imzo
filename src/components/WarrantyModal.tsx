@@ -353,7 +353,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 BOTTOM - 2 PECHAT + 2 HAQIQIY IMOZO */}
+              {/* 🔥 BOTTOM - SIFAT NAZORATI MUTAXASSISI QO'SHILDI */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
                 {/* Left: Inspector Info */}
                 <div className="text-center sm:text-left">
@@ -363,24 +363,29 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     Barcha standartlarga to'liq mos keladi
                   </p>
                   <div className="mt-2 sm:mt-3">
-                    <p className="text-[10px] text-slate-500">Sifat Nazorati Mas'ul Muhandisi:</p>
+                    <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
                     <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
                     <p className="text-[10px] text-slate-500">{order.warranty?.okkManagerTitle || 'Bosh sifat nazoratchisi'}</p>
                   </div>
+                  {/* 🔥 SIFAT NAZORATI MUTAXASSISI QO'SHILDI */}
+                  <div className="mt-2">
+                    <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
+                    <p className="font-bold text-slate-900 text-xs">OKK-{certNumber.slice(-6)}</p>
+                  </div>
                 </div>
 
-                {/* 🔥 Middle: IKKITA PECHAT VA IKKITA HAQIQIY IMOZO */}
+                {/* 🔥 Middle: IKKITA PECHAT (KATTAROQ) VA IKKITA IMOZO */}
                 <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
                   {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                    {/* 🔥 PECHAT 1 - KATTAROQ */}
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
                       <img 
                         src="/images.png" 
                         alt="Imzo" 
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    {/* 🔥 HAQIQIY IMOZO 1 */}
                     <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
                       <img 
                         src="/signature1.png" 
@@ -395,14 +400,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
 
                   {/* 2 - Sifat Nazorati */}
                   <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+                    {/* 🔥 PECHAT 2 - KATTAROQ */}
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
                       <img 
                         src="/images1.png" 
                         alt="Sifat Nazorati" 
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    {/* 🔥 HAQIQIY IMOZO 2 */}
                     <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
                       <img 
                         src="/signature2.png" 
