@@ -271,6 +271,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     <span className="text-slate-500 font-medium shrink-0">Showroom filiali:</span>
                     <span className="font-semibold text-slate-800 text-right">{order.showroomName}</span>
                   </div>
+                  {/* 🔥 SHOWROOM TELEFON RAQAMI - SHOWROOM FILIALI TAGIGA QO'SHILDI */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-slate-500 font-medium shrink-0">Showroom telefon:</span>
+                    <span className="font-semibold text-slate-800 font-mono text-sm">{showroomPhone}</span>
+                  </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-slate-500 font-medium shrink-0">Mas'ul menedjer:</span>
                     <span className="font-semibold text-slate-800">{order.salesManagerName}</span>
@@ -390,7 +395,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   </div>
                 </div>
 
-                {/* Right: QR Code Online Verification - STATIK (QR kod o'chirildi) */}
+                {/* Right: QR Code Online Verification */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
                   <div className="p-1.5 bg-white border border-slate-300 rounded-lg shadow-sm">
                     <div className="w-16 h-16 sm:w-18 sm:h-18 bg-slate-950 p-1 flex items-center justify-center rounded">
@@ -419,15 +424,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 Showroom Phone Qo'shildi */}
+              {/* 🔥 FOOTER - Showroom, Call Markaz, portal.fabrika.uz */}
               <div className="mt-4 pt-3 border-t border-amber-900/10 text-[9px] sm:text-[10px] text-slate-500 text-center flex flex-wrap items-center justify-center gap-2 sm:gap-4">
-                <span>Showroom: {order.showroomName}</span>
-                <span>•</span>
-                <span>Tel: {showroomPhone}</span>
-                <span className="hidden sm:inline">•</span>
                 <span>Call Markaz: +998 (71) 200-88-00</span>
                 <span className="hidden sm:inline">•</span>
-                <span>portal.fabrika.uz</span>
+                <span>imzo.uz</span>
                 <span className="hidden sm:inline">•</span>
                 <span>O'z DSt standartlariga muvofiq</span>
               </div>
