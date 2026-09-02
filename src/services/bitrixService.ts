@@ -1,5 +1,7 @@
+// bitrixService.ts - import qismiga qo'shing
 import { SHOWROOM_PHONES } from './bitrixConfig';
 
+// 🔥 Showroom telefon raqamini olish funksiyasi
 export const getShowroomPhone = (showroomName: string): string => {
   if (!showroomName || showroomName === "Bo'sh") {
     return SHOWROOM_PHONES['default'] || "+998 (71) 200-88-00";
@@ -17,6 +19,7 @@ export const getShowroomPhone = (showroomName: string): string => {
   
   return SHOWROOM_PHONES['default'] || "+998 (71) 200-88-00";
 };
+
 import { Order, OrderStatus, ProductItem } from '../types';
 import { 
   PRODUCTS_DICT, 
