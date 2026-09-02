@@ -54,13 +54,16 @@ export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
   return true;
 };
 
+// 🔥 MAP BITRIX STAGE TO INTERNAL STATUS
 export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
   const s = (stageId || '').trim();
 
+  // 1. Muvaffaqiyatli yakunlandi
   if (s.endsWith(':WON')) {
     return 'topshirildi';
   }
 
+  // 2. Yetkazilmoqda / Yetkazildi
   if (
     s === 'C2:2' || s === 'C2:UC_6R66T3' ||
     s === 'C8:UC_KI81ZC' ||
@@ -75,6 +78,7 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'yetkazib_berishda';
   }
 
+  // 3. Sifat nazorati tekshiruvida / Sifat nazoratidan o'tmadi
   if (
     s === 'C2:6' || s === 'C2:UC_ELI1KU' ||
     s === 'C8:UC_EE5QBV' ||
@@ -89,6 +93,7 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'kontrol_kachestva';
   }
 
+  // 4. Buyurtma tayyor / O'rnatish jarayonida
   if (
     s === 'C2:1' || s === 'C2:5' ||
     s === 'C8:UC_Q4UARA' || s === 'C8:UC_KCNRMF' ||
@@ -103,10 +108,12 @@ export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
     return 'okk_otdi';
   }
 
+  // 5. Ishlab chiqarishda
   if (s === 'C2:UC_MNKRA5' || s === 'C27:UC_EVAKIV') {
     return 'ishlab_chiqarishda';
   }
 
+  // 6. Boshqa statuslar
   return 'yangi';
 };
 
@@ -619,7 +626,7 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
       "UF_CRM_1696845428847", "UF_CRM_1761029845985"
     ];
 
-    // 🔥 FAQAT BIRINCHI SAHIFA - 50 TA
+    // FAQAT BIRINCHI SAHIFA - 50 TA
     const result = await callBitrixMethod('crm.deal.list', {
       order: { DATE_CREATE: "DESC" },
       filter: {
@@ -638,7 +645,7 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
 
     console.log(`📋 ${result.length} ta deal yuklandi`);
 
-    // STAGE_ID bo'yicha filtr
+    // STAGE_ID bo'yicha filtr - FAQAT ALLOWED_BITRIX_STAGES dagilar
     const eligibleDeals = result.filter(deal => {
       const stageId = String(deal.STAGE_ID || '').trim();
       if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
@@ -654,7 +661,7 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
       return [];
     }
 
-    // 🔥 FAQAT 10 TA OLAMIZ
+    // FAQAT 10 TA OLAMIZ
     const limitedDeals = eligibleDeals.slice(0, 10);
 
     // Contact ma'lumotlarini olish
