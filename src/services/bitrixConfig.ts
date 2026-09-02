@@ -1,4 +1,12 @@
 // Bitrix24 Real Data Mapping and Dictionaries
+export const SHOWROOM_PHONES: Record<string, string> = {
+  "№251-Фаргона": "+998 (73) 224-00-02",
+  "245 - Шоу-рум": "+998 (66) 233-00-01",
+  "277 - Шоу-рум": "+998 (66) 233-00-02",
+  "353-Sergeli": "+998 (71) 200-88-07",
+  "344-Lunacharskiy": "+998 (71) 200-88-13",
+  "default": "+998 (71) 200-88-00"
+};
 
 // 1. Maxsulotlar katalogi (Products dictionary)
 export const PRODUCTS_DICT: Record<number | string, string> = {
