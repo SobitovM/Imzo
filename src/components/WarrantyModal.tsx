@@ -22,6 +22,11 @@ import html2canvas from 'html2canvas';
 import { ImzoLogo } from './ImzoLogo';
 import { getShowroomPhone } from '../services/bitrixService';
 
+// 🔥 7 xonalik random raqam yaratish
+const generateRandomNumber = (): string => {
+  return Math.floor(1000000 + Math.random() * 9000000).toString();
+};
+
 interface WarrantyModalProps {
   order: Order;
   isOpen: boolean;
@@ -44,8 +49,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     ? order.warranty.okkManagerName 
     : (order.okkInspectorName || "Bo'sh");
   
-  // 🔥 SERTIFIKAT RAQAMI - Imzo-2026-085044 formatida
-  const certNumber = `Imzo-${new Date().getFullYear()}-${String(order.id).slice(-6).padStart(6, '0')}`;
+  // 🔥 SERTIFIKAT RAQAMI - 7 xonalik random + yil
+  const randomNum = generateRandomNumber();
+  const certNumber = `Imzo-${new Date().getFullYear()}-${randomNum}`;
   
   const showroomPhone = getShowroomPhone(order.showroomName);
 
@@ -357,7 +363,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 BOTTOM */}
+              {/* Bottom */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
                 {/* Left */}
                 <div className="text-center sm:text-left">
@@ -414,7 +420,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   </div>
                 </div>
 
-                {/* Right: QR Code o'chirildi */}
+                {/* Right: Sertifikat raqami */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
                   <div className="p-2 bg-amber-50 border border-amber-200 rounded-lg shadow-sm text-center w-full max-w-[180px]">
                     <p className="text-xs font-mono text-amber-800 font-bold break-all">{certNumber}</p>
