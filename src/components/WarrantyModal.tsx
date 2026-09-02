@@ -22,7 +22,7 @@ import html2canvas from 'html2canvas';
 import { ImzoLogo } from './ImzoLogo';
 import { getShowroomPhone } from '../services/bitrixService';
 // 🔥 VARIANT 1: default import
-import QRCode from 'qrcode.react';
+import { QRCode } from 'qrcode.react';
 
 interface WarrantyModalProps {
   order: Order;
