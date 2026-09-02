@@ -340,7 +340,7 @@ export const BITRIX_FIELDS = {
   PRODUCT_SERIES: "UF_CRM_1656483960",          // Серия профиля : (обновлённая) (ID list)
   COLOR: "UF_CRM_1656484012",                   // Цвет профиля : (обновлённая) (ID list)
   FACTORY_DATE: "UF_CRM_1701497119",            // Фабрикага келган вақт
-  ESTIMATED_READY_DATE: "UF_CRM_1678904672694", // Тахминий тайёр бўлиш вақти  UF_CRM_1682695332152
+  ESTIMATED_READY_DATE: "UF_CRM_1682695332152", // Тахминий тайёр бўлиш вақти  UF_CRM_1682695332152
   READY_TO_PROD_DATE: "UF_CRM_1682761006746",   // "Готов к производству" статусига ўтган вақт
   ORDER_READY_DATE: "UF_CRM_1678904672694",     // "Заказ готов" статусига ўтган вақт
 
