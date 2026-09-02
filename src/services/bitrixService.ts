@@ -779,3 +779,32 @@ export const parseRawBitrixJsonData = (rawInput: string | object): Order[] => {
 
   return eligibleDeals.map((deal: any) => convertBitrixDealToOrder(deal));
 };
+// 🔥 Sertifikat raqamini yaratish (Imzo-2026-000001 formatida)
+export const generateCertificateNumber = (dealId: string, orderDate?: string): string => {
+  let year = new Date().getFullYear().toString();
+  if (orderDate) {
+    const date = new Date(orderDate);
+    if (!isNaN(date.getTime())) {
+      year = date.getFullYear().toString();
+    }
+  }
+  const num = String(dealId).slice(-6).padStart(6, '0');
+  return `Imzo-${year}-${num}`;
+};
+
+// 🔥 Sertifikat raqamidan yil va raqamni ajratib olish
+export const parseCertificateNumber = (certNumber: string): { year: string; number: string; full: string } => {
+  const parts = certNumber.split('-');
+  if (parts.length === 3) {
+    return {
+      year: parts[1] || new Date().getFullYear().toString(),
+      number: parts[2] || '000001',
+      full: certNumber
+    };
+  }
+  return {
+    year: new Date().getFullYear().toString(),
+    number: '000001',
+    full: certNumber
+  };
+};
