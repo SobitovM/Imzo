@@ -17,26 +17,32 @@ export const getStoredOrders = (): Order[] => {
     
     orders = JSON.parse(raw);
 
+    // 🔥 RUXSAT ETILGAN STATUSLAR - barcha statuslar
     const allowedStatuses: OrderStatus[] = [
-      'okk_otdi',
-      'kontrol_kachestva',
-      'yetkazib_berishda',
-      'topshirildi'
+      'okk_otdi',           // Buyurtma tayyor
+      'kontrol_kachestva',  // Sifat nazorati tekshiruvida
+      'yetkazib_berishda',  // Yetkazilmoqda
+      'topshirildi',        // Muvaffaqiyatli yakunlandi
+      'ishlab_chiqarishda', // Ishlab chiqarishda
+      'yangi'               // Yangi
     ];
     
     orders = orders.filter((ord) => {
       if (!allowedStatuses.includes(ord.status)) {
+        console.warn(`Order ${ord.id} (${ord.invoiceNumber}) o'chirildi: Status "${ord.status}" ruxsat etilmagan`);
         return false;
       }
       
       const pin = ord.credentials?.pinCode;
       if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0 || pin === "Bo'sh") {
+        console.warn(`Order ${ord.id} (${ord.invoiceNumber}) o'chirildi: PIN yo'q (${pin})`);
         return false;
       }
       
       return true;
     });
 
+    // Bo'sh maydonlarni "Bo'sh" ga to'ldiramiz
     orders = orders.map((ord) => ({
       ...ord,
       showroomName: ord.showroomName && ord.showroomName.trim() !== '' && ord.showroomName !== '-' ? ord.showroomName : "Bo'sh",
