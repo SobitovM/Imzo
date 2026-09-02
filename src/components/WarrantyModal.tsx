@@ -1,4 +1,3 @@
-import QRCode from 'qrcode.react';
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -22,6 +21,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ImzoLogo } from './ImzoLogo';
 import { getShowroomPhone } from '../services/bitrixService';
+import QRCode from 'qrcode.react';
 
 interface WarrantyModalProps {
   order: Order;
@@ -46,7 +46,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     ? order.warranty.okkManagerName 
     : (order.okkInspectorName || "Bo'sh");
   
-  const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '0000'}`;
+  // 🔥 Sertifikat raqami (Imzo-2026-000001 formatida)
+  const certNumber = `Imzo-${new Date().getFullYear()}-${String(order.id).slice(-6).padStart(6, '0')}`;
+  
   const showroomPhone = getShowroomPhone(order.showroomName);
 
   const handleDownloadPdf = async () => {
@@ -373,11 +375,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   </div>
                 </div>
 
-                {/* 🔥 Middle: IKKITA PECHAT (KATTAROQ) VA IKKITA IMOZO */}
+                {/* 🔥 Middle: IKKITA PECHAT VA IKKITA IMOZO */}
                 <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
                   {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
-                    <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
                       <img 
                         src="/images.png" 
                         alt="Imzo" 
@@ -398,7 +400,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
 
                   {/* 2 - Sifat Nazorati */}
                   <div className="flex flex-col items-center">
-                    <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
                       <img 
                         src="/images1.png" 
                         alt="Sifat Nazorati" 
@@ -421,22 +423,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 {/* Right: QR Code */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
                   <div className="p-1.5 bg-white border border-slate-300 rounded-lg shadow-sm">
-                    <div className="w-16 h-16 sm:w-18 sm:h-18 bg-slate-950 p-1 flex items-center justify-center rounded">
-                      <div className="grid grid-cols-4 gap-0.5 w-full h-full bg-white p-0.5">
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="border border-slate-950" />
-                        <div className="bg-slate-950 rounded-xs" />
-                        <div className="bg-slate-950 rounded-xs" />
-                      </div>
-                    </div>
+                    <QRCode 
+                      value={`https://imzo-kabinet.vercel.app/verify/${certNumber}`}
+                      size={80}
+                      bgColor="#ffffff" 
+                      fgColor="#1e293b" 
+                      level="H" 
+                      includeMargin={true} 
+                    />
                   </div>
                   <p className="text-[9px] sm:text-[10px] text-slate-500 mt-1 font-mono">
                     Onlayn QR Verifikatsiya
@@ -453,6 +447,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <span className="hidden sm:inline">•</span>
                 <span>imzo.uz</span>
                 <span className="hidden sm:inline">•</span>
+                <span>O'z DSt standartlariga muvofiq</span>
               </div>
             </div>
           </div>
