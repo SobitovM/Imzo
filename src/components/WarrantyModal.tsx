@@ -353,7 +353,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 BOTTOM - 2 PECHAT + 2 PROFESSIONAL IMZO (PREZIDENT USLUBIDA) */}
+              {/* 🔥 BOTTOM - 2 PECHAT + 2 REAL IMOZO (SVRG USLUBIDA) */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
                 {/* Left: Inspector Info */}
                 <div className="text-center sm:text-left">
@@ -369,7 +369,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   </div>
                 </div>
 
-                {/* 🔥 Middle: IKKITA PECHAT VA PROFESSIONAL IMOZOLAR */}
+                {/* 🔥 Middle: IKKITA PECHAT VA IKKITA REAL IMOZO */}
                 <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
                   {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
@@ -380,16 +380,22 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    {/* 🔥 PROFESSIONAL IMZO 1 - PREZIDENT USLUBIDA */}
+                    {/* 🔥 REAL IMOZO 1 - QO'L YOZILGAN USLUBDA */}
                     <div className="mt-0.5">
-                      <svg className="w-28 h-8 sm:w-36 sm:h-10" viewBox="0 0 180 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 30 C12 15, 20 38, 30 12 C40 -5, 50 35, 60 18 C68 5, 78 32, 88 15 C98 -2, 108 30, 118 20 C125 14, 135 28, 145 10 C155 -5, 165 25, 175 18" stroke="#1a365d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M8 32 C15 18, 23 40, 33 14 C43 -3, 53 37, 63 20 C71 7, 81 34, 91 17 C101 0, 111 32, 121 22 C128 16, 138 30, 148 12 C158 -3, 168 27, 178 20" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
-                        <path d="M3 28 C10 12, 18 35, 28 10 C38 -7, 48 33, 58 16 C66 3, 76 30, 86 13 C96 -4, 106 28, 116 18 C123 12, 133 26, 143 8 C153 -7, 163 23, 173 16" stroke="#1a365d" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
-                        <path d="M15 35 L55 28" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
-                        <path d="M125 22 L165 18" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
+                      <svg className="w-32 h-10 sm:w-40 sm:h-12" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* Asosiy imzo chizig'i */}
+                        <path d="M8 35 C18 18, 28 42, 38 12 C48 -8, 58 38, 68 20 C78 2, 88 35, 98 15 C108 -5, 118 32, 128 22 C138 12, 148 30, 158 10 C168 -8, 178 28, 185 20" stroke="#1a365d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* Ikkinchi qatlam - qalinroq */}
+                        <path d="M12 37 C22 20, 32 44, 42 14 C52 -6, 62 40, 72 22 C82 4, 92 37, 102 17 C112 -3, 122 34, 132 24 C142 14, 152 32, 162 12 C172 -6, 182 30, 188 22" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                        {/* Uchinchi qatlam - ingichka */}
+                        <path d="M15 33 C25 16, 35 40, 45 10 C55 -10, 65 36, 75 18 C85 0, 95 33, 105 13 C115 -7, 125 30, 135 20 C145 10, 155 28, 165 8 C175 -10, 185 26, 190 18" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+                        {/* Pastki chiziq - imzo ostidagi */}
+                        <path d="M20 42 L60 35" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
+                        <path d="M140 30 L180 25" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
+                        {/* Nuqta - imzo oxiri */}
+                        <circle cx="188" cy="20" r="1.5" fill="#1a365d" opacity="0.5" />
                       </svg>
-                      <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                      <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
                         Mahsulot kafolati
                       </p>
                     </div>
@@ -404,16 +410,21 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    {/* 🔥 PROFESSIONAL IMZO 2 - PREZIDENT USLUBIDA */}
+                    {/* 🔥 REAL IMOZO 2 - QO'L YOZILGAN USLUBDA */}
                     <div className="mt-0.5">
-                      <svg className="w-28 h-8 sm:w-36 sm:h-10" viewBox="0 0 180 45" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 32 C20 18, 28 40, 38 14 C48 -3, 58 35, 68 20 C76 8, 86 32, 96 16 C106 0, 116 30, 126 22 C133 16, 143 30, 153 12 C163 -2, 173 25, 178 18" stroke="#1a365d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M15 34 C23 20, 31 42, 41 16 C51 -1, 61 37, 71 22 C79 10, 89 34, 99 18 C109 2, 119 32, 129 24 C136 18, 146 32, 156 14 C166 0, 176 27, 180 20" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
-                        <path d="M10 30 C18 16, 26 38, 36 12 C46 -5, 56 33, 66 18 C74 6, 84 30, 94 14 C104 -2, 114 28, 124 20 C131 14, 141 28, 151 10 C161 -5, 171 23, 176 16" stroke="#1a365d" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
-                        <path d="M20 37 L60 30" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
-                        <path d="M130 24 L170 20" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
+                      <svg className="w-32 h-10 sm:w-40 sm:h-12" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* Asosiy imzo chizig'i */}
+                        <path d="M10 38 C20 20, 30 44, 40 14 C50 -6, 60 40, 70 22 C80 4, 90 37, 100 17 C110 -3, 120 34, 130 24 C140 14, 150 32, 160 12 C170 -6, 180 30, 186 22" stroke="#1a365d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* Ikkinchi qatlam */}
+                        <path d="M14 40 C24 22, 34 46, 44 16 C54 -4, 64 42, 74 24 C84 6, 94 39, 104 19 C114 -1, 124 36, 134 26 C144 16, 154 34, 164 14 C174 -4, 184 32, 190 24" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                        {/* Uchinchi qatlam */}
+                        <path d="M17 36 C27 18, 37 42, 47 12 C57 -8, 67 38, 77 20 C87 2, 97 35, 107 15 C117 -5, 127 32, 137 22 C147 12, 157 30, 167 10 C177 -8, 187 28, 192 20" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+                        {/* Pastki chiziq */}
+                        <path d="M22 44 L62 37" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
+                        <path d="M142 32 L182 27" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
+                        <circle cx="190" cy="22" r="1.5" fill="#1a365d" opacity="0.5" />
                       </svg>
-                      <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                      <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
                         Sifat nazorati
                       </p>
                     </div>
