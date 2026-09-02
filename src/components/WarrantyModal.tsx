@@ -376,7 +376,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
                   {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
+                    <div className="w-32 h-24 sm:w-32 sm:h-28 flex items-center justify-center">
                       <img 
                         src="/images.png" 
                         alt="Imzo" 
@@ -397,7 +397,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
 
                   {/* 2 - Sifat Nazorati */}
                   <div className="flex flex-col items-center">
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
+                    <div className="w-32 h-24 sm:w-32 sm:h-28 flex items-center justify-center">
                       <img 
                         src="/images1.png" 
                         alt="Sifat Nazorati" 
