@@ -357,7 +357,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Bottom Verification, Signatures & Stamps */}
+              {/* 🔥 Bottom Verification, Signatures & Stamps - IKKITA PECHAT */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
                 {/* Left: Inspector Info */}
                 <div className="text-center sm:text-left">
@@ -373,25 +373,30 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                   </div>
                 </div>
 
-                {/* Middle: Official Stamp and Signature */}
-                <div className="flex flex-col items-center justify-center relative py-1">
-                  {/* Signature */}
-                  <div className="relative w-32 h-12 flex items-center justify-center">
-                    <svg className="w-28 h-10 text-blue-900 -rotate-3" viewBox="0 0 160 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M10 40 C30 10, 45 55, 60 20 C70 -5, 80 50, 95 30 C105 15, 120 40, 150 25 M30 35 L140 33" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span className="absolute bottom-0 text-[8px] text-slate-400 font-mono uppercase">
-                      Imzo: {inspectorName.split(' ')[0] || 'OKK'}
-                    </span>
+                {/* 🔥 Middle: IKKITA PECHAT - images.png va images1.png */}
+                <div className="flex flex-row items-center justify-center gap-4 sm:gap-6 py-1">
+                  {/* 1-Pechat: images.png */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
+                      <img 
+                        src="/images.png" 
+                        alt="Imzo Sifat Nazorati" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <span className="text-[6px] sm:text-[7px] text-slate-400 mt-0.5">Imzo</span>
                   </div>
 
-                  {/* 🔥 PECHAT - FAQAT RASM, OQ FONSIZ */}
-                  <div className="w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
-                    <img 
-                      src="/images.png" 
-                      alt="Imzo Sifat Nazorati" 
-                      className="w-full h-full object-contain"
-                    />
+                  {/* 2-Pechat: images1.png */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
+                      <img 
+                        src="/images1.png" 
+                        alt="Sifat Nazorati" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <span className="text-[6px] sm:text-[7px] text-slate-400 mt-0.5">Sifat Nazorati</span>
                   </div>
                 </div>
 
