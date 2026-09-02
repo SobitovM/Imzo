@@ -376,14 +376,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
                   {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
-                    <div className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
+                    <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
                       <img 
                         src="/images.png" 
                         alt="Imzo" 
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    <div className="mt-0.5 w-32 h-32 sm:w-36 sm:h-36">
+                    <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
                       <img 
                         src="/signature1.png" 
                         alt="Mahsulot kafolati" 
@@ -397,14 +397,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
 
                   {/* 2 - Sifat Nazorati */}
                   <div className="flex flex-col items-center">
-                    <div className="w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
+                    <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
                       <img 
                         src="/images1.png" 
                         alt="Sifat Nazorati" 
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    <div className="mt-0.5 w-32 h-32 sm:w-36 sm:h-36">
+                    <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
                       <img 
                         src="/signature2.png" 
                         alt="Sifat nazorati" 
