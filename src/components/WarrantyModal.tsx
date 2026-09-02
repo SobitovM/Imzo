@@ -268,7 +268,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0">Showroom filiali:</span>
+                    <span className="text-slate-500 font-medium shrink-0">Showroom:</span>
                     <span className="font-semibold text-slate-800 text-right">{order.showroomName}</span>
                   </div>
                   {/* 🔥 SHOWROOM TELEFON RAQAMI */}
