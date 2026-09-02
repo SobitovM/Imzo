@@ -21,8 +21,8 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { ImzoLogo } from './ImzoLogo';
 import { getShowroomPhone } from '../services/bitrixService';
-// 🔥 VARIANT 1: default import
-import { QRCode } from 'qrcode.react';
+// 🔥 VARIANT: * as import
+import * as QRCode from 'qrcode.react';
 
 interface WarrantyModalProps {
   order: Order;
@@ -396,8 +396,8 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 {/* Right: QR Code */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
                   <div className="p-1.5 bg-white border border-slate-300 rounded-lg shadow-sm">
-                    {/* 🔥 QR CODE - default import bilan */}
-                    <QRCode 
+                    {/* 🔥 QR CODE - * as import bilan */}
+                    <QRCode.QRCode 
                       value={`https://imzo-kabinet.vercel.app/verify/${certNumber}`}
                       size={80}
                       bgColor="#ffffff" 
