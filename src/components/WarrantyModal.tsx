@@ -452,7 +452,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <span className="hidden sm:inline">•</span>
                 <span>imzo.uz</span>
                 <span className="hidden sm:inline">•</span>
-                <span>O'z DSt standartlariga muvofiq</span>
               </div>
             </div>
           </div>
