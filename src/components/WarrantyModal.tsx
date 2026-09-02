@@ -35,7 +35,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
 
   if (!isOpen) return null;
 
-  // 🔥 FAQAT OKK statusida bo'lsa PDF ko'rsatiladi
   const isReady = ['okk_otdi', 'topshirildi'].includes(order.status);
   const warrantyMonths = (order.warranty?.warrantyPeriodMonths && order.warranty.warrantyPeriodMonths >= 60) 
     ? order.warranty.warrantyPeriodMonths 
@@ -86,7 +85,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     window.print();
   };
 
-  // 🔥 Agar OKK statusida bo'lmasa, eslatma ko'rsatamiz
   if (!isReady) {
     return (
       <AnimatePresence>
@@ -135,7 +133,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     );
   }
 
-  // 🔥 OKK statusida bo'lsa, to'liq PDF ko'rsatiladi
   return (
     <AnimatePresence>
       <div 
@@ -149,7 +146,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
           transition={{ duration: 0.2 }}
           className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
         >
-          {/* Header Action Bar */}
+          {/* Header */}
           <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 shrink-0 gap-2">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
@@ -215,7 +212,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
             </div>
           </div>
 
-          {/* Certificate Printable Canvas / Container */}
+          {/* Certificate */}
           <div className="p-2 sm:p-5 md:p-8 overflow-y-auto flex-1 bg-slate-950/70">
             <div
               ref={certificateRef}
@@ -223,18 +220,18 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
               className="relative w-full bg-gradient-to-b from-[#FFFDF9] to-[#FAF5E8] text-slate-900 p-4 sm:p-7 md:p-10 rounded-xl sm:rounded-2xl border-2 sm:border-4 md:border-[6px] border-double border-[#D4AF37] shadow-2xl selection:bg-amber-100 max-w-full"
               style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
             >
-              {/* Corner Luxury Flourishes */}
+              {/* Dekorativ burchaklar */}
               <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-l-2 border-[#D4AF37]" />
               <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-r-2 border-[#D4AF37]" />
               <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-l-2 border-[#D4AF37]" />
               <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-r-2 border-[#D4AF37]" />
 
-              {/* Watermark Background */}
+              {/* Watermark */}
               <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
                 <Award className="w-64 h-64 sm:w-96 sm:h-96 text-[#855B14]" />
               </div>
 
-              {/* Top Header */}
+              {/* Header */}
               <div className="text-center relative z-10 pb-4 sm:pb-6 border-b border-amber-900/20">
                 <div className="flex justify-center pb-2">
                   <ImzoLogo size="lg" variant="dark" className="h-10 sm:h-12" />
@@ -254,78 +251,78 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </p>
               </div>
 
-              {/* Info Matrix Grid - BIR XIL SHRIFT */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4 sm:py-6 border-b border-amber-900/15 relative z-10 text-xs sm:text-sm" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+              {/* Info Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4 sm:py-6 border-b border-amber-900/15 relative z-10 text-xs sm:text-sm">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Buyurtmachi (Mijoz):</span>
-                    <span className="font-bold text-slate-900 text-right" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{order.clientFullName}</span>
+                    <span className="text-slate-500 font-medium shrink-0">Buyurtmachi (Mijoz):</span>
+                    <span className="font-bold text-slate-900 text-right">{order.clientFullName}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Schet raqami:</span>
-                    <span className="font-mono font-bold text-slate-900 bg-amber-100/70 px-2 py-0.5 rounded text-xs" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                    <span className="text-slate-500 font-medium shrink-0">Schet raqami:</span>
+                    <span className="font-mono font-bold text-slate-900 bg-amber-100/70 px-2 py-0.5 rounded text-xs">
                       {order.invoiceNumber}
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Showroom filiali:</span>
-                    <span className="font-semibold text-slate-800 text-right" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{order.showroomName}</span>
+                    <span className="text-slate-500 font-medium shrink-0">Showroom filiali:</span>
+                    <span className="font-semibold text-slate-800 text-right">{order.showroomName}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Showroom telefon:</span>
-                    <span className="font-semibold text-slate-800 font-mono text-sm" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{showroomPhone}</span>
+                    <span className="text-slate-500 font-medium shrink-0">Showroom telefon:</span>
+                    <span className="font-semibold text-slate-800 font-mono text-sm">{showroomPhone}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Mas'ul menedjer:</span>
-                    <span className="font-semibold text-slate-800" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{order.salesManagerName}</span>
+                    <span className="text-slate-500 font-medium shrink-0">Mas'ul menedjer:</span>
+                    <span className="font-semibold text-slate-800">{order.salesManagerName}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2 sm:border-l sm:border-amber-900/15 sm:pl-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Buyurtma sanasi:</span>
-                    <span className="font-semibold text-slate-800 font-mono text-xs" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{order.orderDate}</span>
+                    <span className="text-slate-500 font-medium shrink-0">Buyurtma sanasi:</span>
+                    <span className="font-semibold text-slate-800 font-mono text-xs">{order.orderDate}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Fabrikaga berilgan:</span>
-                    <span className="font-semibold text-slate-800 font-mono text-xs" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{order.factorySentDate || order.orderDate}</span>
+                    <span className="text-slate-500 font-medium shrink-0">Fabrikaga berilgan:</span>
+                    <span className="font-semibold text-slate-800 font-mono text-xs">{order.factorySentDate || order.orderDate}</span>
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500 font-medium shrink-0" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Tayyor bo'lgan sana:</span>
-                    <span className="font-bold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded text-xs font-mono" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                    <span className="text-slate-500 font-medium shrink-0">Tayyor bo'lgan sana:</span>
+                    <span className="font-bold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded text-xs font-mono">
                       {order.readyDate || (isReady ? 'Tasdiqlangan' : order.orderDate)}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Product Specifications Table */}
+              {/* Products Table */}
               <div className="py-4 relative z-10">
-                <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#855B14] mb-2 sm:mb-3 flex items-center gap-1.5" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#855B14] mb-2 sm:mb-3 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#B8860B]" />
                   Kafolat berilgan mahsulotlar spetsifikatsiyasi:
                 </h4>
 
                 <div className="overflow-x-auto rounded-lg border border-amber-900/20 bg-white/80 shadow-xs">
-                  <table className="w-full text-left text-xs min-w-[340px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                  <table className="w-full text-left text-xs min-w-[340px]">
                     <thead className="bg-amber-100/60 text-slate-700 font-semibold border-b border-amber-900/15">
                       <tr>
-                        <th className="py-2 px-2.5 sm:px-3 text-[11px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>№</th>
-                        <th className="py-2 px-2.5 sm:px-3 text-[11px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Mahsulot va Model</th>
-                        <th className="py-2 px-2.5 sm:px-3 text-[11px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Rangi</th>
-                        <th className="py-2 px-2.5 sm:px-3 text-[11px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Hajm</th>
+                        <th className="py-2 px-2.5 sm:px-3 text-[11px]">№</th>
+                        <th className="py-2 px-2.5 sm:px-3 text-[11px]">Mahsulot va Model</th>
+                        <th className="py-2 px-2.5 sm:px-3 text-[11px]">Rangi</th>
+                        <th className="py-2 px-2.5 sm:px-3 text-[11px]">Hajm</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-amber-900/10 text-slate-800">
                       {order.products.map((item, idx) => (
                         <tr key={item.id || idx}>
-                          <td className="py-2 px-2.5 sm:px-3 font-mono text-slate-500 text-[11px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{idx + 1}</td>
-                          <td className="py-2 px-2.5 sm:px-3" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
-                            <span className="font-bold block text-slate-900 text-xs" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{item.name}</span>
-                            <span className="text-[10px] text-slate-600 block" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{item.model && item.model !== 'Bo\'sh' ? item.model : (item.dimensions && item.dimensions !== 'Bo\'sh' ? item.dimensions : '')}</span>
+                          <td className="py-2 px-2.5 sm:px-3 font-mono text-slate-500 text-[11px]">{idx + 1}</td>
+                          <td className="py-2 px-2.5 sm:px-3">
+                            <span className="font-bold block text-slate-900 text-xs">{item.name}</span>
+                            <span className="text-[10px] text-slate-600 block">{item.model && item.model !== 'Bo\'sh' ? item.model : (item.dimensions && item.dimensions !== 'Bo\'sh' ? item.dimensions : '')}</span>
                           </td>
-                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{item.color && item.color !== 'Bo\'sh' ? item.color : 'Bo\'sh'}</td>
-                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{item.areaSqM > 0 ? `${item.areaSqM} m²` : 'Bo\'sh'}</td>
+                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.color && item.color !== 'Bo\'sh' ? item.color : 'Bo\'sh'}</td>
+                          <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.areaSqM > 0 ? `${item.areaSqM} m²` : 'Bo\'sh'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -333,70 +330,73 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Warranty Period Banner */}
+              {/* Warranty Period */}
               <div className="my-2 sm:my-3 p-3 sm:p-4 bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-amber-500/15 border border-amber-500/40 rounded-xl flex items-center justify-between relative z-10 gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#B8860B] text-white flex items-center justify-center font-extrabold text-sm sm:text-base shadow-sm shrink-0">
                     {warrantyMonths}
                   </div>
                   <div>
-                    <h5 className="font-bold text-slate-900 text-xs sm:text-sm" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                    <h5 className="font-bold text-slate-900 text-xs sm:text-sm">
                       Kafolat Muddati: {warrantyMonths} Oy ({warrantyMonths / 12} Yil)
                     </h5>
-                    <p className="text-[10px] sm:text-[11px] text-slate-600 leading-tight" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                    <p className="text-[10px] sm:text-[11px] text-slate-600 leading-tight">
                       Konstruksiyalar, furnitura va lak-bo'yoq qatlamiga rasmiy servis kafolatlangan.
                     </p>
                   </div>
                 </div>
                 <div className="hidden sm:block text-right shrink-0">
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Sifat: {order.warranty?.qualityScore || 100}%
                   </span>
                 </div>
               </div>
 
-              {/* 🔥 Bottom - IKKITA PECHAT VA IKKITA INDIVIDUAL IMZO */}
+              {/* 🔥 BOTTOM - 2 PECHAT + 2 PROFESSIONAL IMZO (PREZIDENT USLUBIDA) */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
                 {/* Left: Inspector Info */}
                 <div className="text-center sm:text-left">
-                  <p className="text-[11px] text-slate-500 font-medium" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Sifat nazorati xulosasi:</p>
-                  <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                  <p className="text-[11px] text-slate-500 font-medium">Sifat nazorati xulosasi:</p>
+                  <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Barcha standartlarga to'liq mos keladi
                   </p>
                   <div className="mt-2 sm:mt-3">
-                    <p className="text-[10px] text-slate-500" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Sifat Nazorati Mas'ul Muhandisi:</p>
-                    <p className="font-bold text-slate-900 text-xs" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{inspectorName}</p>
-                    <p className="text-[10px] text-slate-500" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>{order.warranty?.okkManagerTitle || 'Bosh sifat nazoratchisi'}</p>
+                    <p className="text-[10px] text-slate-500">Sifat Nazorati Mas'ul Muhandisi:</p>
+                    <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
+                    <p className="text-[10px] text-slate-500">{order.warranty?.okkManagerTitle || 'Bosh sifat nazoratchisi'}</p>
                   </div>
                 </div>
 
-                {/* 🔥 Middle: IKKITA PECHAT VA IKKITA IMZO */}
-                <div className="flex flex-row items-center justify-center gap-4 sm:gap-8 py-1">
+                {/* 🔥 Middle: IKKITA PECHAT VA PROFESSIONAL IMOZOLAR */}
+                <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
                   {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
-                    {/* Pechat */}
                     <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
                       <img 
                         src="/images.png" 
-                        alt="Imzo Sifat Nazorati" 
+                        alt="Imzo" 
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    {/* 🔥 Individual imzo - 1 */}
-                    <div className="mt-1">
-                      <svg className="w-20 h-6 sm:w-24 sm:h-7 text-blue-900" viewBox="0 0 120 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M5 20 C15 5, 25 22, 35 10 C45 0, 55 18, 65 8 C75 -2, 85 20, 95 12 C105 5, 115 15, 120 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M8 22 C18 8, 28 24, 38 12 C48 2, 58 20, 68 10 C78 0, 88 22, 98 14 C108 7, 118 17, 122 12" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
+                    {/* 🔥 PROFESSIONAL IMZO 1 - PREZIDENT USLUBIDA */}
+                    <div className="mt-0.5">
+                      <svg className="w-28 h-8 sm:w-36 sm:h-10" viewBox="0 0 180 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 30 C12 15, 20 38, 30 12 C40 -5, 50 35, 60 18 C68 5, 78 32, 88 15 C98 -2, 108 30, 118 20 C125 14, 135 28, 145 10 C155 -5, 165 25, 175 18" stroke="#1a365d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M8 32 C15 18, 23 40, 33 14 C43 -3, 53 37, 63 20 C71 7, 81 34, 91 17 C101 0, 111 32, 121 22 C128 16, 138 30, 148 12 C158 -3, 168 27, 178 20" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+                        <path d="M3 28 C10 12, 18 35, 28 10 C38 -7, 48 33, 58 16 C66 3, 76 30, 86 13 C96 -4, 106 28, 116 18 C123 12, 133 26, 143 8 C153 -7, 163 23, 173 16" stroke="#1a365d" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+                        <path d="M15 35 L55 28" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
+                        <path d="M125 22 L165 18" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
                       </svg>
-                      <p className="text-[6px] sm:text-[7px] text-slate-500 text-center font-medium" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Mahsulot kafolati</p>
+                      <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                        Mahsulot kafolati
+                      </p>
                     </div>
                   </div>
 
                   {/* 2 - Sifat Nazorati */}
                   <div className="flex flex-col items-center">
-                    {/* Pechat */}
                     <div className="w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
                       <img 
                         src="/images1.png" 
@@ -404,13 +404,18 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    {/* 🔥 Individual imzo - 2 */}
-                    <div className="mt-1">
-                      <svg className="w-20 h-6 sm:w-24 sm:h-7 text-blue-900" viewBox="0 0 120 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M10 18 C25 8, 35 25, 50 15 C60 8, 70 22, 85 12 C95 5, 105 20, 115 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M15 20 C28 10, 38 27, 52 17 C62 10, 72 24, 87 14 C97 7, 107 22, 117 17" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.5" />
+                    {/* 🔥 PROFESSIONAL IMZO 2 - PREZIDENT USLUBIDA */}
+                    <div className="mt-0.5">
+                      <svg className="w-28 h-8 sm:w-36 sm:h-10" viewBox="0 0 180 45" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 32 C20 18, 28 40, 38 14 C48 -3, 58 35, 68 20 C76 8, 86 32, 96 16 C106 0, 116 30, 126 22 C133 16, 143 30, 153 12 C163 -2, 173 25, 178 18" stroke="#1a365d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M15 34 C23 20, 31 42, 41 16 C51 -1, 61 37, 71 22 C79 10, 89 34, 99 18 C109 2, 119 32, 129 24 C136 18, 146 32, 156 14 C166 0, 176 27, 180 20" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+                        <path d="M10 30 C18 16, 26 38, 36 12 C46 -5, 56 33, 66 18 C74 6, 84 30, 94 14 C104 -2, 114 28, 124 20 C131 14, 141 28, 151 10 C161 -5, 171 23, 176 16" stroke="#1a365d" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+                        <path d="M20 37 L60 30" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
+                        <path d="M130 24 L170 20" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.3" />
                       </svg>
-                      <p className="text-[6px] sm:text-[7px] text-slate-500 text-center font-medium" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>Sifat nazorati</p>
+                      <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                        Sifat nazorati
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -435,17 +440,17 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                       </div>
                     </div>
                   </div>
-                  <p className="text-[9px] sm:text-[10px] text-slate-500 mt-1 font-mono" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                  <p className="text-[9px] sm:text-[10px] text-slate-500 mt-1 font-mono">
                     Onlayn QR Verifikatsiya
                   </p>
-                  <p className="text-[8px] sm:text-[9px] text-slate-400 font-mono" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                  <p className="text-[8px] sm:text-[9px] text-slate-400 font-mono">
                     {certNumber}
                   </p>
                 </div>
               </div>
 
-              {/* 🔥 FOOTER */}
-              <div className="mt-4 pt-3 border-t border-amber-900/10 text-[9px] sm:text-[10px] text-slate-500 text-center flex flex-wrap items-center justify-center gap-2 sm:gap-4" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+              {/* Footer */}
+              <div className="mt-4 pt-3 border-t border-amber-900/10 text-[9px] sm:text-[10px] text-slate-500 text-center flex flex-wrap items-center justify-center gap-2 sm:gap-4">
                 <span>Call Markaz: +998 (71) 200-88-00</span>
                 <span className="hidden sm:inline">•</span>
                 <span>imzo.uz</span>
