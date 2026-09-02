@@ -40,12 +40,12 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     ? order.warranty.warrantyPeriodMonths 
     : 60;
   
+  // 🔥 Sifat nazorati Mutaxassisi - UF_CRM_1690286173 dan olinadi
   const inspectorName = (order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-' && order.warranty.okkManagerName !== "Bo'sh") 
     ? order.warranty.okkManagerName 
     : (order.okkInspectorName || "Bo'sh");
   
-  const certNumber = `Imzo-${new Date().getFullYear()}-${String(order.id).slice(-6).padStart(6, '0')}`;
-  
+  const certNumber = order.warranty?.certificateNumber || `KT-2026-${order.invoiceNumber.replace(/\D/g, '').slice(-4) || '0000'}`;
   const showroomPhone = getShowroomPhone(order.showroomName);
 
   const handleDownloadPdf = async () => {
@@ -58,8 +58,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
         useCORS: true,
         logging: false,
         backgroundColor: '#FFFFFF',
-        allowTaint: true,
-        foreignObjectRendering: true,
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -80,7 +78,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
       setTimeout(() => setDownloadSuccess(false), 3000);
     } catch (err) {
       console.error('PDF generation error', err);
-      // Agar xatolik bo'lsa, print qilishni taklif qilamiz
       window.print();
     } finally {
       setIsGeneratingPdf(false);
@@ -152,7 +149,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
           transition={{ duration: 0.2 }}
           className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
         >
-          {/* Header Action Bar */}
+          {/* Header */}
           <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 shrink-0 gap-2">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
@@ -218,7 +215,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
             </div>
           </div>
 
-          {/* Certificate Printable Canvas / Container */}
+          {/* Certificate */}
           <div className="p-2 sm:p-5 md:p-8 overflow-y-auto flex-1 bg-slate-950/70">
             <div
               ref={certificateRef}
@@ -226,13 +223,13 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
               className="relative w-full bg-gradient-to-b from-[#FFFDF9] to-[#FAF5E8] text-slate-900 p-4 sm:p-7 md:p-10 rounded-xl sm:rounded-2xl border-2 sm:border-4 md:border-[6px] border-double border-[#D4AF37] shadow-2xl selection:bg-amber-100 max-w-full"
               style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
             >
-              {/* Corner Luxury Flourishes */}
+              {/* Corner Flourishes */}
               <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-l-2 border-[#D4AF37]" />
               <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-r-2 border-[#D4AF37]" />
               <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-l-2 border-[#D4AF37]" />
               <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-r-2 border-[#D4AF37]" />
 
-              {/* Watermark Background */}
+              {/* Watermark */}
               <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
                 <Award className="w-64 h-64 sm:w-96 sm:h-96 text-[#855B14]" />
               </div>
@@ -257,7 +254,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </p>
               </div>
 
-              {/* Info Matrix Grid */}
+              {/* Info Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4 sm:py-6 border-b border-amber-900/15 relative z-10 text-xs sm:text-sm">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -302,7 +299,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Product Specifications Table */}
+              {/* Products Table */}
               <div className="py-4 relative z-10">
                 <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#855B14] mb-2 sm:mb-3 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#B8860B]" />
@@ -336,7 +333,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Warranty Period Banner */}
+              {/* Warranty Period */}
               <div className="my-2 sm:my-3 p-3 sm:p-4 bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-amber-500/15 border border-amber-500/40 rounded-xl flex items-center justify-between relative z-10 gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#B8860B] text-white flex items-center justify-center font-extrabold text-sm sm:text-base shadow-sm shrink-0">
@@ -359,62 +356,102 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* Bottom Verification, Signatures & Stamps */}
+              {/* 🔥 BOTTOM - FAQAT "Sifat nazorati Mutaxassisi" qoldi */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
-                {/* Left: Inspector Info */}
+                {/* Left: Sifat nazorati xulosasi */}
                 <div className="text-center sm:text-left">
                   <p className="text-[11px] text-slate-500 font-medium">Sifat nazorati xulosasi:</p>
                   <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Barcha standartlarga to'liq mos keladi
                   </p>
+                  {/* 🔥 FAQAT "Sifat nazorati Mutaxassisi" qoldi */}
                   <div className="mt-2">
                     <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
                     <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
                   </div>
                 </div>
 
-                {/* Middle: Official Stamp and Signature */}
-                <div className="flex flex-col items-center justify-center relative py-1">
-                  {/* Signature */}
-                  <div className="relative w-32 h-12 flex items-center justify-center">
-                    <svg className="w-28 h-10 text-blue-900 -rotate-3" viewBox="0 0 160 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M10 40 C30 10, 45 55, 60 20 C70 -5, 80 50, 95 30 C105 15, 120 40, 150 25 M30 35 L140 33" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span className="absolute bottom-0 text-[8px] text-slate-400 font-mono uppercase">
-                      Imzo: {inspectorName.split(' ')[0] || 'OKK'}
-                    </span>
+                {/* 🔥 Middle: IKKITA PECHAT (KATTAROQ) VA IKKITA IMOZO */}
+                <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
+                  {/* 1 - Mahsulot Kafolati */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
+                      <img 
+                        src="/images.png" 
+                        alt="Imzo" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
+                      <img 
+                        src="/signature1.png" 
+                        alt="Mahsulot kafolati" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
+                      Mahsulot kafolati
+                    </p>
                   </div>
 
-                  {/* 🔥 PECHAT RASMI - /images.png */}
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-0 flex items-center justify-center shadow-inner bg-white/90">
-                    <img 
-                      src="/images.png" 
-                      alt="Imzo Sifat Nazorati" 
-                      className="w-full h-full object-contain rounded-full"
-                    />
+                  {/* 2 - Sifat Nazorati */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
+                      <img 
+                        src="/images1.png" 
+                        alt="Sifat Nazorati" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
+                      <img 
+                        src="/signature2.png" 
+                        alt="Sifat nazorati" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
+                      Sifat nazorati
+                    </p>
                   </div>
                 </div>
 
-                {/* Right: Sertifikat raqami (QR kod o'rniga) */}
+                {/* Right: QR Code */}
                 <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg shadow-sm text-center w-full max-w-[200px]">
-                    <p className="text-xs font-mono text-amber-800 font-bold break-all">{certNumber}</p>
-                    <p className="text-[10px] text-amber-600 mt-1">Sertifikat raqami</p>
+                  <div className="p-1.5 bg-white border border-slate-300 rounded-lg shadow-sm">
+                    <div className="w-16 h-16 sm:w-18 sm:h-18 bg-slate-950 p-1 flex items-center justify-center rounded">
+                      <div className="grid grid-cols-4 gap-0.5 w-full h-full bg-white p-0.5">
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="border border-slate-950" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="border border-slate-950" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="border border-slate-950" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="border border-slate-950" />
+                        <div className="bg-slate-950 rounded-xs" />
+                        <div className="bg-slate-950 rounded-xs" />
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-[9px] sm:text-[10px] text-slate-500 mt-2 font-mono text-center sm:text-right break-all">
-                    imzo-kabinet.vercel.app/verify/{certNumber}
+                  <p className="text-[9px] sm:text-[10px] text-slate-500 mt-1 font-mono">
+                    Onlayn QR Verifikatsiya
+                  </p>
+                  <p className="text-[8px] sm:text-[9px] text-slate-400 font-mono">
+                    {certNumber}
                   </p>
                 </div>
               </div>
 
-              {/* Small Footnote */}
+              {/* Footer */}
               <div className="mt-4 pt-3 border-t border-amber-900/10 text-[9px] sm:text-[10px] text-slate-500 text-center flex flex-wrap items-center justify-center gap-2 sm:gap-4">
                 <span>Call Markaz: +998 (71) 200-88-00</span>
                 <span className="hidden sm:inline">•</span>
                 <span>imzo.uz</span>
                 <span className="hidden sm:inline">•</span>
-                <span>O'z DSt standartlariga muvofiq</span>
               </div>
             </div>
           </div>
