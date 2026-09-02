@@ -220,7 +220,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
               className="relative w-full bg-gradient-to-b from-[#FFFDF9] to-[#FAF5E8] text-slate-900 p-4 sm:p-7 md:p-10 rounded-xl sm:rounded-2xl border-2 sm:border-4 md:border-[6px] border-double border-[#D4AF37] shadow-2xl selection:bg-amber-100 max-w-full"
               style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
             >
-              {/* Dekorativ burchaklar */}
+              {/* Corner Flourishes */}
               <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-l-2 border-[#D4AF37]" />
               <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-r-2 border-[#D4AF37]" />
               <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-l-2 border-[#D4AF37]" />
@@ -231,7 +231,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <Award className="w-64 h-64 sm:w-96 sm:h-96 text-[#855B14]" />
               </div>
 
-              {/* Header */}
+              {/* Top Header */}
               <div className="text-center relative z-10 pb-4 sm:pb-6 border-b border-amber-900/20">
                 <div className="flex justify-center pb-2">
                   <ImzoLogo size="lg" variant="dark" className="h-10 sm:h-12" />
@@ -353,7 +353,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 BOTTOM - 2 PECHAT + 2 REAL IMOZO (SVRG USLUBIDA) */}
+              {/* 🔥 BOTTOM - 2 PECHAT + 2 REAL IMOZO (ANDRA USLUBIDA) */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
                 {/* Left: Inspector Info */}
                 <div className="text-center sm:text-left">
@@ -380,20 +380,23 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    {/* 🔥 REAL IMOZO 1 - QO'L YOZILGAN USLUBDA */}
+                    {/* 🔥 REAL IMOZO 1 - ANDRA USLUBIDA */}
                     <div className="mt-0.5">
-                      <svg className="w-24 h-8 sm:w-24 sm:h-12" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        {/* Asosiy imzo chizig'i */}
-                        <path d="M8 35 C18 18, 28 42, 38 12 C48 -8, 58 38, 68 20 C78 2, 88 35, 98 15 C108 -5, 118 32, 128 22 C138 12, 148 30, 158 10 C168 -8, 178 28, 185 20" stroke="#1a365d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        {/* Ikkinchi qatlam - qalinroq */}
-                        <path d="M12 37 C22 20, 32 44, 42 14 C52 -6, 62 40, 72 22 C82 4, 92 37, 102 17 C112 -3, 122 34, 132 24 C142 14, 152 32, 162 12 C172 -6, 182 30, 188 22" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-                        {/* Uchinchi qatlam - ingichka */}
-                        <path d="M15 33 C25 16, 35 40, 45 10 C55 -10, 65 36, 75 18 C85 0, 95 33, 105 13 C115 -7, 125 30, 135 20 C145 10, 155 28, 165 8 C175 -10, 185 26, 190 18" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
-                        {/* Pastki chiziq - imzo ostidagi */}
-                        <path d="M20 42 L60 35" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
-                        <path d="M140 30 L180 25" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
-                        {/* Nuqta - imzo oxiri */}
-                        <circle cx="188" cy="20" r="1.5" fill="#1a365d" opacity="0.5" />
+                      <svg className="w-36 h-12 sm:w-44 sm:h-14" viewBox="0 0 220 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* Asosiy imzo */}
+                        <path d="M10 40 C25 20, 35 48, 45 15 C55 -8, 65 42, 75 25 C85 8, 95 40, 105 18 C115 -4, 125 35, 135 28 C145 21, 155 35, 165 12 C175 -8, 185 30, 195 22" stroke="#1a365d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* 2-qatlam */}
+                        <path d="M14 42 C29 22, 39 50, 49 17 C59 -6, 69 44, 79 27 C89 10, 99 42, 109 20 C119 -2, 129 37, 139 30 C149 23, 159 37, 169 14 C179 -6, 189 32, 199 24" stroke="#1a365d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                        {/* 3-qatlam */}
+                        <path d="M18 38 C33 18, 43 46, 53 13 C63 -10, 73 40, 83 23 C93 6, 103 38, 113 16 C123 -6, 133 33, 143 26 C153 19, 163 33, 173 10 C183 -10, 193 28, 203 20" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+                        {/* Pastgi chiziq */}
+                        <path d="M25 48 L65 40" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+                        <path d="M155 35 L195 28" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+                        {/* Nuqta */}
+                        <circle cx="200" cy="22" r="2" fill="#1a365d" opacity="0.6" />
+                        {/* Chiziq ostidagi qo'shimcha */}
+                        <path d="M20 50 C40 45, 60 48, 80 42" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
+                        <path d="M150 38 C170 33, 190 36, 210 30" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
                       </svg>
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
                         Mahsulot kafolati
@@ -410,19 +413,23 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    {/* 🔥 REAL IMOZO 2 - QO'L YOZILGAN USLUBDA */}
+                    {/* 🔥 REAL IMOZO 2 - ANDRA USLUBIDA */}
                     <div className="mt-0.5">
-                      <svg className="w-24 h-10 sm:w-24 sm:h-12" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        {/* Asosiy imzo chizig'i */}
-                        <path d="M10 38 C20 20, 30 44, 40 14 C50 -6, 60 40, 70 22 C80 4, 90 37, 100 17 C110 -3, 120 34, 130 24 C140 14, 150 32, 160 12 C170 -6, 180 30, 186 22" stroke="#1a365d" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        {/* Ikkinchi qatlam */}
-                        <path d="M14 40 C24 22, 34 46, 44 16 C54 -4, 64 42, 74 24 C84 6, 94 39, 104 19 C114 -1, 124 36, 134 26 C144 16, 154 34, 164 14 C174 -4, 184 32, 190 24" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
-                        {/* Uchinchi qatlam */}
-                        <path d="M17 36 C27 18, 37 42, 47 12 C57 -8, 67 38, 77 20 C87 2, 97 35, 107 15 C117 -5, 127 32, 137 22 C147 12, 157 30, 167 10 C177 -8, 187 28, 192 20" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
-                        {/* Pastki chiziq */}
-                        <path d="M22 44 L62 37" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
-                        <path d="M142 32 L182 27" stroke="#1a365d" strokeWidth="1.2" strokeLinecap="round" opacity="0.4" />
-                        <circle cx="190" cy="22" r="1.5" fill="#1a365d" opacity="0.5" />
+                      <svg className="w-36 h-12 sm:w-44 sm:h-14" viewBox="0 0 220 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        {/* Asosiy imzo */}
+                        <path d="M12 42 C27 22, 37 50, 47 17 C57 -6, 67 44, 77 27 C87 10, 97 42, 107 20 C117 -2, 127 37, 137 30 C147 23, 157 37, 167 14 C177 -6, 187 32, 197 24" stroke="#1a365d" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        {/* 2-qatlam */}
+                        <path d="M16 44 C31 24, 41 52, 51 19 C61 -4, 71 46, 81 29 C91 12, 101 44, 111 22 C121 0, 131 39, 141 32 C151 25, 161 39, 171 16 C181 -4, 191 34, 201 26" stroke="#1a365d" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.6" />
+                        {/* 3-qatlam */}
+                        <path d="M20 40 C35 20, 45 48, 55 15 C65 -8, 75 42, 85 25 C95 8, 105 40, 115 18 C125 -4, 135 35, 145 28 C155 21, 165 35, 175 12 C185 -8, 195 30, 205 22" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" opacity="0.3" />
+                        {/* Pastgi chiziq */}
+                        <path d="M27 50 L67 42" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+                        <path d="M157 37 L197 30" stroke="#1a365d" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+                        {/* Nuqta */}
+                        <circle cx="202" cy="24" r="2" fill="#1a365d" opacity="0.6" />
+                        {/* Chiziq ostidagi qo'shimcha */}
+                        <path d="M22 52 C42 47, 62 50, 82 44" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
+                        <path d="M152 40 C172 35, 192 38, 212 32" stroke="#1a365d" strokeWidth="1" strokeLinecap="round" opacity="0.3" />
                       </svg>
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
                         Sifat nazorati
