@@ -353,7 +353,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 BOTTOM - SIFAT NAZORATI MUTAXASSISI QO'SHILDI */}
+              {/* 🔥 BOTTOM - FAQAT "Sifat nazorati Mutaxassisi" QOLDI */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
                 {/* Left: Inspector Info */}
                 <div className="text-center sm:text-left">
@@ -363,11 +363,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     Barcha standartlarga to'liq mos keladi
                   </p>
                   <div className="mt-2 sm:mt-3">
-                    <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
+                    <p className="text-[10px] text-slate-500">Sifat Nazorati Mas'ul Muhandisi:</p>
                     <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
                     <p className="text-[10px] text-slate-500">{order.warranty?.okkManagerTitle || 'Bosh sifat nazoratchisi'}</p>
                   </div>
-                  {/* 🔥 SIFAT NAZORATI MUTAXASSISI QO'SHILDI */}
+                  {/* 🔥 FAQAT "Sifat nazorati Mutaxassisi" QOLDI */}
                   <div className="mt-2">
                     <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
                     <p className="font-bold text-slate-900 text-xs">OKK-{certNumber.slice(-6)}</p>
@@ -378,7 +378,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <div className="flex flex-row items-center justify-center gap-6 sm:gap-10 py-1">
                   {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
-                    {/* 🔥 PECHAT 1 - KATTAROQ */}
                     <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
                       <img 
                         src="/images.png" 
@@ -400,7 +399,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
 
                   {/* 2 - Sifat Nazorati */}
                   <div className="flex flex-col items-center">
-                    {/* 🔥 PECHAT 2 - KATTAROQ */}
                     <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
                       <img 
                         src="/images1.png" 
