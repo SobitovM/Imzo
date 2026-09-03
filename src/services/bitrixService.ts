@@ -79,6 +79,27 @@ export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
 
   return true;
 };
+// bitrixService.ts - mapBitrixStageToStatus funksiyasiga qo'shing
+
+// 🔥 C1 Pipeline (Servis) uchun statuslar
+if (s === 'C1:NEW') {
+  return 'servis_yangi';
+}
+if (s === 'C1:UC_WV7G2R') {
+  return 'servis_master';
+}
+if (s === 'C1:PREPARATION' || s === 'C1:UC_PIL0QY') {
+  return 'servis_jarayonda';
+}
+if (s === 'C1:WON') {
+  return 'servis_hal_qilindi';
+}
+if (s === 'C1:LOSE') {
+  return 'servis_bekor_qilindi';
+}
+if (s === 'C1:UC_E0X40P') {
+  return 'servis_montaj_tugallanmagan';
+}
 
 // 🔥 MAP BITRIX STAGE TO INTERNAL STATUS
 export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
