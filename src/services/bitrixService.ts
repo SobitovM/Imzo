@@ -1,25 +1,3 @@
-// bitrixService.ts - import qismiga qo'shing
-import { SHOWROOM_PHONES } from './bitrixConfig';
-
-// 🔥 Showroom telefon raqamini olish funksiyasi
-export const getShowroomPhone = (showroomName: string): string => {
-  if (!showroomName || showroomName === "Bo'sh") {
-    return SHOWROOM_PHONES['default'] || "+998 (71) 200-88-00";
-  }
-  
-  if (SHOWROOM_PHONES[showroomName]) {
-    return SHOWROOM_PHONES[showroomName];
-  }
-  
-  for (const [key, phone] of Object.entries(SHOWROOM_PHONES)) {
-    if (showroomName.includes(key) || key.includes(showroomName)) {
-      return phone;
-    }
-  }
-  
-  return SHOWROOM_PHONES['default'] || "+998 (71) 200-88-00";
-};
-
 import { Order, OrderStatus, ProductItem } from '../types';
 import { 
   PRODUCTS_DICT, 
@@ -58,7 +36,6 @@ export const setBitrixAutoSync = (enabled: boolean) => {
 export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
   if (!deal || typeof deal !== 'object') return false;
 
-  // 1. UF_CRM_1745308434 (Maxsus kod) to'ldirilgan bo'lishi kerak
   const specialCode = deal[BITRIX_FIELDS.SPECIAL_CODE];
   const hasCode = specialCode !== null && 
                   specialCode !== undefined && 
@@ -70,7 +47,6 @@ export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
     return false;
   }
 
-  // 2. STAGE_ID ruxsat etilgan ro'yxatda bo'lishi kerak
   const stageId = String(deal.STAGE_ID || '').trim();
   if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
     console.warn(`Deal ${deal.ID} filtrlandi: STAGE_ID "${stageId}" ruxsat etilmagan`);
@@ -80,12 +56,11 @@ export const isBitrixDealEligible = (deal: Record<string, any>): boolean => {
   return true;
 };
 
-// bitrixService.ts - mapBitrixStageToStatus TO'LIQ FUNKSIYA
-
+// 🔥 MAP BITRIX STAGE TO INTERNAL STATUS
 export const mapBitrixStageToStatus = (stageId: string): OrderStatus => {
   const s = (stageId || '').trim();
 
-  // 🔥 C1 Pipeline (Servis) uchun statuslar - BIRINCHI TEKSHIRILADI
+  // 🔥 C1 Pipeline (Servis) uchun statuslar
   if (s === 'C1:NEW') {
     return 'servis_yangi';
   }
@@ -368,26 +343,19 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
     }
   ];
 
-  // 🔥 DATES - TUZATILGAN QISM
   const factorySentDate = deal[BITRIX_FIELDS.FACTORY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.FACTORY_DATE]) : "Bo'sh";
   const estimatedReadyDate = deal[BITRIX_FIELDS.ESTIMATED_READY_DATE] ? formatBitrixDate(deal[BITRIX_FIELDS.ESTIMATED_READY_DATE]) : "Bo'sh";
-  
-  // 🔥 FAQAT UF_CRM_1678904672694 dan olamiz - "Заказ готов" статусига ўтган вақт
-  const orderReadyDateRaw = deal[BITRIX_FIELDS.ORDER_READY_DATE]; // UF_CRM_1678904672694
-  let readyDate = "Bo'sh";
+  const orderReadyDateRaw = deal[BITRIX_FIELDS.ORDER_READY_DATE];
+  const orderReadyDate = orderReadyDateRaw ? formatBitrixDate(orderReadyDateRaw) : null;
 
-  if (orderReadyDateRaw) {
-    readyDate = formatBitrixDate(orderReadyDateRaw);
+  let readyDate = "Bo'sh";
+  if (orderReadyDate) {
+    readyDate = orderReadyDate;
+  } else if (isReady && estimatedReadyDate !== "Bo'sh") {
+    readyDate = estimatedReadyDate;
   } else if (isReady) {
     readyDate = 'Tasdiqlangan';
   }
-
-  // Debug uchun
-  console.log(`Deal ${dealId} readyDate:`, {
-    orderReadyDateRaw,
-    readyDate,
-    isReady
-  });
 
   const clientName = contact?.NAME 
     ? `${contact.LAST_NAME || ''} ${contact.NAME} ${contact.SECOND_NAME || ''}`.trim()
@@ -669,7 +637,6 @@ export const fetchBitrixCustomerOrdersByCredentials = async (
   };
 };
 
-// 🔥 ASOSIY FUNKSIYA: fetchBitrixRecentDeals - SPECIAL_CODE va STAGE_ID filtrlanadi
 export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[]> => {
   try {
     console.log('🔄 Bitrix24 dan ma\'lumot olinmoqda...');
@@ -688,7 +655,6 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
       "UF_CRM_1696845428847", "UF_CRM_1761029845985"
     ];
 
-    // 🔥 1. Barcha deal'larni olamiz (2026-yildan boshlab)
     const result = await callBitrixMethod('crm.deal.list', {
       order: { DATE_CREATE: "DESC" },
       filter: {
@@ -706,9 +672,7 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
 
     console.log(`📋 ${result.length} ta deal yuklandi (2026-yildan boshlab)`);
 
-    // 🔥 2. SPECIAL_CODE bor va STAGE_ID ruxsat etilganlarni filtrlaymiz
     const eligibleDeals = result.filter(deal => {
-      // SPECIAL_CODE tekshiruvi - UF_CRM_1745308434 maydoni to'ldirilgan bo'lishi kerak
       const specialCode = deal.UF_CRM_1745308434;
       const hasCode = specialCode !== null && 
                       specialCode !== undefined && 
@@ -721,7 +685,6 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
         return false;
       }
 
-      // STAGE_ID tekshiruvi - malumot1.txt dagi statuslar
       const stageId = String(deal.STAGE_ID || '').trim();
       if (!stageId || !ALLOWED_BITRIX_STAGES.has(stageId)) {
         console.warn(`Deal ${deal.ID} filtrlandi: STAGE_ID "${stageId}" ruxsat etilmagan`);
@@ -738,10 +701,8 @@ export const fetchBitrixRecentDeals = async (limit: number = 10): Promise<Order[
       return [];
     }
 
-    // 🔥 3. FAQAT 10 TA OLAMIZ
     const limitedDeals = eligibleDeals.slice(0, 10);
 
-    // Contact ma'lumotlarini olish
     const contactIds = Array.from(new Set(limitedDeals.map((d: any) => d.CONTACT_ID).filter((id: any) => id && id !== '0' && id !== 0)));
     let contactMap: Record<string, any> = {};
 
@@ -799,33 +760,4 @@ export const parseRawBitrixJsonData = (rawInput: string | object): Order[] => {
   const eligibleDeals = dealsArray.filter(isBitrixDealEligible);
 
   return eligibleDeals.map((deal: any) => convertBitrixDealToOrder(deal));
-};
-// 🔥 Sertifikat raqamini yaratish (Imzo-2026-000001 formatida)
-export const generateCertificateNumber = (dealId: string, orderDate?: string): string => {
-  let year = new Date().getFullYear().toString();
-  if (orderDate) {
-    const date = new Date(orderDate);
-    if (!isNaN(date.getTime())) {
-      year = date.getFullYear().toString();
-    }
-  }
-  const num = String(dealId).slice(-6).padStart(6, '0');
-  return `Imzo-${year}-${num}`;
-};
-
-// 🔥 Sertifikat raqamidan yil va raqamni ajratib olish
-export const parseCertificateNumber = (certNumber: string): { year: string; number: string; full: string } => {
-  const parts = certNumber.split('-');
-  if (parts.length === 3) {
-    return {
-      year: parts[1] || new Date().getFullYear().toString(),
-      number: parts[2] || '000001',
-      full: certNumber
-    };
-  }
-  return {
-    year: new Date().getFullYear().toString(),
-    number: '000001',
-    full: certNumber
-  };
 };
