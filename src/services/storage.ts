@@ -207,7 +207,7 @@ export const markSmsSent = (orderId: string, customText?: string): Order | null 
   return orders[index];
 };
 
-// 🔥 ServiceStatus ni TicketStatus ga o'tkazish
+// ServiceStatus ni TicketStatus ga o'tkazish
 export const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi' => {
   const map: Record<string, 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi'> = {
     'yangi': 'yangi',
@@ -220,7 +220,7 @@ export const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' |
   return map[serviceStatus] || 'yangi';
 };
 
-// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish
+// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish (TUZATILGAN)
 export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise<string | null> => {
   try {
     const webhookUrl = getBitrixWebhookUrl();
@@ -240,22 +240,49 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
     const salesManager = matchedOrder?.salesManagerName || "Ko'rsatilmagan";
 
     let contactId = null;
-    try {
-      const searchResult = await callBitrixMethod('crm.contact.list', {
-        filter: {
-          "PHONE": contactPhone.replace(/\D/g, '')
-        },
-        select: ["ID", "NAME", "PHONE"]
-      });
 
-      if (Array.isArray(searchResult) && searchResult.length > 0) {
-        contactId = searchResult[0].ID;
-        console.log('✅ Mavjud contact topildi:', contactId);
+    // 🔥 Telefon raqamni turli formatlarda qidirish
+    const cleanPhone = normalizePhone(contactPhone); // 998901884471
+    const shortPhone = cleanPhone.slice(-9); // 901884471
+    const plusPhone = `+${cleanPhone}`; // +998901884471
+    const spacedPhone = contactPhone; // +998 90 188 44 71
+
+    console.log('🔍 Contact qidirilmoqda. Formatlar:', { cleanPhone, shortPhone, plusPhone, spacedPhone });
+
+    try {
+      // Bir nechta formatda qidirish
+      const searchFilters = [
+        { "PHONE": shortPhone },
+        { "PHONE": cleanPhone },
+        { "PHONE": plusPhone },
+        { "PHONE": spacedPhone }
+      ];
+
+      let foundContact = null;
+      for (const filter of searchFilters) {
+        const searchResult = await callBitrixMethod('crm.contact.list', {
+          filter: filter,
+          select: ["ID", "NAME", "PHONE"]
+        });
+
+        if (Array.isArray(searchResult) && searchResult.length > 0) {
+          foundContact = searchResult[0];
+          console.log('📞 Contact topildi! Filter:', filter, 'Contact:', foundContact);
+          break;
+        }
+      }
+
+      if (foundContact) {
+        contactId = foundContact.ID;
+        console.log('✅ Mavjud contact topildi ID:', contactId, 'Telefon:', foundContact.PHONE);
+      } else {
+        console.warn('⚠️ Telefon bo\'yicha contact topilmadi. Qidirilgan formatlar:', searchFilters);
       }
     } catch (searchErr) {
       console.warn('Contact qidirishda xatolik:', searchErr);
     }
 
+    // 🔥 Agar kontakt topilmasa, YANGI kontakt yaratamiz
     if (!contactId) {
       try {
         const newContact = await callBitrixMethod('crm.contact.add', {
@@ -272,19 +299,27 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
           }
         });
         contactId = newContact?.ID;
-        console.log('✅ Yangi contact yaratildi:', contactId);
+        console.log('✅ Yangi contact yaratildi ID:', contactId);
       } catch (createErr) {
-        console.warn('Contact yaratishda xatolik:', createErr);
+        console.error('❌ Contact yaratishda xatolik:', createErr);
+        return null;
       }
     }
 
+    // 🔥 Agar contactId hali ham yo'q bo'lsa, DEAL YARATMAYMIZ
+    if (!contactId) {
+      console.error('❌ Contact ID topilmadi yoki yaratilmadi, deal yaratish to\'xtatildi');
+      return null;
+    }
+
+    // 🔥 Deal yaratish (contactId MAJBURIY)
     const result = await callBitrixMethod('crm.deal.add', {
       fields: {
         TITLE: `Servis zayavkasi #${ticket.id} - ${contactName}`,
         TYPE_ID: 'SERVICE',
         CATEGORY_ID: 1,
         STAGE_ID: 'C1:NEW',
-        CONTACT_ID: contactId || '',
+        CONTACT_ID: contactId,  // 🔥 BU ENDI BO'SH EMAS!
         COMMENTS: `
 Mijoz: ${contactName}
 Telefon: ${contactPhone}
@@ -314,7 +349,7 @@ Muammo: ${ticket.problemDetails}
   }
 };
 
-// 🔥 Bitrix24 C1 pipeline da servis statusini yangilash
+// Bitrix24 C1 pipeline da servis statusini yangilash
 export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<void> => {
   try {
     if (!ticket.bitrixDealId) {
@@ -356,7 +391,7 @@ export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<
   }
 };
 
-// 🔥 Servis ticket yaratish
+// Servis ticket yaratish
 export const createServiceTicket = async (
   order: Order,
   category: string,
