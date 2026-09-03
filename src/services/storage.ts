@@ -1,5 +1,6 @@
-import { Order, ServiceTicket, OrderStatus, ProductItem } from '../types';
+import { Order, ServiceTicket, OrderStatus, ProductItem, ServiceStatus } from '../types';
 import { INITIAL_ORDERS, INITIAL_SERVICE_TICKETS } from '../data/mockData';
+import { getBitrixWebhookUrl, callBitrixMethod } from './bitrixService';
 
 const ORDERS_KEY = 'imzo_orders_v2';
 const TICKETS_KEY = 'imzo_tickets_v2';
@@ -17,32 +18,28 @@ export const getStoredOrders = (): Order[] => {
     
     orders = JSON.parse(raw);
 
-    // 🔥 RUXSAT ETILGAN STATUSLAR - barcha statuslar
     const allowedStatuses: OrderStatus[] = [
-      'okk_otdi',           // Buyurtma tayyor
-      'kontrol_kachestva',  // Sifat nazorati tekshiruvida
-      'yetkazib_berishda',  // Yetkazilmoqda
-      'topshirildi',        // Muvaffaqiyatli yakunlandi
-      'ishlab_chiqarishda', // Ishlab chiqarishda
-      'yangi'               // Yangi
+      'okk_otdi',
+      'kontrol_kachestva',
+      'yetkazib_berishda',
+      'topshirildi',
+      'ishlab_chiqarishda',
+      'yangi'
     ];
     
     orders = orders.filter((ord) => {
       if (!allowedStatuses.includes(ord.status)) {
-        console.warn(`Order ${ord.id} (${ord.invoiceNumber}) o'chirildi: Status "${ord.status}" ruxsat etilmagan`);
         return false;
       }
       
       const pin = ord.credentials?.pinCode;
       if (!pin || pin === '0000' || pin === '-' || pin === '5638' || pin.trim().length === 0 || pin === "Bo'sh") {
-        console.warn(`Order ${ord.id} (${ord.invoiceNumber}) o'chirildi: PIN yo'q (${pin})`);
         return false;
       }
       
       return true;
     });
 
-    // Bo'sh maydonlarni "Bo'sh" ga to'ldiramiz
     orders = orders.map((ord) => ({
       ...ord,
       showroomName: ord.showroomName && ord.showroomName.trim() !== '' && ord.showroomName !== '-' ? ord.showroomName : "Bo'sh",
@@ -210,14 +207,59 @@ export const markSmsSent = (orderId: string, customText?: string): Order | null 
   return orders[index];
 };
 
-export const createServiceTicket = (
+// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish
+export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise<string | null> => {
+  try {
+    const webhookUrl = getBitrixWebhookUrl();
+    if (!webhookUrl) {
+      console.warn('Bitrix24 Webhook URL sozlanmagan, zayavka faqat local saqlandi');
+      return null;
+    }
+
+    // Bitrix24 da yangi deal yaratish (C1 pipeline - Servis)
+    const result = await callBitrixMethod('crm.deal.add', {
+      fields: {
+        TITLE: `Servis zayavkasi #${ticket.id} - ${ticket.clientFullName}`,
+        TYPE_ID: 'SERVICE',
+        CATEGORY_ID: 1, // C1 pipeline
+        STAGE_ID: 'C1:NEW', // Новая заявка
+        CONTACT_ID: ticket.orderId?.replace('bx_', '') || '',
+        COMMENTS: `
+Mijoz: ${ticket.clientFullName}
+Telefon: ${ticket.clientPhone}
+Schet: ${ticket.invoiceNumber}
+Toifa: ${ticket.category}
+Muammo: ${ticket.problemDetails}
+        `.trim(),
+        UF_CRM_SERVICE_TICKET_ID: ticket.id,
+        UF_CRM_SERVICE_INVOICE: ticket.invoiceNumber,
+        UF_CRM_SERVICE_CATEGORY: ticket.category,
+        UF_CRM_SERVICE_STATUS: 'yangi',
+      }
+    });
+
+    console.log('✅ Servis zayavkasi Bitrix24 C1 pipeline ga yuborildi:', result);
+    
+    // Bitrix24 deal ID ni saqlaymiz
+    if (result && result.ID) {
+      return result.ID;
+    }
+    return null;
+  } catch (err) {
+    console.error('Bitrix24 C1 pipeline ga yuborishda xatolik:', err);
+    return null;
+  }
+};
+
+// 🔥 Servis ticket yaratish (C1 pipeline ga yuboradi)
+export const createServiceTicket = async (
   order: Order,
   category: string,
   problemDetails: string,
   customInvoiceNumber?: string,
   customPhone?: string,
   photos?: string[]
-): ServiceTicket => {
+): Promise<ServiceTicket> => {
   const tickets = getStoredTickets();
   const allOrders = getStoredOrders();
   const now = new Date();
@@ -239,16 +281,31 @@ export const createServiceTicket = (
     photoUrls: photos || [],
     createdAt: timeStr,
     status: 'yangi',
+    serviceStatus: 'yangi', // 🔥 C1:NEW ga mos
   };
 
   tickets.unshift(newTicket);
   saveStoredTickets(tickets);
+  
+  // 🔥 Bitrix24 C1 pipeline ga zayavka yuborish (async)
+  const bitrixDealId = await sendServiceRequestToBitrix(newTicket);
+  if (bitrixDealId) {
+    // Bitrix24 deal ID ni saqlaymiz
+    const updatedTickets = getStoredTickets();
+    const index = updatedTickets.findIndex(t => t.id === newTicket.id);
+    if (index !== -1) {
+      updatedTickets[index].bitrixDealId = bitrixDealId;
+      saveStoredTickets(updatedTickets);
+    }
+  }
+  
+  window.dispatchEvent(new Event('tickets_updated'));
   return newTicket;
 };
 
 export const updateTicketStatus = (
   ticketId: string,
-  status: 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi',
+  status: 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi',
   assignedSpecialist?: string
 ): ServiceTicket | null => {
   const tickets = getStoredTickets();
@@ -258,15 +315,66 @@ export const updateTicketStatus = (
   const now = new Date();
   const timeStr = `${now.toISOString().split('T')[0]} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
+  // 🔥 ServiceStatus ga moslashtirish
+  const serviceStatusMap: Record<string, ServiceStatus> = {
+    'yangi': 'yangi',
+    'jarayonda': 'jarayonda',
+    'usta_biriktirildi': 'master',
+    'hal_qilindi': 'hal_qilindi',
+    'bekor_qilindi': 'bekor_qilindi',
+  };
+
   tickets[index] = {
     ...tickets[index],
     status,
+    serviceStatus: serviceStatusMap[status] || 'yangi',
     assignedSpecialist: assignedSpecialist || tickets[index].assignedSpecialist,
-    ...(status === 'hal_qilindi' && !tickets[index].resolvedAt ? { resolvedAt: timeStr, resolvedByManager: assignedSpecialist || 'Servis Menejeri' } : {})
+    ...(status === 'hal_qilindi' && !tickets[index].resolvedAt ? { 
+      resolvedAt: timeStr, 
+      resolvedByManager: assignedSpecialist || 'Servis Menejeri' 
+    } : {})
   };
 
   saveStoredTickets(tickets);
+  
+  // 🔥 Bitrix24 C1 pipeline da statusni yangilash
+  updateBitrixServiceStatus(tickets[index]);
+  
   return tickets[index];
+};
+
+// 🔥 Bitrix24 C1 pipeline da servis statusini yangilash
+export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<void> => {
+  try {
+    if (!ticket.bitrixDealId) {
+      console.warn('Bitrix24 deal ID yo\'q, status yangilanmadi');
+      return;
+    }
+
+    // C1 pipeline statuslariga moslashtirish
+    const stageMap: Record<string, string> = {
+      'yangi': 'C1:NEW',
+      'master': 'C1:UC_WV7G2R',
+      'jarayonda': 'C1:UC_PIL0QY',
+      'hal_qilindi': 'C1:WON',
+      'bekor_qilindi': 'C1:LOSE',
+      'montaj_tugallanmagan': 'C1:UC_E0X40P',
+    };
+
+    const stageId = stageMap[ticket.serviceStatus || 'yangi'] || 'C1:NEW';
+
+    await callBitrixMethod('crm.deal.update', {
+      id: ticket.bitrixDealId,
+      fields: {
+        STAGE_ID: stageId,
+        UF_CRM_SERVICE_STATUS: ticket.serviceStatus || 'yangi',
+      }
+    });
+
+    console.log(`✅ Bitrix24 C1 pipeline status yangilandi: ${ticket.serviceStatus} -> ${stageId}`);
+  } catch (err) {
+    console.error('Bitrix24 C1 pipeline status yangilashda xatolik:', err);
+  }
 };
 
 export const resolveServiceTicket = (
@@ -285,6 +393,7 @@ export const resolveServiceTicket = (
   const updated: ServiceTicket = {
     ...tickets[index],
     status: 'hal_qilindi',
+    serviceStatus: 'hal_qilindi',
     resolvedAt: timeStr,
     resolvedByManager,
     resolutionNotes,
@@ -293,6 +402,10 @@ export const resolveServiceTicket = (
 
   tickets[index] = updated;
   saveStoredTickets(tickets);
+  
+  // 🔥 Bitrix24 C1 pipeline da statusni yangilash
+  updateBitrixServiceStatus(updated);
+  
   return updated;
 };
 
