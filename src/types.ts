@@ -70,6 +70,9 @@ export interface ServiceTicket {
   ratedAt?: string;
   // 🔥 Bitrix24 C1 deal ID
   bitrixDealId?: string;
+  // 🔥 Showroom va menejer ma'lumotlari
+  showroomName?: string;
+  salesManagerName?: string;
 }
 
 export interface ClientCredentials {
@@ -121,4 +124,3 @@ export interface ManagerUser {
   phone: string;
   department: string;
 }
-
