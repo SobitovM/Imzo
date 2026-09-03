@@ -132,7 +132,6 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
         {tickets.map((ticket) => {
           const isResolved = ticket.status === 'hal_qilindi';
           const isPendingRating = isResolved && !ticket.clientRating;
-          // 🔥 serviceStatus yoki status dan olamiz
           const statusKey = ticket.serviceStatus || ticket.status;
           const statusInfo = getServiceStatusInfo(statusKey);
 
@@ -147,7 +146,6 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                   : 'bg-slate-900/70 border-slate-800'
               }`}
             >
-              {/* Top Banner if Just Resolved & Needs Rating */}
               {isPendingRating && (
                 <div className="mb-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -167,7 +165,6 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                 </div>
               )}
 
-              {/* Header Info */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-xs font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
@@ -176,7 +173,6 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                   <span className="text-xs font-semibold text-white">
                     {ticket.category}
                   </span>
-                  {/* 🔥 Servis statusi */}
                   <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${statusInfo.color}`}>
                     {statusInfo.icon}
                     {statusInfo.label}
@@ -188,7 +184,6 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                     <Clock className="w-3 h-3 text-slate-500" />
                     {ticket.createdAt}
                   </span>
-                  {/* 🔥 Showroom nomi */}
                   {ticket.showroomName && ticket.showroomName !== "Ko'rsatilmagan" && (
                     <span className="text-[10px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
                       {ticket.showroomName}
@@ -197,7 +192,6 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                 </div>
               </div>
 
-              {/* Problem Description */}
               <div className="py-3 text-xs text-slate-300 leading-relaxed">
                 <p className="text-slate-400 text-[11px] mb-1 font-medium">Murojaat mazmuni:</p>
                 <p className="bg-slate-950/60 p-3 rounded-lg border border-slate-800/80 text-slate-200">
@@ -205,7 +199,6 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                 </p>
               </div>
 
-              {/* Resolution Box (If Resolved) */}
               {isResolved && (
                 <div className="mt-2 p-3.5 rounded-lg bg-emerald-950/20 border border-emerald-500/20 text-xs space-y-2">
                   <div className="flex flex-wrap items-center justify-between gap-1">
@@ -227,7 +220,6 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                 </div>
               )}
 
-              {/* Rating Display */}
               {ticket.clientRating ? (
                 <div className="mt-3 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-2">
@@ -255,7 +247,6 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                 </div>
               ) : null}
 
-              {/* Rating Dialog (Interactive) */}
               <AnimatePresence>
                 {ratingTicketId === ticket.id && (
                   <motion.div
