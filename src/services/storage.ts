@@ -208,7 +208,7 @@ export const markSmsSent = (orderId: string, customText?: string): Order | null 
 };
 
 // 🔥 ServiceStatus ni TicketStatus ga o'tkazish
-const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi' => {
+export const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi' => {
   const map: Record<string, 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi'> = {
     'yangi': 'yangi',
     'master': 'jarayonda',
@@ -229,22 +229,18 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
       return null;
     }
 
-    // 🔥 Contact ma'lumotlarini olish
     const allOrders = getStoredOrders();
     const matchedOrder = allOrders.find(
       (o) => o.invoiceNumber.toUpperCase() === ticket.invoiceNumber.toUpperCase()
     );
 
-    // 🔥 Contact nomi va telefon raqami
     const contactName = ticket.clientFullName || matchedOrder?.clientFullName || 'Mijoz';
     const contactPhone = ticket.clientPhone || matchedOrder?.clientPhone || '+998 90 000 00 00';
     const showroomName = matchedOrder?.showroomName || "Ko'rsatilmagan";
     const salesManager = matchedOrder?.salesManagerName || "Ko'rsatilmagan";
 
-    // 🔥 1. Contact yaratish yoki mavjudini topish
     let contactId = null;
     try {
-      // Telefon raqam bo'yicha contact qidirish
       const searchResult = await callBitrixMethod('crm.contact.list', {
         filter: {
           "PHONE": contactPhone.replace(/\D/g, '')
@@ -260,7 +256,6 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
       console.warn('Contact qidirishda xatolik:', searchErr);
     }
 
-    // Agar contact topilmasa, yangi yaratamiz
     if (!contactId) {
       try {
         const newContact = await callBitrixMethod('crm.contact.add', {
@@ -283,12 +278,11 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
       }
     }
 
-    // 🔥 2. Deal (zayavka) yaratish
     const result = await callBitrixMethod('crm.deal.add', {
       fields: {
         TITLE: `Servis zayavkasi #${ticket.id} - ${contactName}`,
         TYPE_ID: 'SERVICE',
-        CATEGORY_ID: 1, // C1 pipeline
+        CATEGORY_ID: 1,
         STAGE_ID: 'C1:NEW',
         CONTACT_ID: contactId || '',
         COMMENTS: `
@@ -328,7 +322,6 @@ export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<
       return;
     }
 
-    // C1 pipeline statuslariga moslashtirish
     const stageMap: Record<string, string> = {
       'yangi': 'C1:NEW',
       'master': 'C1:UC_WV7G2R',
@@ -350,7 +343,6 @@ export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<
 
     console.log(`✅ Bitrix24 C1 pipeline status yangilandi: ${ticket.serviceStatus} -> ${stageId}`);
 
-    // 🔥 Mijoz kabinetida ko'rinishi uchun ticket ni yangilaymiz
     const tickets = getStoredTickets();
     const index = tickets.findIndex(t => t.id === ticket.id);
     if (index !== -1) {
@@ -364,7 +356,7 @@ export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<
   }
 };
 
-// 🔥 Servis ticket yaratish (C1 pipeline ga yuboradi)
+// 🔥 Servis ticket yaratish
 export const createServiceTicket = async (
   order: Order,
   category: string,
@@ -395,7 +387,6 @@ export const createServiceTicket = async (
     createdAt: timeStr,
     status: 'yangi',
     serviceStatus: 'yangi',
-    // 🔥 Showroom va menejer ma'lumotlari saqlanadi
     showroomName: matchedOrder?.showroomName || order.showroomName,
     salesManagerName: matchedOrder?.salesManagerName || order.salesManagerName,
   };
@@ -403,10 +394,8 @@ export const createServiceTicket = async (
   tickets.unshift(newTicket);
   saveStoredTickets(tickets);
   
-  // 🔥 Bitrix24 C1 pipeline ga zayavka yuborish (async)
   const bitrixDealId = await sendServiceRequestToBitrix(newTicket);
   if (bitrixDealId) {
-    // Bitrix24 deal ID ni saqlaymiz
     const updatedTickets = getStoredTickets();
     const index = updatedTickets.findIndex(t => t.id === newTicket.id);
     if (index !== -1) {
@@ -431,7 +420,6 @@ export const updateTicketStatus = (
   const now = new Date();
   const timeStr = `${now.toISOString().split('T')[0]} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-  // 🔥 ServiceStatus ga moslashtirish
   const serviceStatusMap: Record<string, ServiceStatus> = {
     'yangi': 'yangi',
     'jarayonda': 'jarayonda',
@@ -453,7 +441,6 @@ export const updateTicketStatus = (
 
   saveStoredTickets(tickets);
   
-  // 🔥 Bitrix24 C1 pipeline da statusni yangilash
   const updatedTicket = tickets[index];
   if (updatedTicket.bitrixDealId) {
     updateBitrixServiceStatus(updatedTicket);
@@ -488,7 +475,6 @@ export const resolveServiceTicket = (
   tickets[index] = updated;
   saveStoredTickets(tickets);
   
-  // 🔥 Bitrix24 C1 pipeline da statusni yangilash
   if (updated.bitrixDealId) {
     updateBitrixServiceStatus(updated);
   }
