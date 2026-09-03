@@ -761,3 +761,23 @@ export const parseRawBitrixJsonData = (rawInput: string | object): Order[] => {
 
   return eligibleDeals.map((deal: any) => convertBitrixDealToOrder(deal));
 };
+// 🔥 Showroom telefon raqamlarini olish
+import { SHOWROOM_PHONES } from './bitrixConfig';
+
+export const getShowroomPhone = (showroomName: string): string => {
+  if (!showroomName || showroomName === "Bo'sh") {
+    return SHOWROOM_PHONES['default'] || "+998 (71) 200-88-00";
+  }
+  
+  if (SHOWROOM_PHONES[showroomName]) {
+    return SHOWROOM_PHONES[showroomName];
+  }
+  
+  for (const [key, phone] of Object.entries(SHOWROOM_PHONES)) {
+    if (showroomName.includes(key) || key.includes(showroomName)) {
+      return phone;
+    }
+  }
+  
+  return SHOWROOM_PHONES['default'] || "+998 (71) 200-88-00";
+};
