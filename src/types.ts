@@ -5,16 +5,23 @@ export type OrderStatus =
   | 'kontrol_kachestva' 
   | 'okk_otdi' 
   | 'yetkazib_berishda' 
-  | 'topshirildi';
+  | 'topshirildi'
+  // 🔥 Servis statuslari
+  | 'servis_yangi'
+  | 'servis_master'
+  | 'servis_jarayonda'
+  | 'servis_hal_qilindi'
+  | 'servis_bekor_qilindi'
+  | 'servis_montaj_tugallanmagan';
 
 export interface ProductItem {
   id: string;
   name: string;
-  category: string; // e.g. 'MDF Eshik', 'Alyumin Rom', 'Oshxona Mebeli', 'Laminat'
+  category: string;
   model: string;
-  color: string; // e.g. 'Oq Emal / Oltin Patina', 'Antratsit Mat'
-  areaSqM: number; // kv.m
-  dimensions: string; // e.g. '2100x800x120 mm'
+  color: string;
+  areaSqM: number;
+  dimensions: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -23,13 +30,13 @@ export interface ProductItem {
 
 export interface WarrantyDetails {
   certificateNumber: string;
-  invoiceNumber: string; // Schet raqam
-  orderDate: string; // Buyurtma sanasi
-  readyDate: string; // Tayyor bo'lgan sana
-  warrantyPeriodMonths: number; // e.g. 60 oy (5 yil)
-  okkManagerName: string; // Sifat nazorati menejeri
+  invoiceNumber: string;
+  orderDate: string;
+  readyDate: string;
+  warrantyPeriodMonths: number;
+  okkManagerName: string;
   okkManagerTitle: string;
-  qualityScore: number; // 99.8%
+  qualityScore: number;
   sealStampUrl: string;
   signatureUrl: string;
   qrCodeValue: string;
@@ -37,6 +44,9 @@ export interface WarrantyDetails {
 }
 
 export type TicketStatus = 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi';
+
+// 🔥 Servis statuslari (C1 pipeline ga mos)
+export type ServiceStatus = 'yangi' | 'master' | 'jarayonda' | 'hal_qilindi' | 'bekor_qilindi' | 'montaj_tugallanmagan';
 
 export interface ServiceTicket {
   id: string;
@@ -49,13 +59,17 @@ export interface ServiceTicket {
   photoUrls?: string[];
   createdAt: string;
   status: TicketStatus;
+  // 🔥 Servis statusi (C1 pipeline ga mos)
+  serviceStatus?: ServiceStatus;
   assignedSpecialist?: string;
   resolvedAt?: string;
   resolvedByManager?: string;
   resolutionNotes?: string;
-  clientRating?: number; // 1 to 5
+  clientRating?: number;
   clientFeedback?: string;
   ratedAt?: string;
+  // 🔥 Bitrix24 C1 deal ID
+  bitrixDealId?: string;
 }
 
 export interface ClientCredentials {
@@ -66,7 +80,7 @@ export interface ClientCredentials {
 
 export interface Order {
   id: string;
-  invoiceNumber: string; // e.g. "SCH-2026-8841"
+  invoiceNumber: string;
   clientFullName: string;
   clientPhone: string;
   clientAddress: string;
@@ -74,26 +88,21 @@ export interface Order {
   showroomId: string;
   salesManagerName: string;
   salesManagerPhone: string;
-  
-  orderDate: string; // Buyurtma berilgan sana
-  factorySentDate: string; // Fabrikaga berilgan sana
-  productionStartDate: string; // Ishlab chiqarishga kirgan sana
-  okkInspectionDate?: string; // OKK ga kirgan sana
-  readyDate?: string; // Tayyor bo'lgan sana (OKK dan o'tgan)
+  orderDate: string;
+  factorySentDate: string;
+  productionStartDate: string;
+  okkInspectionDate?: string;
+  readyDate?: string;
   deliveredDate?: string;
-
   status: OrderStatus;
   products: ProductItem[];
   totalAmount: number;
   paidAmount: number;
-  
   credentials: ClientCredentials;
   warranty: WarrantyDetails;
-  
   smsSent: boolean;
   smsSentAt?: string;
   lastSmsText?: string;
-  
   notes?: string;
 }
 
@@ -112,3 +121,4 @@ export interface ManagerUser {
   phone: string;
   department: string;
 }
+
