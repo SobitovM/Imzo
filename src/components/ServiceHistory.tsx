@@ -12,7 +12,10 @@ import {
   AlertCircle,
   ThumbsUp,
   HelpCircle,
-  ChevronRight
+  ChevronRight,
+  XCircle,
+  UserCog,
+  Wrench
 } from 'lucide-react';
 import { ServiceTicket } from '../types';
 import { rateServiceTicket } from '../services/storage';
@@ -22,6 +25,52 @@ interface ServiceHistoryProps {
   tickets: ServiceTicket[];
   onRefresh: () => void;
 }
+
+// 🔥 Servis statuslarini o'zbek tilida ko'rsatish
+const getServiceStatusInfo = (status: string): { label: string; color: string; icon: React.ReactNode } => {
+  const statusMap: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+    'yangi': { 
+      label: '🆕 Yangi ariza', 
+      color: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+      icon: <Clock className="w-3.5 h-3.5" />
+    },
+    'master': { 
+      label: '👨‍🔧 Mutaxassisga yo\'naltirildi', 
+      color: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
+      icon: <UserCog className="w-3.5 h-3.5" />
+    },
+    'jarayonda': { 
+      label: '⏳ Jarayonda', 
+      color: 'text-purple-400 bg-purple-500/10 border-purple-500/30',
+      icon: <Wrench className="w-3.5 h-3.5" />
+    },
+    'usta_biriktirildi': { 
+      label: '👨‍🔧 Usta biriktirildi', 
+      color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
+      icon: <UserCheck className="w-3.5 h-3.5" />
+    },
+    'hal_qilindi': { 
+      label: '✅ Hal qilindi', 
+      color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+      icon: <CheckCircle2 className="w-3.5 h-3.5" />
+    },
+    'bekor_qilindi': { 
+      label: '❌ Bekor qilindi', 
+      color: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
+      icon: <XCircle className="w-3.5 h-3.5" />
+    },
+    'montaj_tugallanmagan': { 
+      label: '⚠️ Montaj tugallanmagan', 
+      color: 'text-orange-400 bg-orange-500/10 border-orange-500/30',
+      icon: <AlertCircle className="w-3.5 h-3.5" />
+    },
+  };
+  return statusMap[status] || { 
+    label: status, 
+    color: 'text-slate-400 bg-slate-500/10 border-slate-500/30',
+    icon: <HelpCircle className="w-3.5 h-3.5" />
+  };
+};
 
 export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefresh }) => {
   const [ratingTicketId, setRatingTicketId] = useState<string | null>(null);
@@ -83,6 +132,9 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
         {tickets.map((ticket) => {
           const isResolved = ticket.status === 'hal_qilindi';
           const isPendingRating = isResolved && !ticket.clientRating;
+          // 🔥 serviceStatus yoki status dan olamiz
+          const statusKey = ticket.serviceStatus || ticket.status;
+          const statusInfo = getServiceStatusInfo(statusKey);
 
           return (
             <motion.div
@@ -117,12 +169,17 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
 
               {/* Header Info */}
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <span className="text-xs font-mono font-bold text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-400/20">
                     ID: {ticket.id}
                   </span>
                   <span className="text-xs font-semibold text-white">
                     {ticket.category}
+                  </span>
+                  {/* 🔥 Servis statusi */}
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${statusInfo.color}`}>
+                    {statusInfo.icon}
+                    {statusInfo.label}
                   </span>
                 </div>
 
@@ -131,16 +188,10 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                     <Clock className="w-3 h-3 text-slate-500" />
                     {ticket.createdAt}
                   </span>
-
-                  {isResolved ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Hal qilindi
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                      <Clock className="w-3 h-3" />
-                      Ko'rib chiqilmoqda
+                  {/* 🔥 Showroom nomi */}
+                  {ticket.showroomName && ticket.showroomName !== "Ko'rsatilmagan" && (
+                    <span className="text-[10px] text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20">
+                      {ticket.showroomName}
                     </span>
                   )}
                 </div>
@@ -247,7 +298,7 @@ export const ServiceHistory: React.FC<ServiceHistoryProps> = ({ tickets, onRefre
                         type="text"
                         value={feedbackText}
                         onChange={(e) => setFeedbackText(e.target.value)}
-                        placeholder="Menejer va usta ishi haqida qisqa izoh (masalan: Usta o'z vaqtida keldi, a'lo darajada)..."
+                        placeholder="Menejer va usta ishi haqida qisqa izoh..."
                         className="w-full px-3 py-2 text-xs bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                       />
                     </div>
