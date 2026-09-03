@@ -207,6 +207,19 @@ export const markSmsSent = (orderId: string, customText?: string): Order | null 
   return orders[index];
 };
 
+// 🔥 ServiceStatus ni TicketStatus ga o'tkazish
+const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi' => {
+  const map: Record<string, 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi'> = {
+    'yangi': 'yangi',
+    'master': 'jarayonda',
+    'jarayonda': 'jarayonda',
+    'hal_qilindi': 'hal_qilindi',
+    'bekor_qilindi': 'bekor_qilindi',
+    'montaj_tugallanmagan': 'jarayonda',
+  };
+  return map[serviceStatus] || 'yangi';
+};
+
 // 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish
 export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise<string | null> => {
   try {
@@ -216,18 +229,74 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
       return null;
     }
 
-    // Bitrix24 da yangi deal yaratish (C1 pipeline - Servis)
+    // 🔥 Contact ma'lumotlarini olish
+    const allOrders = getStoredOrders();
+    const matchedOrder = allOrders.find(
+      (o) => o.invoiceNumber.toUpperCase() === ticket.invoiceNumber.toUpperCase()
+    );
+
+    // 🔥 Contact nomi va telefon raqami
+    const contactName = ticket.clientFullName || matchedOrder?.clientFullName || 'Mijoz';
+    const contactPhone = ticket.clientPhone || matchedOrder?.clientPhone || '+998 90 000 00 00';
+    const showroomName = matchedOrder?.showroomName || "Ko'rsatilmagan";
+    const salesManager = matchedOrder?.salesManagerName || "Ko'rsatilmagan";
+
+    // 🔥 1. Contact yaratish yoki mavjudini topish
+    let contactId = null;
+    try {
+      // Telefon raqam bo'yicha contact qidirish
+      const searchResult = await callBitrixMethod('crm.contact.list', {
+        filter: {
+          "PHONE": contactPhone.replace(/\D/g, '')
+        },
+        select: ["ID", "NAME", "PHONE"]
+      });
+
+      if (Array.isArray(searchResult) && searchResult.length > 0) {
+        contactId = searchResult[0].ID;
+        console.log('✅ Mavjud contact topildi:', contactId);
+      }
+    } catch (searchErr) {
+      console.warn('Contact qidirishda xatolik:', searchErr);
+    }
+
+    // Agar contact topilmasa, yangi yaratamiz
+    if (!contactId) {
+      try {
+        const newContact = await callBitrixMethod('crm.contact.add', {
+          fields: {
+            NAME: contactName.split(' ')[0] || 'Mijoz',
+            LAST_NAME: contactName.split(' ').slice(1).join(' ') || '',
+            PHONE: [
+              {
+                "VALUE": contactPhone,
+                "VALUE_TYPE": "WORK"
+              }
+            ],
+            COMMENTS: `Showroom: ${showroomName}\nMenejer: ${salesManager}`
+          }
+        });
+        contactId = newContact?.ID;
+        console.log('✅ Yangi contact yaratildi:', contactId);
+      } catch (createErr) {
+        console.warn('Contact yaratishda xatolik:', createErr);
+      }
+    }
+
+    // 🔥 2. Deal (zayavka) yaratish
     const result = await callBitrixMethod('crm.deal.add', {
       fields: {
-        TITLE: `Servis zayavkasi #${ticket.id} - ${ticket.clientFullName}`,
+        TITLE: `Servis zayavkasi #${ticket.id} - ${contactName}`,
         TYPE_ID: 'SERVICE',
         CATEGORY_ID: 1, // C1 pipeline
-        STAGE_ID: 'C1:NEW', // Новая заявка
-        CONTACT_ID: ticket.orderId?.replace('bx_', '') || '',
+        STAGE_ID: 'C1:NEW',
+        CONTACT_ID: contactId || '',
         COMMENTS: `
-Mijoz: ${ticket.clientFullName}
-Telefon: ${ticket.clientPhone}
+Mijoz: ${contactName}
+Telefon: ${contactPhone}
 Schet: ${ticket.invoiceNumber}
+Showroom: ${showroomName}
+Mas'ul menejer: ${salesManager}
 Toifa: ${ticket.category}
 Muammo: ${ticket.problemDetails}
         `.trim(),
@@ -235,12 +304,12 @@ Muammo: ${ticket.problemDetails}
         UF_CRM_SERVICE_INVOICE: ticket.invoiceNumber,
         UF_CRM_SERVICE_CATEGORY: ticket.category,
         UF_CRM_SERVICE_STATUS: 'yangi',
+        UF_CRM_SERVICE_SHOWROOM: showroomName,
       }
     });
 
     console.log('✅ Servis zayavkasi Bitrix24 C1 pipeline ga yuborildi:', result);
     
-    // Bitrix24 deal ID ni saqlaymiz
     if (result && result.ID) {
       return result.ID;
     }
@@ -248,6 +317,50 @@ Muammo: ${ticket.problemDetails}
   } catch (err) {
     console.error('Bitrix24 C1 pipeline ga yuborishda xatolik:', err);
     return null;
+  }
+};
+
+// 🔥 Bitrix24 C1 pipeline da servis statusini yangilash
+export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<void> => {
+  try {
+    if (!ticket.bitrixDealId) {
+      console.warn('Bitrix24 deal ID yo\'q, status yangilanmadi');
+      return;
+    }
+
+    // C1 pipeline statuslariga moslashtirish
+    const stageMap: Record<string, string> = {
+      'yangi': 'C1:NEW',
+      'master': 'C1:UC_WV7G2R',
+      'jarayonda': 'C1:UC_PIL0QY',
+      'hal_qilindi': 'C1:WON',
+      'bekor_qilindi': 'C1:LOSE',
+      'montaj_tugallanmagan': 'C1:UC_E0X40P',
+    };
+
+    const stageId = stageMap[ticket.serviceStatus || 'yangi'] || 'C1:NEW';
+
+    await callBitrixMethod('crm.deal.update', {
+      id: ticket.bitrixDealId,
+      fields: {
+        STAGE_ID: stageId,
+        UF_CRM_SERVICE_STATUS: ticket.serviceStatus || 'yangi',
+      }
+    });
+
+    console.log(`✅ Bitrix24 C1 pipeline status yangilandi: ${ticket.serviceStatus} -> ${stageId}`);
+
+    // 🔥 Mijoz kabinetida ko'rinishi uchun ticket ni yangilaymiz
+    const tickets = getStoredTickets();
+    const index = tickets.findIndex(t => t.id === ticket.id);
+    if (index !== -1) {
+      tickets[index].serviceStatus = ticket.serviceStatus || 'yangi';
+      tickets[index].status = mapServiceStatusToTicketStatus(ticket.serviceStatus || 'yangi');
+      saveStoredTickets(tickets);
+    }
+
+  } catch (err) {
+    console.error('Bitrix24 C1 pipeline status yangilashda xatolik:', err);
   }
 };
 
@@ -281,7 +394,10 @@ export const createServiceTicket = async (
     photoUrls: photos || [],
     createdAt: timeStr,
     status: 'yangi',
-    serviceStatus: 'yangi', // 🔥 C1:NEW ga mos
+    serviceStatus: 'yangi',
+    // 🔥 Showroom va menejer ma'lumotlari saqlanadi
+    showroomName: matchedOrder?.showroomName || order.showroomName,
+    salesManagerName: matchedOrder?.salesManagerName || order.salesManagerName,
   };
 
   tickets.unshift(newTicket);
@@ -338,43 +454,12 @@ export const updateTicketStatus = (
   saveStoredTickets(tickets);
   
   // 🔥 Bitrix24 C1 pipeline da statusni yangilash
-  updateBitrixServiceStatus(tickets[index]);
+  const updatedTicket = tickets[index];
+  if (updatedTicket.bitrixDealId) {
+    updateBitrixServiceStatus(updatedTicket);
+  }
   
   return tickets[index];
-};
-
-// 🔥 Bitrix24 C1 pipeline da servis statusini yangilash
-export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<void> => {
-  try {
-    if (!ticket.bitrixDealId) {
-      console.warn('Bitrix24 deal ID yo\'q, status yangilanmadi');
-      return;
-    }
-
-    // C1 pipeline statuslariga moslashtirish
-    const stageMap: Record<string, string> = {
-      'yangi': 'C1:NEW',
-      'master': 'C1:UC_WV7G2R',
-      'jarayonda': 'C1:UC_PIL0QY',
-      'hal_qilindi': 'C1:WON',
-      'bekor_qilindi': 'C1:LOSE',
-      'montaj_tugallanmagan': 'C1:UC_E0X40P',
-    };
-
-    const stageId = stageMap[ticket.serviceStatus || 'yangi'] || 'C1:NEW';
-
-    await callBitrixMethod('crm.deal.update', {
-      id: ticket.bitrixDealId,
-      fields: {
-        STAGE_ID: stageId,
-        UF_CRM_SERVICE_STATUS: ticket.serviceStatus || 'yangi',
-      }
-    });
-
-    console.log(`✅ Bitrix24 C1 pipeline status yangilandi: ${ticket.serviceStatus} -> ${stageId}`);
-  } catch (err) {
-    console.error('Bitrix24 C1 pipeline status yangilashda xatolik:', err);
-  }
 };
 
 export const resolveServiceTicket = (
@@ -404,7 +489,9 @@ export const resolveServiceTicket = (
   saveStoredTickets(tickets);
   
   // 🔥 Bitrix24 C1 pipeline da statusni yangilash
-  updateBitrixServiceStatus(updated);
+  if (updated.bitrixDealId) {
+    updateBitrixServiceStatus(updated);
+  }
   
   return updated;
 };
