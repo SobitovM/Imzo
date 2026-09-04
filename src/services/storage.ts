@@ -624,3 +624,49 @@ export const resetDemoData = () => {
   window.dispatchEvent(new Event('orders_updated'));
   window.dispatchEvent(new Event('tickets_updated'));
 };
+// ============================================================
+// AUTH SESSION (Login holatini saqlash)
+// ============================================================
+
+const AUTH_SESSION_KEY = 'imzo_auth_session';
+
+export interface AuthSession {
+  orderId: string;
+  login: string;
+  pinCode: string;
+  timestamp: number;
+}
+
+export const saveAuthSession = (session: AuthSession): void => {
+  try {
+    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(session));
+  } catch (e) {
+    console.error('Failed to save auth session', e);
+  }
+};
+
+export const getAuthSession = (): AuthSession | null => {
+  try {
+    const raw = localStorage.getItem(AUTH_SESSION_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Failed to get auth session', e);
+    return null;
+  }
+};
+
+export const clearAuthSession = (): void => {
+  try {
+    localStorage.removeItem(AUTH_SESSION_KEY);
+  } catch (e) {
+    console.error('Failed to clear auth session', e);
+  }
+};
+
+// Session muddati (7 kun)
+export const isAuthSessionValid = (session: AuthSession): boolean => {
+  const now = Date.now();
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+  return (now - session.timestamp) < sevenDays;
+};
