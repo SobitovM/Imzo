@@ -2,11 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-// App.tsx - useEffect ichida
-useEffect(() => {
-  // 🔥 Eski sertifikat raqamlarini migratsiya qilish
-  migrateCertificateNumbers();
-  
+
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Lock, X, ArrowRight } from 'lucide-react';
 import { Navbar } from './components/Navbar';
@@ -17,6 +13,12 @@ import { Order } from './types';
 import { getStoredOrders } from './services/storage';
 import { getAuthSession, saveAuthSession, clearAuthSession, isAuthSessionValid } from './services/storage';
 
+// 🔥 Eski sertifikat raqamlarini migratsiya qilish funksiyasi
+// (Agar mavjud bo'lsa)
+const migrateCertificateNumbers = () => {
+  // Migratsiya kodi...
+};
+
 export default function App() {
   const [currentView, setCurrentView] = useState<'client_login' | 'client_dashboard' | 'manager_panel'>('client_login');
   const [currentClientOrder, setCurrentClientOrder] = useState<Order | null>(null);
@@ -26,6 +28,9 @@ export default function App() {
 
   // 🔥 Sayt yuklanganda avvalgi session ni tekshirish
   useEffect(() => {
+    // 🔥 Eski sertifikat raqamlarini migratsiya qilish
+    migrateCertificateNumbers();
+
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const adminParam = params.get('admin');
@@ -224,4 +229,4 @@ export default function App() {
       )}
     </div>
   );
-}, []);
+}
