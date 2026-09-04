@@ -2,6 +2,11 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
+// App.tsx - useEffect ichida
+useEffect(() => {
+  // 🔥 Eski sertifikat raqamlarini migratsiya qilish
+  migrateCertificateNumbers();
+  
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Lock, X, ArrowRight } from 'lucide-react';
 import { Navbar } from './components/Navbar';
@@ -219,4 +224,4 @@ export default function App() {
       )}
     </div>
   );
-}
+}, []);
