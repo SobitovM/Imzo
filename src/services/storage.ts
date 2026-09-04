@@ -1,6 +1,6 @@
-import { Order, ServiceTicket, OrderStatus, ProductItem, ServiceStatus } from '../types';
-import { INITIAL_ORDERS, INITIAL_SERVICE_TICKETS } from '../data/mockData';
-import { getBitrixWebhookUrl, callBitrixMethod } from './bitrixService';
+import { Order, ServiceTicket, OrderStatus, ProductItem, ServiceStatus } from '../types.js';
+import { INITIAL_ORDERS, INITIAL_SERVICE_TICKETS } from '../data/mockData.js';
+import { getBitrixWebhookUrl, callBitrixMethod } from './bitrixService.js';
 
 const ORDERS_KEY = 'imzo_orders_v2';
 const TICKETS_KEY = 'imzo_tickets_v2';
@@ -211,7 +211,7 @@ export const markSmsSent = (orderId: string, customText?: string): Order | null 
 export const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi' => {
   const map: Record<string, 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi'> = {
     'yangi': 'yangi',
-    'master': 'jarayonda',
+    'master': 'usta_biriktirildi',
     'jarayonda': 'jarayonda',
     'hal_qilindi': 'hal_qilindi',
     'bekor_qilindi': 'bekor_qilindi',
@@ -220,7 +220,7 @@ export const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' |
   return map[serviceStatus] || 'yangi';
 };
 
-// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish (TUZATILGAN)
+// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish (TUZATILGAN - TO'LIQ)
 export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise<string | null> => {
   try {
     const webhookUrl = getBitrixWebhookUrl();
@@ -242,15 +242,14 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
     let contactId = null;
 
     // 🔥 Telefon raqamni turli formatlarda qidirish
-    const cleanPhone = normalizePhone(contactPhone); // 998901884471
-    const shortPhone = cleanPhone.slice(-9); // 901884471
-    const plusPhone = `+${cleanPhone}`; // +998901884471
-    const spacedPhone = contactPhone; // +998 90 188 44 71
+    const cleanPhone = normalizePhone(contactPhone);
+    const shortPhone = cleanPhone.slice(-9);
+    const plusPhone = `+${cleanPhone}`;
+    const spacedPhone = contactPhone;
 
     console.log('🔍 Contact qidirilmoqda. Formatlar:', { cleanPhone, shortPhone, plusPhone, spacedPhone });
 
     try {
-      // Bir nechta formatda qidirish
       const searchFilters = [
         { "PHONE": shortPhone },
         { "PHONE": cleanPhone },
@@ -276,7 +275,7 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
         contactId = foundContact.ID;
         console.log('✅ Mavjud contact topildi ID:', contactId, 'Telefon:', foundContact.PHONE);
       } else {
-        console.warn('⚠️ Telefon bo\'yicha contact topilmadi. Qidirilgan formatlar:', searchFilters);
+        console.warn('⚠️ Telefon bo\'yicha contact topilmadi.');
       }
     } catch (searchErr) {
       console.warn('Contact qidirishda xatolik:', searchErr);
@@ -306,7 +305,6 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
       }
     }
 
-    // 🔥 Agar contactId hali ham yo'q bo'lsa, DEAL YARATMAYMIZ
     if (!contactId) {
       console.error('❌ Contact ID topilmadi yoki yaratilmadi, deal yaratish to\'xtatildi');
       return null;
@@ -319,7 +317,7 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
         TYPE_ID: 'SERVICE',
         CATEGORY_ID: 1,
         STAGE_ID: 'C1:NEW',
-        CONTACT_ID: contactId,  // 🔥 BU ENDI BO'SH EMAS!
+        CONTACT_ID: contactId,
         COMMENTS: `
 Mijoz: ${contactName}
 Telefon: ${contactPhone}
