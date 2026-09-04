@@ -15,7 +15,14 @@ export default defineConfig(() => {
       outDir: 'dist',
       emptyOutDir: true,
       rollupOptions: {
-        external: [], // Barcha dependencylarni bundle ichiga oladi
+        external: [],
+        output: {
+          manualChunks: undefined,
+        },
+      },
+      commonjsOptions: {
+        include: [/node_modules/],
+        extensions: ['.js', '.cjs', '.mjs'],
       },
     },
     server: {
