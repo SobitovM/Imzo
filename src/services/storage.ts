@@ -704,3 +704,34 @@ export const generateCertificateNumber = (): string => {
 export const resetCertificateCounter = (startFrom: number = 0): void => {
   localStorage.setItem('imzo_last_cert_number', String(startFrom));
 };
+// 🔥 Barcha eski buyurtmalarning sertifikat raqamlarini yangilash
+export const migrateCertificateNumbers = (): void => {
+  const orders = getStoredOrders();
+  let lastNumber = parseInt(localStorage.getItem('imzo_last_cert_number') || '0', 10);
+  let updated = false;
+
+  const updatedOrders = orders.map((order) => {
+    // Agar sertifikat raqami eski formatda bo'lsa (KT- bilan boshlansa)
+    if (order.warranty?.certificateNumber && order.warranty.certificateNumber.startsWith('KT-')) {
+      updated = true;
+      lastNumber += 1;
+      const paddedNumber = String(lastNumber).padStart(7, '0');
+      const newCertNumber = `Imzo-${new Date().getFullYear()}-${paddedNumber}`;
+      
+      return {
+        ...order,
+        warranty: {
+          ...order.warranty,
+          certificateNumber: newCertNumber,
+        },
+      };
+    }
+    return order;
+  });
+
+  if (updated) {
+    localStorage.setItem('imzo_last_cert_number', String(lastNumber));
+    saveStoredOrders(updatedOrders);
+    console.log(`✅ ${updatedOrders.filter(o => o.warranty?.certificateNumber?.startsWith('Imzo-')).length} ta sertifikat raqami yangilandi`);
+  }
+};
