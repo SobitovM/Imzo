@@ -1,4 +1,4 @@
-// src/services/bitrixService.ts - BOSHIDA (TO'LIQ)
+// src/services/bitrixService.ts - TO'LIQ
 import { Order, OrderStatus, ProductItem } from '../types.js';
 import { 
   PRODUCTS_DICT, 
@@ -300,6 +300,7 @@ export const resolveOkkInspector = (deal: Record<string, any>): string => {
   return `OKK Muhandis #${okkId}`;
 };
 
+// 🔥 CONVERT BITRIX DEAL TO ORDER
 export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Record<string, any>): Order => {
   const dealId = String(deal.ID || '');
   const invoiceNumber = deal[BITRIX_FIELDS.ORDER_INVOICE_ID] || deal.TITLE || `SCH-${dealId}`;
@@ -376,6 +377,11 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
   const pin = specialCode;
   const token = `tok_${login.toLowerCase()}_${dealId}`;
 
+  // 🔥 Sertifikat raqami - Imzo formatida generatsiya qilamiz
+  const year = new Date().getFullYear();
+  const dealIdDigits = dealId.replace(/\D/g, '').slice(-7).padStart(7, '0');
+  const certificateNumber = `Imzo-${year}-${dealIdDigits || '0000001'}`;
+
   return {
     id: `bx_${dealId}`,
     invoiceNumber: String(invoiceNumber),
@@ -398,10 +404,11 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
     credentials: {
       login: login,
       pinCode: pin,
+      specialNumber: specialCode,
       directToken: token,
     },
     warranty: {
-      certificateNumber: `KT-2026-${dealId.slice(-4) || '0000'}`,
+      certificateNumber: certificateNumber,
       invoiceNumber: String(invoiceNumber),
       orderDate: formatBitrixDate(deal.DATE_CREATE) || "Bo'sh",
       readyDate: readyDate || "Bo'sh",
@@ -420,7 +427,7 @@ export const convertBitrixDealToOrder = (deal: Record<string, any>, contact?: Re
     },
     smsSent: isReady,
     smsSentAt: isReady ? 'Bugun' : "Bo'sh",
-    lastSmsText: `Hurmatli ${clientName.split(' ')[0]}! Sizning ${invoiceNumber} buyurtmangiz tayyor bo'ldi. Kabinet: https://kabinet.fabrika.uz/?token=${token} Login: ${login} Parol: ${pin}`,
+    lastSmsText: `Hurmatli ${clientName.split(' ')[0]}! Sizning ${invoiceNumber} buyurtmangiz tayyor bo'ldi. Kabinet: https://kabinet.fabrika.uz/?token=${token} Login: ${login} Parol: ${specialCode}`,
     notes: `Bitrix24 Deal ID: ${dealId} | Bosqich: ${stageHumanName}`
   };
 };
@@ -763,7 +770,6 @@ export const parseRawBitrixJsonData = (rawInput: string | object): Order[] => {
 
   return eligibleDeals.map((deal: any) => convertBitrixDealToOrder(deal));
 };
-// src/services/bitrixService.ts - OXIRIGA QO'SHING
 
 // 🔥 Showroom telefon raqamlarini olish
 export const getShowroomPhone = (showroomName: string): string => {
