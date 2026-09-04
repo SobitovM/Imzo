@@ -1,3 +1,6 @@
+// ============================================================
+// WarrantyModal.tsx
+// ============================================================
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -247,9 +250,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 uppercase font-serif">
                   KAFOLAT TALONI
                 </h1>
-                // WarrantyModal.tsx - Sertifikat raqami qismi
+                {/* 🔥 Sertifikat raqami - order.warranty.certificateNumber dan olinadi */}
                 <p className="text-[11px] sm:text-xs font-serif italic text-amber-950/70 mt-0.5">
-                  Sertifikat raqami: <strong className="text-amber-900 font-mono font-bold">{order.warranty?.certificateNumber || 'Imzo-2026-0000001'}</strong>
+                  Sertifikat raqami: <strong className="text-amber-900 font-mono font-bold">
+                    {order.warranty?.certificateNumber || 'Imzo-2026-0000001'}
+                  </strong>
                 </p>
               </div>
 
