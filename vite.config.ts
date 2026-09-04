@@ -14,6 +14,9 @@ export default defineConfig(() => {
     build: {
       outDir: 'dist',
       emptyOutDir: true,
+      rollupOptions: {
+        external: [], // Barcha dependencylarni bundle ichiga oladi
+      },
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
