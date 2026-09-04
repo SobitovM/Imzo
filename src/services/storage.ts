@@ -141,6 +141,7 @@ export const generateOrderToken = (invoiceNumber: string): string => {
   return `tok_${cleanInv}_${rand}`;
 };
 
+// storage.ts - updateOrderStatus funksiyasi (to'liq)
 export const updateOrderStatus = (
   orderId: string, 
   newStatus: OrderStatus, 
@@ -172,11 +173,15 @@ export const updateOrderStatus = (
     if (!updated.credentials.directToken) {
       updated.credentials.directToken = generateOrderToken(updated.invoiceNumber);
     }
+    
+    // 🔥 YANGI: Unikal sertifikat raqami yaratish
+    const certificateNumber = generateCertificateNumber();
+    
     updated.warranty = {
       ...updated.warranty,
       readyDate: dateStr,
       okkManagerName: okkInspectorName || "Bo'sh",
-      certificateNumber: `KT-${dateStr.replace(/-/g, '').slice(0, 6)}-${updated.invoiceNumber.replace(/[^0-9]/g, '') || '01'}`,
+      certificateNumber: certificateNumber,  // 🔥 YANGI unikal raqam
     };
 
     const directLink = `${window.location.origin}/?token=${updated.credentials.directToken}`;
