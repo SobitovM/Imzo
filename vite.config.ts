@@ -15,40 +15,14 @@ export default defineConfig(() => {
       outDir: 'dist',
       emptyOutDir: true,
       rollupOptions: {
-        // 🔥 Barcha dependencylarni bundle'dan chiqarib tashlash
-        external: [
-          'react',
-          'react-dom',
-          'react-router-dom',
-          'express',
-          'dotenv',
-          'canvas-confetti',
-          'html2canvas',
-          'jspdf',
-          'lucide-react',
-          'motion',
-          '@google/genai',
-          '@tailwindcss/vite',
-          '@vitejs/plugin-react',
-          'tailwindcss',
-          'autoprefixer',
-          'esbuild',
-          'tsx',
-          'typescript'
-        ],
+        external: [],
         output: {
-          manualChunks: (id) => {
-            if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-                return 'vendor-react';
-              }
-              if (id.includes('express') || id.includes('dotenv')) {
-                return 'vendor-server';
-              }
-              return 'vendor';
-            }
-          },
+          manualChunks: undefined,
         },
+      },
+      commonjsOptions: {
+        include: [/node_modules/],
+        extensions: ['.js', '.cjs', '.mjs'],
       },
     },
     server: {
