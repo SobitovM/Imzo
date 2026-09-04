@@ -670,3 +670,32 @@ export const isAuthSessionValid = (session: AuthSession): boolean => {
   const sevenDays = 7 * 24 * 60 * 60 * 1000;
   return (now - session.timestamp) < sevenDays;
 };
+// storage.ts - OXIRIGA QO'SHING
+
+// ============================================================
+// SERTIFIKAT RAQAMI GENERATORI
+// ============================================================
+
+export const generateCertificateNumber = (): string => {
+  const year = new Date().getFullYear();
+  
+  // LocalStorage dan oxirgi sertifikat raqamini olish
+  const lastCertKey = 'imzo_last_cert_number';
+  let lastNumber = parseInt(localStorage.getItem(lastCertKey) || '0', 10);
+  
+  // Keyingi raqam
+  lastNumber += 1;
+  
+  // 7 xonali formatga keltirish (masalan: 0000001)
+  const paddedNumber = String(lastNumber).padStart(7, '0');
+  
+  // Saqlash
+  localStorage.setItem(lastCertKey, String(lastNumber));
+  
+  return `Imzo-${year}-${paddedNumber}`;
+};
+
+// Sertifikat raqamini qo'lda o'rnatish (agar kerak bo'lsa)
+export const resetCertificateCounter = (startFrom: number = 0): void => {
+  localStorage.setItem('imzo_last_cert_number', String(startFrom));
+};
