@@ -11,14 +11,6 @@ export default defineConfig(() => {
         '@': path.resolve(__dirname, '.'),
       },
     },
-    css: {
-      postcss: {
-        plugins: [
-          require('tailwindcss'),
-          require('autoprefixer'),
-        ],
-      },
-    },
     build: {
       outDir: 'dist',
       emptyOutDir: true,
