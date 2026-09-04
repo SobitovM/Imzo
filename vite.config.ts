@@ -15,14 +15,39 @@ export default defineConfig(() => {
       outDir: 'dist',
       emptyOutDir: true,
       rollupOptions: {
-        external: [],
+        external: [
+          'react',
+          'react-dom',
+          'react-router-dom',
+          'express',
+          'dotenv',
+          'canvas-confetti',
+          'html2canvas',
+          'jspdf',
+          'lucide-react',
+          'motion',
+          '@google/genai',
+          '@tailwindcss/vite',
+          '@vitejs/plugin-react',
+          'tailwindcss',
+          'autoprefixer',
+          'esbuild',
+          'tsx',
+          'typescript'
+        ],
         output: {
-          manualChunks: undefined,
+          manualChunks: (id) => {
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+                return 'vendor-react';
+              }
+              if (id.includes('express') || id.includes('dotenv')) {
+                return 'vendor-server';
+              }
+              return 'vendor';
+            }
+          },
         },
-      },
-      commonjsOptions: {
-        include: [/node_modules/],
-        extensions: ['.js', '.cjs', '.mjs'],
       },
     },
     server: {
