@@ -1,4 +1,4 @@
-import { Order, OrderStatus, ProductItem } from '../types';
+// src/services/bitrixService.ts ichida
 import { 
   PRODUCTS_DICT, 
   COLORS_DICT, 
@@ -6,9 +6,10 @@ import {
   STAGE_NAMES, 
   ALLOWED_BITRIX_STAGES,
   BITRIX_FIELDS, 
-  formatBitrixDate 
-} from './bitrixConfig';
-import { MANAGERS_DICT } from './managersDict';
+  formatBitrixDate,
+  SHOWROOM_PHONES
+} from './bitrixConfig.js';  // .js qo'shildi
+import { MANAGERS_DICT } from './managersDict.js';  // .js qo'shildi
 
 const BITRIX_WEBHOOK_KEY = 'bitrix_webhook_url';
 const BITRIX_AUTO_SYNC_KEY = 'bitrix_auto_sync_enabled';
