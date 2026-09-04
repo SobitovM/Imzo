@@ -1,3 +1,6 @@
+// ============================================================
+// storage.ts
+// ============================================================
 import { Order, ServiceTicket, OrderStatus, ProductItem, ServiceStatus } from '../types.js';
 import { INITIAL_ORDERS, INITIAL_SERVICE_TICKETS } from '../data/mockData.js';
 import { getBitrixWebhookUrl, callBitrixMethod } from './bitrixService.js';
@@ -141,7 +144,67 @@ export const generateOrderToken = (invoiceNumber: string): string => {
   return `tok_${cleanInv}_${rand}`;
 };
 
-// storage.ts - updateOrderStatus funksiyasi (to'liq)
+// ============================================================
+// SERTIFIKAT RAQAMI GENERATORI
+// ============================================================
+
+export const generateCertificateNumber = (): string => {
+  const year = new Date().getFullYear();
+  
+  // LocalStorage dan oxirgi sertifikat raqamini olish
+  const lastCertKey = 'imzo_last_cert_number';
+  let lastNumber = parseInt(localStorage.getItem(lastCertKey) || '0', 10);
+  
+  // Keyingi raqam
+  lastNumber += 1;
+  
+  // 7 xonali formatga keltirish (masalan: 0000001)
+  const paddedNumber = String(lastNumber).padStart(7, '0');
+  
+  // Saqlash
+  localStorage.setItem(lastCertKey, String(lastNumber));
+  
+  return `Imzo-${year}-${paddedNumber}`;
+};
+
+// Sertifikat raqamini qo'lda o'rnatish (agar kerak bo'lsa)
+export const resetCertificateCounter = (startFrom: number = 0): void => {
+  localStorage.setItem('imzo_last_cert_number', String(startFrom));
+};
+
+// 🔥 Barcha eski buyurtmalarning sertifikat raqamlarini yangilash
+export const migrateCertificateNumbers = (): void => {
+  const orders = getStoredOrders();
+  let lastNumber = parseInt(localStorage.getItem('imzo_last_cert_number') || '0', 10);
+  let updated = false;
+
+  const updatedOrders = orders.map((order) => {
+    // Agar sertifikat raqami eski formatda bo'lsa (KT- bilan boshlansa)
+    if (order.warranty?.certificateNumber && order.warranty.certificateNumber.startsWith('KT-')) {
+      updated = true;
+      lastNumber += 1;
+      const paddedNumber = String(lastNumber).padStart(7, '0');
+      const newCertNumber = `Imzo-${new Date().getFullYear()}-${paddedNumber}`;
+      
+      return {
+        ...order,
+        warranty: {
+          ...order.warranty,
+          certificateNumber: newCertNumber,
+        },
+      };
+    }
+    return order;
+  });
+
+  if (updated) {
+    localStorage.setItem('imzo_last_cert_number', String(lastNumber));
+    saveStoredOrders(updatedOrders);
+    console.log(`✅ ${updatedOrders.filter(o => o.warranty?.certificateNumber?.startsWith('Imzo-')).length} ta sertifikat raqami yangilandi`);
+  }
+};
+
+// storage.ts - updateOrderStatus funksiyasi
 export const updateOrderStatus = (
   orderId: string, 
   newStatus: OrderStatus, 
@@ -181,7 +244,7 @@ export const updateOrderStatus = (
       ...updated.warranty,
       readyDate: dateStr,
       okkManagerName: okkInspectorName || "Bo'sh",
-      certificateNumber: certificateNumber,  // 🔥 YANGI unikal raqam
+      certificateNumber: certificateNumber, // 🔥 YANGI unikal raqam
     };
 
     const directLink = `${window.location.origin}/?token=${updated.credentials.directToken}`;
@@ -225,7 +288,7 @@ export const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' |
   return map[serviceStatus] || 'yangi';
 };
 
-// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish (TUZATILGAN)
+// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish
 export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise<string | null> => {
   try {
     const webhookUrl = getBitrixWebhookUrl();
@@ -597,7 +660,7 @@ export const createNewOrder = (orderData: Partial<Order>): Order => {
       directToken,
     },
     warranty: {
-      certificateNumber: `KT-${dateStr.replace(/-/g, '').slice(0, 6)}-${login.slice(-4)}`,
+      certificateNumber: generateCertificateNumber(), // 🔥 YANGI: Unikal sertifikat raqami
       invoiceNumber: invNum,
       orderDate: dateStr,
       readyDate: dateStr,
@@ -629,6 +692,7 @@ export const resetDemoData = () => {
   window.dispatchEvent(new Event('orders_updated'));
   window.dispatchEvent(new Event('tickets_updated'));
 };
+
 // ============================================================
 // AUTH SESSION (Login holatini saqlash)
 // ============================================================
@@ -674,64 +738,4 @@ export const isAuthSessionValid = (session: AuthSession): boolean => {
   const now = Date.now();
   const sevenDays = 7 * 24 * 60 * 60 * 1000;
   return (now - session.timestamp) < sevenDays;
-};
-// storage.ts - OXIRIGA QO'SHING
-
-// ============================================================
-// SERTIFIKAT RAQAMI GENERATORI
-// ============================================================
-
-export const generateCertificateNumber = (): string => {
-  const year = new Date().getFullYear();
-  
-  // LocalStorage dan oxirgi sertifikat raqamini olish
-  const lastCertKey = 'imzo_last_cert_number';
-  let lastNumber = parseInt(localStorage.getItem(lastCertKey) || '0', 10);
-  
-  // Keyingi raqam
-  lastNumber += 1;
-  
-  // 7 xonali formatga keltirish (masalan: 0000001)
-  const paddedNumber = String(lastNumber).padStart(7, '0');
-  
-  // Saqlash
-  localStorage.setItem(lastCertKey, String(lastNumber));
-  
-  return `Imzo-${year}-${paddedNumber}`;
-};
-
-// Sertifikat raqamini qo'lda o'rnatish (agar kerak bo'lsa)
-export const resetCertificateCounter = (startFrom: number = 0): void => {
-  localStorage.setItem('imzo_last_cert_number', String(startFrom));
-};
-// 🔥 Barcha eski buyurtmalarning sertifikat raqamlarini yangilash
-export const migrateCertificateNumbers = (): void => {
-  const orders = getStoredOrders();
-  let lastNumber = parseInt(localStorage.getItem('imzo_last_cert_number') || '0', 10);
-  let updated = false;
-
-  const updatedOrders = orders.map((order) => {
-    // Agar sertifikat raqami eski formatda bo'lsa (KT- bilan boshlansa)
-    if (order.warranty?.certificateNumber && order.warranty.certificateNumber.startsWith('KT-')) {
-      updated = true;
-      lastNumber += 1;
-      const paddedNumber = String(lastNumber).padStart(7, '0');
-      const newCertNumber = `Imzo-${new Date().getFullYear()}-${paddedNumber}`;
-      
-      return {
-        ...order,
-        warranty: {
-          ...order.warranty,
-          certificateNumber: newCertNumber,
-        },
-      };
-    }
-    return order;
-  });
-
-  if (updated) {
-    localStorage.setItem('imzo_last_cert_number', String(lastNumber));
-    saveStoredOrders(updatedOrders);
-    console.log(`✅ ${updatedOrders.filter(o => o.warranty?.certificateNumber?.startsWith('Imzo-')).length} ta sertifikat raqami yangilandi`);
-  }
 };
