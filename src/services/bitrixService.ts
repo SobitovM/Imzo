@@ -1,4 +1,5 @@
-// src/services/bitrixService.ts ichida
+// src/services/bitrixService.ts - BOSHIDA (TO'LIQ)
+import { Order, OrderStatus, ProductItem } from '../types.js';
 import { 
   PRODUCTS_DICT, 
   COLORS_DICT, 
@@ -8,8 +9,8 @@ import {
   BITRIX_FIELDS, 
   formatBitrixDate,
   SHOWROOM_PHONES
-} from './bitrixConfig.js';  // .js qo'shildi
-import { MANAGERS_DICT } from './managersDict.js';  // .js qo'shildi
+} from './bitrixConfig.js';
+import { MANAGERS_DICT } from './managersDict.js';
 
 const BITRIX_WEBHOOK_KEY = 'bitrix_webhook_url';
 const BITRIX_AUTO_SYNC_KEY = 'bitrix_auto_sync_enabled';
