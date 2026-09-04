@@ -1,4 +1,6 @@
 // Bitrix24 Real Data Mapping and Dictionaries
+// src/services/bitrixConfig.ts - BOSHIDA
+export {};
 // 🔥 SHOWROOM TELEFON RAQAMLARI
 export const SHOWROOM_PHONES: Record<string, string> = {
   // Farg'ona
