@@ -1,3 +1,6 @@
+// ============================================================
+// App.tsx
+// ============================================================
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -10,14 +13,14 @@ import { ClientLogin } from './components/ClientLogin';
 import { ClientDashboard } from './components/ClientDashboard';
 import { ManagerBitrixPanel } from './components/ManagerBitrixPanel';
 import { Order } from './types';
-import { getStoredOrders } from './services/storage';
-import { getAuthSession, saveAuthSession, clearAuthSession, isAuthSessionValid } from './services/storage';
-
-// 🔥 Eski sertifikat raqamlarini migratsiya qilish funksiyasi
-// (Agar mavjud bo'lsa)
-const migrateCertificateNumbers = () => {
-  // Migratsiya kodi...
-};
+import { 
+  getStoredOrders, 
+  getAuthSession, 
+  saveAuthSession, 
+  clearAuthSession, 
+  isAuthSessionValid,
+  migrateCertificateNumbers  // 🔥 IMPORT QILINGAN
+} from './services/storage';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'client_login' | 'client_dashboard' | 'manager_panel'>('client_login');
