@@ -1,6 +1,3 @@
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -15,35 +12,26 @@ const __dirname = path.dirname(__filename);
 export const DEFAULT_BITRIX_WEBHOOK = process.env.VITE_BITRIX_WEBHOOK_URL || '';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 const PORT = Number(process.env.PORT) || 3000;
 
-// 🔥 Static fayllar
+// 🔥 Static fayllar va middleware
 app.use(express.static(path.join(__dirname, 'dist')));
 app.use(express.json({ limit: "10mb" }));
 
-app.use(express.json());
-// Static fayllar
-app.use(express.static(path.join(__dirname, 'dist')));
-
-// Health check
-app.get('/api/health', (req, res) => {
-// Health check API
+// ============================================================
+// 1. HEALTH CHECK
+// ============================================================
 app.get("/api/health", (_req, res) => {
-  res.json({ 
-    status: 'ok', 
-    webhook: process.env.VITE_BITRIX_WEBHOOK_URL || 'Sozlanmagan'
-    status: "ok", 
+  res.json({
+    status: "ok",
     webhook: process.env.VITE_BITRIX_WEBHOOK_URL || "Sozlanmagan",
     env: process.env.NODE_ENV || 'development'
   });
 });
 
-// Webhook
-app.post('/api/bitrix-webhook', (req, res) => {
-  console.log('📥 Webhook keldi:', req.body);
-  res.json({ success: true, received: true });
-// Server-side Bitrix24 Proxy
+// ============================================================
+// 2. BITRIX24 PROXY
+// ============================================================
 app.post("/api/bitrix-proxy", async (req, res) => {
   try {
     const { webhookUrl, method, params } = req.body;
@@ -99,7 +87,9 @@ app.post("/api/bitrix-proxy", async (req, res) => {
   }
 });
 
-// 🔥 Bitrix24 Webhook - status o'zgarishini qabul qilish (TO'LIQ)
+// ============================================================
+// 3. 🔥 BITRIX24 WEBHOOK - STATUS SINXRONIZATSIYASI (TO'LIQ)
+// ============================================================
 app.post("/api/bitrix-webhook", async (req, res) => {
   try {
     console.log('📥 Bitrix24 webhook keldi');
@@ -144,14 +134,17 @@ app.post("/api/bitrix-webhook", async (req, res) => {
           if (index !== -1) {
             console.log(`✅ Ticket ${ticketId} topildi, status yangilanmoqda...`);
             
+            // 🔥 STATUS MAP (Bitrix24 → Admin panel)
             const serviceStatusMap: Record<string, ServiceStatus> = {
               'C1:NEW': 'yangi',
-              'C1:UC_WV7G2R': 'master',
-              'C1:PREPARATION': 'jarayonda',
-              'C1:UC_PIL0QY': 'jarayonda',
-              'C1:WON': 'hal_qilindi',
-              'C1:LOSE': 'bekor_qilindi',
-              'C1:UC_E0X40P': 'montaj_tugallanmagan',
+              'C1:UC_WV7G2R': 'master',           // Мастер
+              'C1:UC_I711LD': 'master',           // Вилоят счёти
+              'C1:PREPARATION': 'jarayonda',       // Снабжение
+              'C1:UC_PIL0QY': 'jarayonda',         // В работе
+              'C1:WON': 'hal_qilindi',             // Выполнено
+              'C1:LOSE': 'bekor_qilindi',          // Сделка провалена
+              'C1:UC_E0X40P': 'montaj_tugallanmagan', // Незавершённая работа
+              'C1:UC_126B9D': 'hal_qilindi',       // ЗАВЕРШИТЬ / ФИЛЬТР
             };
             
             const newServiceStatus = serviceStatusMap[stageId] || 'yangi';
@@ -198,21 +191,21 @@ app.post("/api/bitrix-webhook", async (req, res) => {
   }
 });
 
-// 🔥 SPA uchun - barcha yo'nalishlar index.html ga
+// ============================================================
+// 4. SPA - BARCHA YO'NALISHLAR index.html GA
+// ============================================================
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-// Vercel serverless uchun eksport qilish
+// ============================================================
+// 5. VERCEL SERVERLESS EKSPORT
+// ============================================================
 export default app;
 
-// Lokal ishga tushirish
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Health: http://localhost:${PORT}/api/health`);
-  });
-// Lokal ishga tushirish uchun
+// ============================================================
+// 6. LOKAL ISHGA TUSHIRISH
+// ============================================================
 if (process.env.NODE_ENV !== "production") {
   const startDevServer = async () => {
     const vite = await createViteServer({
