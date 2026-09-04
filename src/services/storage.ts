@@ -117,6 +117,37 @@ export const normalizePhone = (phone: string): string => {
   return (phone || '').replace(/\D/g, '');
 };
 
+// 🔥 Telefon raqamlarni aniq solishtirish
+export const comparePhones = (phone1: string, phone2: string): boolean => {
+  const p1 = normalizePhone(phone1);
+  const p2 = normalizePhone(phone2);
+  
+  if (!p1 || !p2) return false;
+  
+  // To'liq moslik
+  if (p1 === p2) return true;
+  
+  // 998+9 vs 9 xonali
+  if (p1.length === 12 && p2.length === 9) {
+    return p1.slice(-9) === p2;
+  }
+  if (p1.length === 9 && p2.length === 12) {
+    return p1 === p2.slice(-9);
+  }
+  
+  // 9 xonali vs 9 xonali
+  if (p1.length === 9 && p2.length === 9) {
+    return p1 === p2;
+  }
+  
+  // Oxirgi 7 raqamni solishtirish
+  if (p1.length >= 7 && p2.length >= 7) {
+    return p1.slice(-7) === p2.slice(-7);
+  }
+  
+  return false;
+};
+
 export const getClientOrders = (identifier: string): Order[] => {
   const orders = getStoredOrders();
   if (!identifier) return [];
@@ -127,11 +158,41 @@ export const getClientOrders = (identifier: string): Order[] => {
     const oDigits = normalizePhone(o.clientPhone);
     const matchesLogin = o.credentials.login.toUpperCase() === clean;
     const matchesInvoice = o.invoiceNumber.toUpperCase() === clean;
-    const matchesPhone = digits.length >= 7 && (oDigits.endsWith(digits) || digits.endsWith(oDigits));
+    const matchesPhone = digits.length >= 7 && comparePhones(oDigits, digits);
     const matchesToken = o.credentials.directToken === identifier.trim();
     const matchesName = o.clientFullName.toLowerCase() === identifier.trim().toLowerCase();
     return matchesLogin || matchesInvoice || matchesPhone || matchesToken || matchesName;
   });
+};
+
+// 🔥 Special number bo'yicha mijozni topish
+export const getClientBySpecialNumber = (specialNumber: string): Order | null => {
+  const orders = getStoredOrders();
+  const found = orders.find(o => o.credentials.specialNumber === specialNumber.trim());
+  return found || null;
+};
+
+// 🔥 Telefon raqam va special number bo'yicha tekshirish
+export const authenticateClient = (phone: string, specialNumber: string): Order | null => {
+  const orders = getStoredOrders();
+  const inputDigits = normalizePhone(phone);
+  const special = specialNumber.trim();
+  
+  if (!inputDigits || !special) return null;
+  
+  const matched = orders.find((o) => {
+    const oDigits = normalizePhone(o.clientPhone);
+    
+    // Telefon raqam mosligi
+    const phoneMatch = comparePhones(oDigits, inputDigits);
+    
+    // Special number mosligi
+    const specialMatch = o.credentials.specialNumber === special;
+    
+    return phoneMatch && specialMatch;
+  });
+  
+  return matched || null;
 };
 
 export const generatePinCode = (): string => {
@@ -145,9 +206,10 @@ export const generateOrderToken = (invoiceNumber: string): string => {
 };
 
 // ============================================================
-// SERTIFIKAT RAQAMI GENERATORI
+// SERTIFIKAT RAQAMI GENERATORI (TAKRORLANMAS)
 // ============================================================
 
+// 🔥 Sertifikat raqamini generatsiya qilish (Imzo-2026-0000001 format)
 export const generateCertificateNumber = (): string => {
   const year = new Date().getFullYear();
   
@@ -167,20 +229,45 @@ export const generateCertificateNumber = (): string => {
   return `Imzo-${year}-${paddedNumber}`;
 };
 
-// Sertifikat raqamini qo'lda o'rnatish (agar kerak bo'lsa)
-export const resetCertificateCounter = (startFrom: number = 0): void => {
-  localStorage.setItem('imzo_last_cert_number', String(startFrom));
+// 🔥 Sertifikat raqami mavjudligini tekshirish
+export const isCertificateNumberExists = (certNumber: string): boolean => {
+  const orders = getStoredOrders();
+  return orders.some(o => o.warranty?.certificateNumber === certNumber);
 };
 
-// 🔥 Barcha eski buyurtmalarning sertifikat raqamlarini yangilash
+// 🔥 Yangi unikal sertifikat raqami generatsiya qilish (takrorlanmas)
+export const generateUniqueCertificateNumber = (): string => {
+  let attempts = 0;
+  const maxAttempts = 100;
+  
+  while (attempts < maxAttempts) {
+    const newCert = generateCertificateNumber();
+    if (!isCertificateNumberExists(newCert)) {
+      return newCert;
+    }
+    attempts++;
+  }
+  
+  // Agar takrorlanmas raqam topilmasa, vaqt tamg'asi bilan generatsiya qilish
+  const timestamp = Date.now().toString().slice(-7);
+  return `Imzo-${new Date().getFullYear()}-${timestamp}`;
+};
+
+// 🔥 Barcha eski buyurtmalarning sertifikat raqamlarini yangilash (KT -> Imzo)
 export const migrateCertificateNumbers = (): void => {
   const orders = getStoredOrders();
   let lastNumber = parseInt(localStorage.getItem('imzo_last_cert_number') || '0', 10);
   let updated = false;
 
   const updatedOrders = orders.map((order) => {
-    // Agar sertifikat raqami eski formatda bo'lsa (KT- bilan boshlansa)
-    if (order.warranty?.certificateNumber && order.warranty.certificateNumber.startsWith('KT-')) {
+    const currentCert = order.warranty?.certificateNumber;
+    
+    // Agar sertifikat raqami bo'sh yoki KT bilan boshlansa yoki Imzo bilan boshlanmasa
+    if (!currentCert || 
+        currentCert.startsWith('KT-') || 
+        currentCert.startsWith('kt-') ||
+        !currentCert.startsWith('Imzo-')) {
+      
       updated = true;
       lastNumber += 1;
       const paddedNumber = String(lastNumber).padStart(7, '0');
@@ -191,6 +278,7 @@ export const migrateCertificateNumbers = (): void => {
         warranty: {
           ...order.warranty,
           certificateNumber: newCertNumber,
+          readyDate: order.warranty?.readyDate || new Date().toISOString().split('T')[0],
         },
       };
     }
@@ -201,10 +289,15 @@ export const migrateCertificateNumbers = (): void => {
     localStorage.setItem('imzo_last_cert_number', String(lastNumber));
     saveStoredOrders(updatedOrders);
     console.log(`✅ ${updatedOrders.filter(o => o.warranty?.certificateNumber?.startsWith('Imzo-')).length} ta sertifikat raqami yangilandi`);
+  } else {
+    console.log('✅ Barcha sertifikat raqamlari Imzo formatida');
   }
 };
 
-// storage.ts - updateOrderStatus funksiyasi
+// ============================================================
+// ORDER STATUS UPDATE
+// ============================================================
+
 export const updateOrderStatus = (
   orderId: string, 
   newStatus: OrderStatus, 
@@ -217,7 +310,6 @@ export const updateOrderStatus = (
   const currentOrder = orders[index];
   const now = new Date();
   const dateStr = now.toISOString().split('T')[0];
-  const timeStr = `${dateStr} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
   const updated: Order = {
     ...currentOrder,
@@ -230,6 +322,24 @@ export const updateOrderStatus = (
 
   if (newStatus === 'okk_otdi') {
     updated.readyDate = dateStr;
+    
+    // 🔥 Special number generatsiya qilish (agar bo'sh bo'lsa)
+    if (!updated.credentials.specialNumber || updated.credentials.specialNumber === "Bo'sh") {
+      const generateUniqueSpecialNumber = (): string => {
+        let attempts = 0;
+        while (attempts < 50) {
+          const num = Math.floor(10000 + Math.random() * 900000).toString();
+          const exists = orders.some(o => o.credentials.specialNumber === num);
+          if (!exists) {
+            return num;
+          }
+          attempts++;
+        }
+        return Date.now().toString().slice(-6);
+      };
+      updated.credentials.specialNumber = generateUniqueSpecialNumber();
+    }
+    
     if (!updated.credentials.pinCode || updated.credentials.pinCode === "Bo'sh") {
       updated.credentials.pinCode = generatePinCode();
     }
@@ -237,18 +347,30 @@ export const updateOrderStatus = (
       updated.credentials.directToken = generateOrderToken(updated.invoiceNumber);
     }
     
-    // 🔥 YANGI: Unikal sertifikat raqami yaratish
-    const certificateNumber = generateCertificateNumber();
-    
-    updated.warranty = {
-      ...updated.warranty,
-      readyDate: dateStr,
-      okkManagerName: okkInspectorName || "Bo'sh",
-      certificateNumber: certificateNumber, // 🔥 YANGI unikal raqam
-    };
+    // 🔥 Sertifikat raqami - Imzo formatda (takrorlanmas)
+    const currentCert = updated.warranty?.certificateNumber;
+    if (!currentCert || 
+        currentCert.startsWith('KT-') || 
+        currentCert.startsWith('kt-') ||
+        !currentCert.startsWith('Imzo-')) {
+      
+      const certificateNumber = generateUniqueCertificateNumber();
+      updated.warranty = {
+        ...updated.warranty,
+        readyDate: dateStr,
+        okkManagerName: okkInspectorName || "Bo'sh",
+        certificateNumber: certificateNumber,
+      };
+    } else {
+      updated.warranty = {
+        ...updated.warranty,
+        readyDate: dateStr,
+        okkManagerName: okkInspectorName || "Bo'sh",
+      };
+    }
 
     const directLink = `${window.location.origin}/?token=${updated.credentials.directToken}`;
-    updated.lastSmsText = `Hurmatli ${updated.clientFullName.split(' ')[0]}! Sizning ${updated.invoiceNumber} buyurtmangiz OKK sifat nazoratidan muvaffaqiyatli o'tdi va tayyor bo'ldi. Kafolat taloni va kabinet havolasi: ${directLink} Login: ${updated.credentials.login} Parol: ${updated.credentials.pinCode}`;
+    updated.lastSmsText = `Hurmatli ${updated.clientFullName.split(' ')[0]}! Sizning ${updated.invoiceNumber} buyurtmangiz OKK sifat nazoratidan muvaffaqiyatli o'tdi va tayyor bo'ldi. Kafolat taloni va kabinet havolasi: ${directLink} Login: ${updated.credentials.login} Parol: ${updated.credentials.specialNumber}`;
   }
 
   orders[index] = updated;
@@ -275,6 +397,110 @@ export const markSmsSent = (orderId: string, customText?: string): Order | null 
   return orders[index];
 };
 
+// ============================================================
+// CREATE NEW ORDER
+// ============================================================
+
+export const createNewOrder = (orderData: Partial<Order>): Order => {
+  const orders = getStoredOrders();
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+  const invNum = orderData.invoiceNumber || `SCH-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+  
+  // 🔥 Special number generatsiya qilish (takrorlanmas)
+  const generateUniqueSpecialNumber = (): string => {
+    let attempts = 0;
+    while (attempts < 50) {
+      const num = Math.floor(10000 + Math.random() * 900000).toString();
+      const exists = orders.some(o => o.credentials.specialNumber === num);
+      if (!exists) {
+        return num;
+      }
+      attempts++;
+    }
+    return Date.now().toString().slice(-6);
+  };
+  
+  const existingClientOrder = orders.find(
+    (o) =>
+      (orderData.clientPhone && normalizePhone(o.clientPhone) === normalizePhone(orderData.clientPhone)) ||
+      (orderData.clientFullName && o.clientFullName.toLowerCase().trim() === orderData.clientFullName.toLowerCase().trim())
+  );
+
+  const login = existingClientOrder ? existingClientOrder.credentials.login : invNum.replace(/[^a-zA-Z0-9]/g, '');
+  const pin = existingClientOrder ? existingClientOrder.credentials.pinCode : generatePinCode();
+  const specialNumber = existingClientOrder ? existingClientOrder.credentials.specialNumber : generateUniqueSpecialNumber();
+  const directToken = generateOrderToken(invNum);
+
+  // 🔥 Sertifikat raqami - Imzo formatda (takrorlanmas)
+  const certificateNumber = generateUniqueCertificateNumber();
+
+  const newOrder: Order = {
+    id: `ord-${Date.now()}`,
+    invoiceNumber: invNum,
+    clientFullName: orderData.clientFullName || 'Yangi Xaridor',
+    clientPhone: orderData.clientPhone || '+998 90 000 00 00',
+    clientAddress: orderData.clientAddress || 'Toshkent shahar',
+    showroomName: orderData.showroomName || 'Toshkent "Chilonzor-9" Flagship Showroom',
+    showroomId: orderData.showroomId || 'sh-1',
+    salesManagerName: orderData.salesManagerName || 'Bobur Karimov',
+    salesManagerPhone: '+998 90 123-45-67',
+    orderDate: dateStr,
+    factorySentDate: dateStr,
+    productionStartDate: dateStr,
+    status: orderData.status || 'ishlab_chiqarishda',
+    products: orderData.products || [
+      {
+        id: `p-${Date.now()}`,
+        name: 'MDF Emal Ichki Eshiklar',
+        category: 'Eshiklar',
+        model: 'Modern Classic-01',
+        color: 'Oq Emal',
+        areaSqM: 12.0,
+        dimensions: '2100x800x120 mm',
+        quantity: 4,
+        unitPrice: 2800000,
+        totalPrice: 11200000,
+      }
+    ],
+    totalAmount: orderData.totalAmount || 11200000,
+    paidAmount: orderData.paidAmount || 11200000,
+    credentials: {
+      login,
+      pinCode: pin,
+      specialNumber: specialNumber, // 🔥 YANGI
+      directToken,
+    },
+    warranty: {
+      certificateNumber: certificateNumber, // 🔥 Imzo formatda
+      invoiceNumber: invNum,
+      orderDate: dateStr,
+      readyDate: dateStr,
+      warrantyPeriodMonths: 60,
+      okkManagerName: 'Alisher Rustamov',
+      okkManagerTitle: 'Bosh sifat nazorati muhandisi (OKK boshlig\'i)',
+      qualityScore: 99.8,
+      sealStampUrl: 'stamp_verified',
+      signatureUrl: 'sig_alisher',
+      qrCodeValue: `VERIFY:${invNum}:ALISHER_RUSTAMOV:OKK_PASS:60_MONTHS`,
+      terms: [
+        'Ishlab chiqarish nuqsonlari va furnituraga 60 oy (5 yil) to\'liq kafolat taqdim etiladi.',
+        'Muntazam bepul profilaktika va servis xizmati kafolatlanadi.',
+      ],
+    },
+    smsSent: false,
+    notes: orderData.notes || '',
+  };
+
+  orders.unshift(newOrder);
+  saveStoredOrders(orders);
+  return newOrder;
+};
+
+// ============================================================
+// SERVICE TICKETS
+// ============================================================
+
 // ServiceStatus ni TicketStatus ga o'tkazish
 export const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi' => {
   const map: Record<string, 'yangi' | 'jarayonda' | 'usta_biriktirildi' | 'hal_qilindi' | 'bekor_qilindi'> = {
@@ -288,7 +514,6 @@ export const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' |
   return map[serviceStatus] || 'yangi';
 };
 
-// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish
 export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise<string | null> => {
   try {
     const webhookUrl = getBitrixWebhookUrl();
@@ -309,7 +534,6 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
 
     let contactId = null;
 
-    // Telefon raqamni turli formatlarda qidirish
     const cleanPhone = normalizePhone(contactPhone);
     const shortPhone = cleanPhone.slice(-9);
     const plusPhone = `+${cleanPhone}`;
@@ -377,7 +601,6 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
       return null;
     }
 
-    // 🔥 Deal yaratish
     const result = await callBitrixMethod('crm.deal.add', {
       fields: {
         TITLE: `Servis zayavkasi #${ticket.id} - ${contactName}`,
@@ -394,14 +617,12 @@ Mas'ul menejer: ${salesManager}
 Toifa: ${ticket.category}
 Muammo: ${ticket.problemDetails}
         `.trim(),
-        // 🔥 Servis maydonlari
         UF_CRM_SERVICE_TICKET_ID: ticket.id,
         UF_CRM_SERVICE_INVOICE: ticket.invoiceNumber,
         UF_CRM_SERVICE_CATEGORY: ticket.category,
         UF_CRM_SERVICE_STATUS: 'yangi',
         UF_CRM_SERVICE_SHOWROOM: showroomName,
-        // 🔥 YANGI: № счёта maydoniga schet raqam yoziladi
-        "UF_CRM_1644304018": ticket.invoiceNumber,  // № счёта
+        "UF_CRM_1644304018": ticket.invoiceNumber,
       }
     });
 
@@ -417,7 +638,6 @@ Muammo: ${ticket.problemDetails}
   }
 };
 
-// Bitrix24 C1 pipeline da servis statusini yangilash
 export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<void> => {
   try {
     if (!ticket.bitrixDealId) {
@@ -459,7 +679,6 @@ export const updateBitrixServiceStatus = async (ticket: ServiceTicket): Promise<
   }
 };
 
-// Servis ticket yaratish
 export const createServiceTicket = async (
   order: Order,
   category: string,
@@ -606,83 +825,6 @@ export const rateServiceTicket = (
 
   saveStoredTickets(tickets);
   return tickets[index];
-};
-
-export const createNewOrder = (orderData: Partial<Order>): Order => {
-  const orders = getStoredOrders();
-  const now = new Date();
-  const dateStr = now.toISOString().split('T')[0];
-  const invNum = orderData.invoiceNumber || `SCH-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-  
-  const existingClientOrder = orders.find(
-    (o) =>
-      (orderData.clientPhone && normalizePhone(o.clientPhone) === normalizePhone(orderData.clientPhone)) ||
-      (orderData.clientFullName && o.clientFullName.toLowerCase().trim() === orderData.clientFullName.toLowerCase().trim())
-  );
-
-  const login = existingClientOrder ? existingClientOrder.credentials.login : invNum.replace(/[^a-zA-Z0-9]/g, '');
-  const pin = existingClientOrder ? existingClientOrder.credentials.pinCode : generatePinCode();
-  const directToken = generateOrderToken(invNum);
-
-  const newOrder: Order = {
-    id: `ord-${Date.now()}`,
-    invoiceNumber: invNum,
-    clientFullName: orderData.clientFullName || 'Yangi Xaridor',
-    clientPhone: orderData.clientPhone || '+998 90 000 00 00',
-    clientAddress: orderData.clientAddress || 'Toshkent shahar',
-    showroomName: orderData.showroomName || 'Toshkent "Chilonzor-9" Flagship Showroom',
-    showroomId: orderData.showroomId || 'sh-1',
-    salesManagerName: orderData.salesManagerName || 'Bobur Karimov',
-    salesManagerPhone: '+998 90 123-45-67',
-    orderDate: dateStr,
-    factorySentDate: dateStr,
-    productionStartDate: dateStr,
-    status: orderData.status || 'ishlab_chiqarishda',
-    products: orderData.products || [
-      {
-        id: `p-${Date.now()}`,
-        name: 'MDF Emal Ichki Eshiklar',
-        category: 'Eshiklar',
-        model: 'Modern Classic-01',
-        color: 'Oq Emal',
-        areaSqM: 12.0,
-        dimensions: '2100x800x120 mm',
-        quantity: 4,
-        unitPrice: 2800000,
-        totalPrice: 11200000,
-      }
-    ],
-    totalAmount: orderData.totalAmount || 11200000,
-    paidAmount: orderData.paidAmount || 11200000,
-    credentials: {
-      login,
-      pinCode: pin,
-      directToken,
-    },
-    warranty: {
-      certificateNumber: generateCertificateNumber(), // 🔥 YANGI: Unikal sertifikat raqami
-      invoiceNumber: invNum,
-      orderDate: dateStr,
-      readyDate: dateStr,
-      warrantyPeriodMonths: 60,
-      okkManagerName: 'Alisher Rustamov',
-      okkManagerTitle: 'Bosh sifat nazorati muhandisi (OKK boshlig\'i)',
-      qualityScore: 99.8,
-      sealStampUrl: 'stamp_verified',
-      signatureUrl: 'sig_alisher',
-      qrCodeValue: `VERIFY:${invNum}:ALISHER_RUSTAMOV:OKK_PASS:60_MONTHS`,
-      terms: [
-        'Ishlab chiqarish nuqsonlari va furnituraga 60 oy (5 yil) to\'liq kafolat taqdim etiladi.',
-        'Muntazam bepul profilaktika va servis xizmati kafolatlanadi.',
-      ],
-    },
-    smsSent: false,
-    notes: orderData.notes || '',
-  };
-
-  orders.unshift(newOrder);
-  saveStoredOrders(orders);
-  return newOrder;
 };
 
 export const resetDemoData = () => {
