@@ -19,7 +19,7 @@ import {
   saveAuthSession, 
   clearAuthSession, 
   isAuthSessionValid,
-  migrateCertificateNumbers  // 🔥 IMPORT QILINGAN
+  migrateCertificateNumbers
 } from './services/storage';
 
 export default function App() {
@@ -29,9 +29,8 @@ export default function App() {
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState('');
 
-  // 🔥 Sayt yuklanganda avvalgi session ni tekshirish
   useEffect(() => {
-    // 🔥 Eski sertifikat raqamlarini migratsiya qilish
+    // 🔥 Eski sertifikat raqamlarini migratsiya qilish (KT -> Imzo)
     migrateCertificateNumbers();
 
     const params = new URLSearchParams(window.location.search);
@@ -51,7 +50,6 @@ export default function App() {
       if (matched) {
         setCurrentClientOrder(matched);
         setCurrentView('client_dashboard');
-        // 🔥 Session ni saqlash
         saveAuthSession({
           orderId: matched.id,
           login: matched.credentials.login,
@@ -62,7 +60,7 @@ export default function App() {
       }
     }
 
-    // 3. 🔥 LOCAL STORAGE dan session ni tekshirish
+    // 3. LOCAL STORAGE dan session ni tekshirish
     const savedSession = getAuthSession();
     if (savedSession && isAuthSessionValid(savedSession)) {
       const matched = orders.find((o) => o.id === savedSession.orderId);
@@ -71,7 +69,6 @@ export default function App() {
         setCurrentView('client_dashboard');
         return;
       } else {
-        // Order topilmasa, session ni tozalash
         clearAuthSession();
       }
     }
@@ -83,7 +80,6 @@ export default function App() {
   const handleClientLoginSuccess = (order: Order) => {
     setCurrentClientOrder(order);
     setCurrentView('client_dashboard');
-    // 🔥 Session ni saqlash
     saveAuthSession({
       orderId: order.id,
       login: order.credentials.login,
@@ -95,9 +91,7 @@ export default function App() {
   const handleLogoutClient = () => {
     setCurrentClientOrder(null);
     setCurrentView('client_login');
-    // 🔥 Session ni tozalash
     clearAuthSession();
-    // URL dan token ni o'chirish
     if (window.location.search.includes('token=')) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -106,7 +100,6 @@ export default function App() {
   const handleOpenClientFromManager = (order: Order) => {
     setCurrentClientOrder(order);
     setCurrentView('client_dashboard');
-    // 🔥 Session ni saqlash
     saveAuthSession({
       orderId: order.id,
       login: order.credentials.login,
