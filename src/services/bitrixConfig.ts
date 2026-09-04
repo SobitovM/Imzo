@@ -1,8 +1,3 @@
-export const BITRIX_FIELDS = {
-  SPECIAL_CODE: "UF_CRM_1745308434",
-  ORDER_INVOICE_ID: "UF_CRM_1651306406137",     // ID заказа (schet raqam)
-  INVOICE_NUMBER: "UF_CRM_1644304018",          // 🔥 № счёта (YANGI qo'shildi)
-};
 // Bitrix24 Real Data Mapping and Dictionaries
 // 🔥 SHOWROOM TELEFON RAQAMLARI
 export const SHOWROOM_PHONES: Record<string, string> = {
