@@ -2,7 +2,6 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Lock, X, ArrowRight } from 'lucide-react';
 import { Navbar } from './components/Navbar';
@@ -11,6 +10,7 @@ import { ClientDashboard } from './components/ClientDashboard';
 import { ManagerBitrixPanel } from './components/ManagerBitrixPanel';
 import { Order } from './types';
 import { getStoredOrders } from './services/storage';
+import { getAuthSession, saveAuthSession, clearAuthSession, isAuthSessionValid } from './services/storage';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'client_login' | 'client_dashboard' | 'manager_panel'>('client_login');
@@ -19,40 +19,72 @@ export default function App() {
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState('');
 
-  // Check URL token or ?admin=true on initial mount
+  // 🔥 Sayt yuklanganda avvalgi session ni tekshirish
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const adminParam = params.get('admin');
     const orders = getStoredOrders();
 
+    // 1. Admin panel
     if (adminParam === 'true' || adminParam === '1') {
       setCurrentView('manager_panel');
       return;
     }
 
+    // 2. URL token orqali login
     if (token) {
       const matched = orders.find((o) => o.credentials.directToken === token);
       if (matched) {
         setCurrentClientOrder(matched);
         setCurrentView('client_dashboard');
+        // 🔥 Session ni saqlash
+        saveAuthSession({
+          orderId: matched.id,
+          login: matched.credentials.login,
+          pinCode: matched.credentials.pinCode,
+          timestamp: Date.now(),
+        });
         return;
       }
     }
 
-    // Default to client login
+    // 3. 🔥 LOCAL STORAGE dan session ni tekshirish
+    const savedSession = getAuthSession();
+    if (savedSession && isAuthSessionValid(savedSession)) {
+      const matched = orders.find((o) => o.id === savedSession.orderId);
+      if (matched) {
+        setCurrentClientOrder(matched);
+        setCurrentView('client_dashboard');
+        return;
+      } else {
+        // Order topilmasa, session ni tozalash
+        clearAuthSession();
+      }
+    }
+
+    // 4. Default: login ekrani
     setCurrentView('client_login');
   }, []);
 
   const handleClientLoginSuccess = (order: Order) => {
     setCurrentClientOrder(order);
     setCurrentView('client_dashboard');
+    // 🔥 Session ni saqlash
+    saveAuthSession({
+      orderId: order.id,
+      login: order.credentials.login,
+      pinCode: order.credentials.pinCode,
+      timestamp: Date.now(),
+    });
   };
 
   const handleLogoutClient = () => {
     setCurrentClientOrder(null);
     setCurrentView('client_login');
-    // Clear URL token if any
+    // 🔥 Session ni tozalash
+    clearAuthSession();
+    // URL dan token ni o'chirish
     if (window.location.search.includes('token=')) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
@@ -61,12 +93,18 @@ export default function App() {
   const handleOpenClientFromManager = (order: Order) => {
     setCurrentClientOrder(order);
     setCurrentView('client_dashboard');
+    // 🔥 Session ni saqlash
+    saveAuthSession({
+      orderId: order.id,
+      login: order.credentials.login,
+      pinCode: order.credentials.pinCode,
+      timestamp: Date.now(),
+    });
   };
 
   const handleAdminAuth = (e: React.FormEvent) => {
     e.preventDefault();
     setAdminError('');
-    // Passwords accepted for admin: 'admin', 'imzo2026', 'okk2026', 'manager'
     const allowed = ['1234'];
     if (allowed.includes(adminPassword.trim().toLowerCase())) {
       setIsAdminModalOpen(false);
@@ -79,7 +117,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-500 selection:text-white">
-      {/* Top Navbar */}
       <Navbar
         currentView={currentView}
         currentClientOrder={currentClientOrder}
@@ -87,7 +124,6 @@ export default function App() {
         onLogoutClient={handleLogoutClient}
       />
 
-      {/* Main Content Area */}
       <main className="flex-1 p-3 sm:p-6 lg:p-8">
         {currentView === 'client_login' && (
           <ClientLogin
@@ -110,14 +146,12 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="py-4 border-t border-slate-900 bg-slate-950 text-center text-xs text-slate-500 px-4">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-[11px] sm:text-xs">
             IMZO • Sifat Nazorati va Mijoz Shaxsiy Kabineti Tizimi (60 Oy Kafolat)
           </p>
 
-          {/* Discreet Admin Login Link */}
           {currentView !== 'manager_panel' && (
             <button
               id="btn-open-admin-dialog"
@@ -131,7 +165,6 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Admin Authorization Modal */}
       {isAdminModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
