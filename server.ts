@@ -28,63 +28,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// Server-side Bitrix24 Proxy
-app.post("/api/bitrix-proxy", async (req, res) => {
-  try {
-    const { webhookUrl, method, params } = req.body;
-    const targetWebhook = (webhookUrl || DEFAULT_BITRIX_WEBHOOK).trim().replace(/\/+$/, '') + '/';
-    const bitrixUrl = `${targetWebhook}${method}.json`;
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-    try {
-      const bitrixRes = await fetch(bitrixUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(params || {}),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      const data = await bitrixRes.json();
-      if (!bitrixRes.ok || data.error) {
-        return res.status(bitrixRes.status >= 400 ? bitrixRes.status : 400).json({
-          error: true,
-          error_description: data.error_description || data.error || "Bitrix24 API Error",
-        });
-      }
-
-      return res.json({
-        success: true,
-        result: data.result,
-        total: data.total,
-        next: data.next,
-      });
-    } catch (fetchErr: any) {
-      clearTimeout(timeoutId);
-      const isTimeout = fetchErr.name === 'AbortError' || fetchErr.code === 'UND_ERR_CONNECT_TIMEOUT' || fetchErr.message?.includes('timeout') || fetchErr.cause?.name === 'ConnectTimeoutError';
-      
-      return res.status(502).json({
-        error: true,
-        isTimeout,
-        error_description: isTimeout
-          ? `Bitrix24 serveriga (${targetWebhook}) ulanishda vaqt tugadi (Timeout 6s).`
-          : `Bitrix24 serveriga ulanib bo'lmadi: ${fetchErr.message || 'Tarmoq xatosi'}`,
-      });
-    }
-  } catch (err: any) {
-    return res.status(500).json({
-      error: true,
-      error_description: err.message || "Internal Proxy Error",
-    });
-  }
-});
-
-// 🔥 Bitrix24 Webhook - status o'zgarishini qabul qilish (TO'LIQ)
+// server.ts - To'liq webhook handler
 app.post("/api/bitrix-webhook", async (req, res) => {
   try {
     console.log('📥 Bitrix24 webhook keldi');
@@ -97,6 +41,7 @@ app.post("/api/bitrix-webhook", async (req, res) => {
       return res.status(400).json({ error: 'Event maydoni kerak' });
     }
 
+    // 🔥 OnCrmDealUpdate - deal status o'zgarganda
     if (event === 'OnCrmDealUpdate' && data?.FIELDS?.ID) {
       const dealId = data.FIELDS.ID;
       const stageId = data.FIELDS.STAGE_ID;
@@ -104,21 +49,15 @@ app.post("/api/bitrix-webhook", async (req, res) => {
       console.log(`🔄 Deal ${dealId} statusi o'zgardi: ${stageId}`);
       
       try {
-        const webhookUrl = getBitrixWebhookUrl() || DEFAULT_BITRIX_WEBHOOK;
-        if (!webhookUrl) {
-          console.warn('⚠️ Bitrix24 Webhook URL sozlanmagan');
-          return res.json({ success: false, error: 'Webhook URL not configured' });
-        }
-
+        // 🔥 Deal ma'lumotlarini olish
         const deal = await callBitrixMethod('crm.deal.get', { id: dealId });
-        
-        console.log('✅ Deal ma\'lumotlari olindi:', deal ? 'OK' : 'EMPTY');
         
         if (!deal) {
           console.warn('⚠️ Deal topilmadi');
           return res.json({ success: false, error: 'Deal not found' });
         }
 
+        // 🔥 Ticket ID ni olish (UF_CRM_SERVICE_TICKET_ID)
         const ticketId = deal.UF_CRM_SERVICE_TICKET_ID;
         console.log(`🔍 Ticket ID: ${ticketId}`);
         
@@ -127,8 +66,9 @@ app.post("/api/bitrix-webhook", async (req, res) => {
           const index = tickets.findIndex(t => t.id === ticketId);
           
           if (index !== -1) {
-            console.log(`✅ Ticket ${ticketId} topildi, status yangilanmoqda...`);
+            console.log(`✅ Ticket ${ticketId} topildi`);
             
+            // 🔥 C1 pipeline statuslarini map qilish
             const serviceStatusMap: Record<string, ServiceStatus> = {
               'C1:NEW': 'yangi',
               'C1:UC_WV7G2R': 'master',
@@ -142,6 +82,7 @@ app.post("/api/bitrix-webhook", async (req, res) => {
             const newServiceStatus = serviceStatusMap[stageId] || 'yangi';
             console.log(`📊 Yangi serviceStatus: ${newServiceStatus}`);
             
+            // 🔥 Ticket statusini yangilash
             tickets[index].serviceStatus = newServiceStatus;
             tickets[index].status = mapServiceStatusToTicketStatus(newServiceStatus);
             
