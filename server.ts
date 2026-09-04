@@ -1,8 +1,9 @@
+// server.ts - BOSHIDA
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
-import { callBitrixMethod, getBitrixWebhookUrl } from './src/services/bitrixService.js';
+import { callBitrixMethod, getBitrixWebhookUrl, getShowroomPhone } from './src/services/bitrixService.js';
 import { getStoredTickets, saveStoredTickets, mapServiceStatusToTicketStatus } from './src/services/storage.js';
 import { ServiceStatus } from './src/types.js';
 
