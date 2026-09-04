@@ -1,3 +1,32 @@
+// ClientLogin.tsx - handleLogin funksiyasi
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setErrorMsg('');
+  setIsLoading(true);
+
+  const cleanLogin = loginInput.trim().toUpperCase();
+  const cleanPin = pinInput.trim();
+  const loginDigits = normalizePhone(loginInput);
+
+  const all = getStoredOrders();
+  const matchedLocal = all.find((o) => {
+    const oDigits = normalizePhone(o.clientPhone);
+    const matchesPhone = loginDigits.length >= 7 && (oDigits.endsWith(loginDigits) || loginDigits.endsWith(oDigits));
+    const matchesLogin = o.credentials.login.toUpperCase() === cleanLogin;
+    const matchesInvoice = o.invoiceNumber.toUpperCase() === cleanLogin;
+    const matchesPin = o.credentials.pinCode === cleanPin || o.credentials.pinCode.toUpperCase() === cleanPin.toUpperCase();
+
+    return (matchesPhone || matchesLogin || matchesInvoice || !cleanLogin) && matchesPin;
+  });
+
+  if (matchedLocal) {
+    setIsLoading(false);
+    onLoginSuccess(matchedLocal);
+    return;
+  }
+
+  // ... qolgan kod
+};
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
