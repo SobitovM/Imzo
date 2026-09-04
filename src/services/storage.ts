@@ -220,12 +220,12 @@ export const mapServiceStatusToTicketStatus = (serviceStatus: string): 'yangi' |
   return map[serviceStatus] || 'yangi';
 };
 
-// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish (TUZATILGAN - TO'LIQ)
+// 🔥 Bitrix24 C1 pipeline ga servis zayavkasini yuborish (TUZATILGAN)
 export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise<string | null> => {
   try {
     const webhookUrl = getBitrixWebhookUrl();
     if (!webhookUrl) {
-      console.warn('Bitrix24 Webhook URL sozlanmagan, zayavka faqat local saqlandi');
+      console.warn('Bitrix24 Webhook URL sozlanmagan');
       return null;
     }
 
@@ -241,7 +241,7 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
 
     let contactId = null;
 
-    // 🔥 Telefon raqamni turli formatlarda qidirish
+    // Telefon raqamni turli formatlarda qidirish
     const cleanPhone = normalizePhone(contactPhone);
     const shortPhone = cleanPhone.slice(-9);
     const plusPhone = `+${cleanPhone}`;
@@ -273,7 +273,7 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
 
       if (foundContact) {
         contactId = foundContact.ID;
-        console.log('✅ Mavjud contact topildi ID:', contactId, 'Telefon:', foundContact.PHONE);
+        console.log('✅ Mavjud contact topildi ID:', contactId);
       } else {
         console.warn('⚠️ Telefon bo\'yicha contact topilmadi.');
       }
@@ -281,7 +281,6 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
       console.warn('Contact qidirishda xatolik:', searchErr);
     }
 
-    // 🔥 Agar kontakt topilmasa, YANGI kontakt yaratamiz
     if (!contactId) {
       try {
         const newContact = await callBitrixMethod('crm.contact.add', {
@@ -306,11 +305,11 @@ export const sendServiceRequestToBitrix = async (ticket: ServiceTicket): Promise
     }
 
     if (!contactId) {
-      console.error('❌ Contact ID topilmadi yoki yaratilmadi, deal yaratish to\'xtatildi');
+      console.error('❌ Contact ID topilmadi');
       return null;
     }
 
-    // 🔥 Deal yaratish (contactId MAJBURIY)
+    // 🔥 Deal yaratish
     const result = await callBitrixMethod('crm.deal.add', {
       fields: {
         TITLE: `Servis zayavkasi #${ticket.id} - ${contactName}`,
@@ -327,11 +326,14 @@ Mas'ul menejer: ${salesManager}
 Toifa: ${ticket.category}
 Muammo: ${ticket.problemDetails}
         `.trim(),
+        // 🔥 Servis maydonlari
         UF_CRM_SERVICE_TICKET_ID: ticket.id,
         UF_CRM_SERVICE_INVOICE: ticket.invoiceNumber,
         UF_CRM_SERVICE_CATEGORY: ticket.category,
         UF_CRM_SERVICE_STATUS: 'yangi',
         UF_CRM_SERVICE_SHOWROOM: showroomName,
+        // 🔥 YANGI: № счёта maydoniga schet raqam yoziladi
+        "UF_CRM_1644304018": ticket.invoiceNumber,  // № счёта
       }
     });
 
