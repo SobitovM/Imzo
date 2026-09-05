@@ -1,6 +1,5 @@
-// ============================================================
-// WarrantyModal.tsx
-// ============================================================
+// WarrantyModal.tsx - TO'G'RILANGAN VERSIYA
+
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -10,14 +9,8 @@ import {
   X, 
   CheckCircle2, 
   Award, 
-  Calendar, 
-  FileText, 
-  Building2, 
-  UserCheck, 
-  Sparkles,
-  Loader2,
-  Phone,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import { Order } from '../types';
 import jsPDF from 'jspdf';
@@ -49,44 +42,109 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   
   const showroomPhone = getShowroomPhone(order.showroomName);
 
+  // 🔥 PDF yuklab olish - TO'G'RILANGAN
   const handleDownloadPdf = async () => {
-    if (!certificateRef.current) return;
+    if (!certificateRef.current) {
+      console.error('Certificate ref not found');
+      return;
+    }
+
     try {
       setIsGeneratingPdf(true);
       
-      const canvas = await html2canvas(certificateRef.current, {
+      // 🔥 Sertifikatni ko'rinadigan qilish (agar hidden bo'lsa)
+      const certElement = certificateRef.current;
+      
+      // 🔥 html2canvas bilan suratga olish
+      const canvas = await html2canvas(certElement, {
         scale: 2.5,
         useCORS: true,
         logging: false,
         backgroundColor: '#FFFFFF',
+        width: certElement.scrollWidth,
+        height: certElement.scrollHeight,
+        windowWidth: certElement.scrollWidth,
+        windowHeight: certElement.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
+      
+      // 🔥 PDF yaratish
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
       });
 
-      const imgWidth = 210;
-      const pageHeight = 297;
+      const imgWidth = 190; // A4 eni - margin
+      const pageHeight = 277; // A4 bo'yi - margin
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, Math.min(imgHeight, pageHeight));
+      // 🔥 Rasmni PDF ga qo'shish
+      pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, Math.min(imgHeight, pageHeight));
+      
+      // 🔥 Agar rasm bir betga sig'masa, keyingi betga qo'shish
+      if (imgHeight > pageHeight) {
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 10, 10 - pageHeight, imgWidth, imgHeight);
+      }
+      
       pdf.save(`Kafolat_Taloni_${order.invoiceNumber}.pdf`);
       
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3000);
     } catch (err) {
-      console.error('PDF generation error', err);
+      console.error('PDF generation error:', err);
+      // 🔥 Xatolik bo'lsa, chop etishga o'tish
       window.print();
     } finally {
       setIsGeneratingPdf(false);
     }
   };
 
+  // 🔥 Chop etish - TO'G'RILANGAN
   const handlePrint = () => {
+    // Chop etish uchun maxsus stil
+    const printStyles = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #printable-warranty-certificate,
+        #printable-warranty-certificate * {
+          visibility: visible !important;
+        }
+        #printable-warranty-certificate {
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 100% !important;
+          background: white !important;
+          padding: 20px !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        .print-only {
+          display: block !important;
+        }
+      }
+    `;
+
+    // Stilni qo'shish
+    const styleElement = document.createElement('style');
+    styleElement.id = 'print-styles';
+    styleElement.textContent = printStyles;
+    document.head.appendChild(styleElement);
+
+    // Chop etish
     window.print();
+
+    // Chop etishdan keyin stilni o'chirish
+    setTimeout(() => {
+      const el = document.getElementById('print-styles');
+      if (el) el.remove();
+    }, 1000);
   };
 
   if (!isReady) {
@@ -150,8 +208,8 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
           transition={{ duration: 0.2 }}
           className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 shrink-0 gap-2">
+          {/* Header - no-print class qo'shildi */}
+          <div className="no-print flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 shrink-0 gap-2">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                 <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -216,7 +274,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
             </div>
           </div>
 
-          {/* Certificate */}
+          {/* Certificate - id qo'shildi va print uchun */}
           <div className="p-2 sm:p-5 md:p-8 overflow-y-auto flex-1 bg-slate-950/70">
             <div
               ref={certificateRef}
@@ -250,7 +308,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 uppercase font-serif">
                   KAFOLAT TALONI
                 </h1>
-                {/* 🔥 Sertifikat raqami - order.warranty.certificateNumber dan olinadi */}
                 <p className="text-[11px] sm:text-xs font-serif italic text-amber-950/70 mt-0.5">
                   Sertifikat raqami: <strong className="text-amber-900 font-mono font-bold">
                     {order.warranty?.certificateNumber || 'Imzo-2026-0000001'}
@@ -360,31 +417,28 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
               </div>
 
-              {/* 🔥 Bottom */}
+              {/* Bottom */}
               <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-center sm:items-end relative z-10 text-xs">
-                {/* Left: Sifat nazorati xulosasi + Sifat nazorati Mutaxassisi */}
                 <div className="text-center sm:text-left">
                   <p className="text-[11px] text-slate-500 font-medium">Sifat nazorati xulosasi:</p>
                   <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Barcha standartlarga to'liq mos keladi
                   </p>
-                  {/* 🔥 "Sifat nazorati Mutaxassisi: Bo'sh" qayta qo'shildi */}
                   <div className="mt-2">
                     <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
                     <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
                   </div>
                 </div>
 
-                {/* 🔥 Right: Pechatlar va imzolar */}
                 <div className="flex flex-row items-center justify-end gap-6 sm:gap-10 py-1">
-                  {/* 1 - Mahsulot Kafolati */}
                   <div className="flex flex-col items-center">
                     <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
                       <img 
                         src="/images.png" 
                         alt="Imzo" 
                         className="w-full h-full object-contain"
+                        crossOrigin="anonymous"
                       />
                     </div>
                     <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
@@ -392,6 +446,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                         src="/signature1.png" 
                         alt="Mahsulot kafolati" 
                         className="w-full h-full object-contain"
+                        crossOrigin="anonymous"
                       />
                     </div>
                     <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
@@ -399,13 +454,13 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </p>
                   </div>
 
-                  {/* 2 - Sifat Nazorati */}
                   <div className="flex flex-col items-center">
                     <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
                       <img 
                         src="/images1.png" 
                         alt="Sifat Nazorati" 
                         className="w-full h-full object-contain"
+                        crossOrigin="anonymous"
                       />
                     </div>
                     <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
@@ -413,6 +468,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                         src="/signature2.png" 
                         alt="Sifat nazorati" 
                         className="w-full h-full object-contain"
+                        crossOrigin="anonymous"
                       />
                     </div>
                     <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
