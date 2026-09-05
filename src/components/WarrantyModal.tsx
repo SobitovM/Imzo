@@ -1,4 +1,4 @@
-// WarrantyModal.tsx - TO'LIQ QAYTA YOZILGAN
+// WarrantyModal.tsx - TO'LIQ
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,102 +44,71 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   
   const showroomPhone = getShowroomPhone(order.showroomName);
 
-  // WarrantyModal.tsx - PDF yuklab olish
-
-const handleDownloadPdf = async () => {
-  if (!certificateRef.current) {
-    console.error('Certificate ref not found');
-    setPdfError('Sertifikat elementi topilmadi');
-    return;
-  }
-
-  try {
-    setIsGeneratingPdf(true);
-    setPdfError(null);
-    
-    const element = certificateRef.current;
-    
-    // 🔥 1. Avval elementni ko'rinadigan qilish (agar hidden bo'lsa)
-    element.style.display = 'block';
-    element.style.opacity = '1';
-    element.style.visibility = 'visible';
-    
-    // 🔥 2. html2canvas bilan suratga olish
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-      allowTaint: false,
-      width: element.scrollWidth,
-      height: element.scrollHeight,
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight,
-      onclone: (clonedDoc, clonedElement) => {
-        // Rasmlarni to'g'ri ko'rsatish
-        const imgs = clonedElement.querySelectorAll('img');
-        imgs.forEach(img => {
-          img.crossOrigin = 'anonymous';
-        });
-      }
-    });
-
-    // 🔥 3. Rasmni PNG ga o'tkazish
-    const imgData = canvas.toDataURL('image/png');
-    
-    // 🔥 4. PDF yaratish
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-      compress: true
-    });
-    
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    
-    const margin = 10;
-    const imgWidth = pdfWidth - (margin * 2);
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    
-    let yPosition = margin;
-    let remainingHeight = imgHeight;
-    let pageCount = 1;
-    
-    while (remainingHeight > 0) {
-      if (pageCount > 1) {
-        pdf.addPage();
-        yPosition = margin;
-      }
-      
-      const currentHeight = Math.min(remainingHeight, pdfHeight - (margin * 2));
-      pdf.addImage(
-        imgData, 
-        'PNG', 
-        margin, 
-        yPosition, 
-        imgWidth, 
-        currentHeight
-      );
-      
-      remainingHeight -= currentHeight;
-      pageCount++;
+  // 🔥 PDF yuklab olish
+  const handleDownloadPdf = async () => {
+    if (!certificateRef.current) {
+      console.error('Certificate ref not found');
+      setPdfError('Sertifikat elementi topilmadi');
+      return;
     }
-    
-    // 🔥 5. PDF ni saqlash
-    const fileName = `Kafolat_Taloni_${order.invoiceNumber}.pdf`;
-    pdf.save(fileName);
-    
-    setDownloadSuccess(true);
-    setTimeout(() => setDownloadSuccess(false), 3000);
-    
-  } catch (err) {
-    console.error('❌ PDF generation error:', err);
-    setPdfError('PDF yaratishda xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
-  } finally {
-    setIsGeneratingPdf(false);
-  }
-};
+
+    try {
+      setIsGeneratingPdf(true);
+      setPdfError(null);
+      
+      const element = certificateRef.current;
+      
+      // 🔥 Elementni ko'rinadigan qilish
+      element.style.display = 'block';
+      element.style.opacity = '1';
+      element.style.visibility = 'visible';
+      
+      // 🔥 html2canvas bilan suratga olish
+      const canvas = await html2canvas(element, {
+        scale: 2.5,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        allowTaint: false,
+        width: element.scrollWidth,
+        height: element.scrollHeight,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+        onclone: (clonedDoc, clonedElement) => {
+          const imgs = clonedElement.querySelectorAll('img');
+          imgs.forEach(img => {
+            img.crossOrigin = 'anonymous';
+          });
+        }
+      });
+
+      // 🔥 Rasmni PNG ga o'tkazish
+      const imgData = canvas.toDataURL('image/png');
+      
+      // 🔥 PDF yaratish
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      const margin = 10;
+      const imgWidth = pdfWidth - (margin * 2);
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      let yPosition = margin;
+      let remainingHeight = imgHeight;
+      let pageCount = 1;
+      
+      while (remainingHeight > 0) {
+        if (pageCount > 1) {
+          pdf.addPage();
+          yPosition = margin;
+        }
         
         const currentHeight = Math.min(remainingHeight, pdfHeight - (margin * 2));
         pdf.addImage(
@@ -148,19 +117,14 @@ const handleDownloadPdf = async () => {
           margin, 
           yPosition, 
           imgWidth, 
-          currentHeight,
-          undefined,
-          'FAST'
+          currentHeight
         );
         
         remainingHeight -= currentHeight;
-        yPosition = margin;
         pageCount++;
       }
       
-      console.log('✅ PDF yaratildi, betlar:', pageCount - 1);
-      
-      // 🔥 6. PDF ni saqlash
+      // 🔥 PDF ni saqlash
       const fileName = `Kafolat_Taloni_${order.invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
       
@@ -327,7 +291,7 @@ const handleDownloadPdf = async () => {
               <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-l-2 border-[#D4AF37] z-10" />
               <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-r-2 border-[#D4AF37] z-10" />
 
-              {/* Content - relative z-index bilan */}
+              {/* Content */}
               <div className="relative z-10">
                 {/* Top Header */}
                 <div className="text-center pb-4 sm:pb-6 border-b border-amber-900/20">
