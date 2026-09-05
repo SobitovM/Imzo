@@ -68,13 +68,10 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
         allowTaint: false,
         logging: false,
         backgroundColor: '#ffffff',
-        // 🔥 OKLCH xatosini oldini olish uchun maxsus funksiya
+        / 🔥 OKLCH xatosini keltirib chiqaruvchi tashqi CSS larni klondan olib tashlaymiz
         onclone: (clonedDoc) => {
-          const el = clonedDoc.getElementById('certificate-content');
-          if (el) {
-            el.style.color = '#000000';
-            el.style.backgroundColor = '#ffffff';
-          }
+          const stylesheets = clonedDoc.querySelectorAll('link[rel="stylesheet"], style');
+          stylesheets.forEach((sheet) => sheet.remove());
         }
       });
 
