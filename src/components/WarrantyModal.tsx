@@ -1,4 +1,4 @@
-// WarrantyModal.tsx - TO'LIQ
+// WarrantyModal.tsx - TO'LIQ QAYTA YOZILGAN
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,28 +44,28 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   
   const showroomPhone = getShowroomPhone(order.showroomName);
 
-  // 🔥 PDF yuklab olish
+  // 🔥 PDF yuklab olish - SODDA VA ISHONCHLI
   const handleDownloadPdf = async () => {
+    // 🔥 1. Element mavjudligini tekshirish
     if (!certificateRef.current) {
-      console.error('Certificate ref not found');
       setPdfError('Sertifikat elementi topilmadi');
       return;
     }
 
+    setIsGeneratingPdf(true);
+    setPdfError(null);
+
     try {
-      setIsGeneratingPdf(true);
-      setPdfError(null);
-      
       const element = certificateRef.current;
       
-      // 🔥 Elementni ko'rinadigan qilish
+      // 🔥 2. Elementni ko'rinadigan qilish
       element.style.display = 'block';
       element.style.opacity = '1';
       element.style.visibility = 'visible';
       
-      // 🔥 html2canvas bilan suratga olish
+      // 🔥 3. html2canvas bilan suratga olish
       const canvas = await html2canvas(element, {
-        scale: 2.5,
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -82,10 +82,19 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
         }
       });
 
-      // 🔥 Rasmni PNG ga o'tkazish
+      // 🔥 4. Canvas ni tekshirish
+      if (!canvas) {
+        throw new Error('Canvas yaratilmadi');
+      }
+
+      // 🔥 5. Rasmni PNG ga o'tkazish
       const imgData = canvas.toDataURL('image/png');
       
-      // 🔥 PDF yaratish
+      if (!imgData || imgData === 'data:image/png;base64,') {
+        throw new Error('Rasm yaratilmadi');
+      }
+
+      // 🔥 6. PDF yaratish
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -100,6 +109,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
       const imgWidth = pdfWidth - (margin * 2);
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
+      // 🔥 7. Rasmni PDF ga qo'shish
       let yPosition = margin;
       let remainingHeight = imgHeight;
       let pageCount = 1;
@@ -124,16 +134,16 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
         pageCount++;
       }
       
-      // 🔥 PDF ni saqlash
-      const fileName = `Kafolat_Taloni_${order.invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
+      // 🔥 8. PDF ni saqlash
+      const fileName = `Kafolat_Taloni_${order.invoiceNumber}.pdf`;
       pdf.save(fileName);
       
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3000);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ PDF generation error:', err);
-      setPdfError('PDF yaratishda xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
+      setPdfError(err.message || 'PDF yaratishda xatolik yuz berdi');
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -271,6 +281,12 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
           {pdfError && (
             <div className="mx-4 mt-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
               <p className="text-xs text-rose-300">{pdfError}</p>
+              <button 
+                onClick={() => setPdfError(null)}
+                className="text-xs text-rose-400 hover:text-rose-300 mt-1 underline cursor-pointer"
+              >
+                Yopish
+              </button>
             </div>
           )}
 
