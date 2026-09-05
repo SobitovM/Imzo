@@ -1,4 +1,4 @@
-// WarrantyModal.tsx - To'liq tuzatilgan va mobil qurilmalar uchun moslashtirilgan versiya
+// WarrantyModal.tsx - Mobil va kompyuter uchun to'liq tuzatilgan versiya
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -56,7 +56,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
   const showroomPhone = getShowroomPhone(order.showroomName);
 
   // ============================================================
-  // PDF YUKLAB OLISH (Mobil qurilmalar uchun moslashtirilgan)
+  // PDF YUKLAB OLISH (Mobil va Kompyuter uchun universal usul)
   // ============================================================
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) {
@@ -72,7 +72,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
       const element = certificateRef.current;
 
-      // Element ko'rinishini majburan aktiv qilamiz
       const originalDisplay = element.style.display;
       const originalOpacity = element.style.opacity;
       const originalVisibility = element.style.visibility;
@@ -81,13 +80,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
       element.style.opacity = '1';
       element.style.visibility = 'visible';
 
-      // Barcha rasmlar yuklanishini kutamiz
       const images = Array.from(element.querySelectorAll('img'));
 
       await Promise.all(
         images.map((img) => {
           if (img.complete) return Promise.resolve();
-
           return new Promise<void>((resolve) => {
             img.onload = () => resolve();
             img.onerror = () => resolve();
@@ -95,7 +92,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
         })
       );
 
-      // HTML -> Canvas
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -107,7 +103,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
         scrollY: 0
       });
 
-      // Original style'larni qaytaramiz
       element.style.display = originalDisplay;
       element.style.opacity = originalOpacity;
       element.style.visibility = originalVisibility;
@@ -118,9 +113,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
       const imgData = canvas.toDataURL('image/png', 1.0);
 
-      // ============================================================
-      // A4 PDF yaratish
-      // ============================================================
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -130,7 +122,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-
       const margin = 8;
 
       const availableWidth = pdfWidth - margin * 2;
@@ -147,64 +138,60 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
       const x = (pdfWidth - imgWidth) / 2;
       const y = (pdfHeight - imgHeight) / 2;
 
-      pdf.addImage(
-        imgData,
-        'PNG',
-        x,
-        y,
-        imgWidth,
-        imgHeight,
-        undefined,
-        'FAST'
-      );
+      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
 
-      // Fayl nomi
-      const safeInvoiceNumber = String(
-        order.invoiceNumber || '000000'
-      ).replace(/[^a-zA-Z0-9_-]/g, '_');
-
-      const date = new Date()
-        .toISOString()
-        .split('T')[0];
-
+      const safeInvoiceNumber = String(order.invoiceNumber || '000000').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const date = new Date().toISOString().split('T')[0];
       const fileName = `Kafolat_Taloni_${safeInvoiceNumber}_${date}.pdf`;
 
-      // ============================================================
-      // MOBIL VA KOMPYUTER UCHUN ISHONCHLI YUKLASH (BLOB USuli)
-      // ============================================================
-      const pdfBlob = pdf.output('blob');
-      const blobUrl = URL.createObjectURL(pdfBlob);
+      // 1. PDF ni aniq PDF turi (application/pdf) bilan Blob ga aylantiramiz
+      const pdfBlob = pdf.output('blob', { type: 'application/pdf' });
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
+      // 2. Mobil qurilmalar uchun ulashish va "Fayllarga saqlash" oynasi
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Kafolat Taloni',
+            text: `Schet raqami: ${order.invoiceNumber}`,
+          });
+          setDownloadSuccess(true);
+          setTimeout(() => setDownloadSuccess(false), 3000);
+          setIsGeneratingPdf(false);
+          return;
+        } catch (shareErr: any) {
+          if (shareErr.name !== 'AbortError') {
+            console.log('Share API canceled or failed, falling back to download link');
+          } else {
+            setIsGeneratingPdf(false);
+            return;
+          }
+        }
+      }
+
+      // 3. Kompyuterlar uchun standart yuklash
+      const blobUrl = URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = fileName;
-      
-      // Mobil brauzerlarda ishlashi uchun DOM'ga qo'shamiz
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
 
-      // Xotirani tozalash
       setTimeout(() => {
         URL.revokeObjectURL(blobUrl);
       }, 100);
 
-      // Muvaffaqiyat
       setDownloadSuccess(true);
-
       setTimeout(() => {
         setDownloadSuccess(false);
       }, 3000);
 
     } catch (err: any) {
       console.error('❌ PDF generation detailed error:', err);
-
-      const message =
-        err?.message ||
-        'PDF yaratishda xatolik yuz berdi.';
-
+      const message = err?.message || 'PDF yaratishda xatolik yuz berdi.';
       setPdfError(`Xatolik: ${message}`);
-
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -228,25 +215,12 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md"
         >
           <motion.div
-            initial={{
-              opacity: 0,
-              scale: 0.96,
-              y: 15
-            }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.96,
-              y: 15
-            }}
+            initial={{ opacity: 0, scale: 0.96, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 15 }}
             className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
           >
             <div className="p-6 text-center space-y-4">
-
               <div className="flex justify-center">
                 <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
                   <AlertCircle className="w-8 h-8 text-amber-400" />
@@ -286,7 +260,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
               >
                 Tushundim, Yopish
               </button>
-
             </div>
           </motion.div>
         </div>
@@ -304,38 +277,20 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
         className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto"
       >
         <motion.div
-          initial={{
-            opacity: 0,
-            scale: 0.96,
-            y: 15
-          }}
-          animate={{
-            opacity: 1,
-            scale: 1,
-            y: 0
-          }}
-          exit={{
-            opacity: 0,
-            scale: 0.96,
-            y: 15
-          }}
-          transition={{
-            duration: 0.2
-          }}
+          initial={{ opacity: 0, scale: 0.96, y: 15 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 15 }}
+          transition={{ duration: 0.2 }}
           className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
         >
-
           {/* HEADER */}
           <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 shrink-0 gap-2">
-
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                 <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
 
               <div className="min-w-0">
-
                 <h3 className="text-xs sm:text-base md:text-lg font-bold text-white flex items-center gap-1.5 truncate">
                   <span>Kafolat Taloni</span>
                   <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium shrink-0">
@@ -349,13 +304,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                     {order.invoiceNumber}
                   </span>
                 </p>
-
               </div>
             </div>
 
             {/* Header buttons */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-
               <button
                 onClick={handlePrint}
                 className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700 cursor-pointer"
@@ -395,7 +348,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
               >
                 <X className="w-5 h-5" />
               </button>
-
             </div>
           </div>
 
@@ -617,11 +569,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                   <span className="hidden sm:inline">•</span>
                   <span>O'z DSt standartlariga muvofiq</span>
                 </div>
-
               </div>
             </div>
           </div>
-
         </motion.div>
       </div>
     </AnimatePresence>
