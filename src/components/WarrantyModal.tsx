@@ -1,21 +1,21 @@
-// WarrantyModal.tsx - To'liq va tuzatilgan kod
+// WarrantyModal.tsx - To'liq tuzatilgan versiya
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  ShieldCheck, 
-  Download, 
-  Printer, 
-  X, 
-  CheckCircle2, 
-  Award, 
+import {
+  ShieldCheck,
+  Download,
+  Printer,
+  X,
+  CheckCircle2,
+  Award,
   Sparkles,
   Loader2,
   AlertCircle
 } from 'lucide-react';
 import { Order } from '../types';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 import { ImzoLogo } from './ImzoLogo';
 import { getShowroomPhone } from '../services/bitrixService';
 
@@ -25,8 +25,13 @@ interface WarrantyModalProps {
   onClose: () => void;
 }
 
-export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onClose }) => {
+export const WarrantyModal: React.FC<WarrantyModalProps> = ({
+  order,
+  isOpen,
+  onClose
+}) => {
   const certificateRef = useRef<HTMLDivElement>(null);
+
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -34,17 +39,26 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   if (!isOpen) return null;
 
   const isReady = ['okk_otdi', 'topshirildi'].includes(order.status);
-  const warrantyMonths = (order.warranty?.warrantyPeriodMonths && order.warranty.warrantyPeriodMonths >= 60) 
-    ? order.warranty.warrantyPeriodMonths 
-    : 60;
-  
-  const inspectorName = (order.warranty?.okkManagerName && order.warranty.okkManagerName !== '-' && order.warranty.okkManagerName !== "Bo'sh") 
-    ? order.warranty.okkManagerName 
-    : (order.okkInspectorName || "Bo'sh");
-  
+
+  const warrantyMonths =
+    order.warranty?.warrantyPeriodMonths &&
+    order.warranty.warrantyPeriodMonths >= 60
+      ? order.warranty.warrantyPeriodMonths
+      : 60;
+
+  const inspectorName =
+    order.warranty?.okkManagerName &&
+    order.warranty.okkManagerName !== '-' &&
+    order.warranty.okkManagerName !== "Bo'sh"
+      ? order.warranty.okkManagerName
+      : order.okkInspectorName || 'Bo\'sh';
+
   const showroomPhone = getShowroomPhone(order.showroomName);
 
-  // 🔥 PDF yuklab olish (OKLCH xatosini chetlab o'tish uchun inline ranglar bilan)
+  // ============================================================
+  // PDF YUKLAB OLISH
+  // html2canvas-pro OKLCH ranglarini qo'llab-quvvatlaydi
+  // ============================================================
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) {
       console.error('Certificate ref not found');
@@ -55,103 +69,212 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     try {
       setIsGeneratingPdf(true);
       setPdfError(null);
-      
+      setDownloadSuccess(false);
+
       const element = certificateRef.current;
-      
+
+      // Element ko'rinishini majburan aktiv qilamiz
+      const originalDisplay = element.style.display;
+      const originalOpacity = element.style.opacity;
+      const originalVisibility = element.style.visibility;
+
       element.style.display = 'block';
       element.style.opacity = '1';
       element.style.visibility = 'visible';
-      
+
+      // Barcha rasmlar yuklanishini kutamiz
+      const images = Array.from(element.querySelectorAll('img'));
+
+      await Promise.all(
+        images.map((img) => {
+          if (img.complete) return Promise.resolve();
+
+          return new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+        })
+      );
+
+      // HTML -> Canvas
       const canvas = await html2canvas(element, {
-        scale: 1.5,
+        scale: 2,
         useCORS: true,
         allowTaint: false,
         logging: false,
         backgroundColor: '#ffffff',
-        // 🔥 OKLCH xatosini keltirib chiqaruvchi tashqi CSS larni klondan olib tashlaymiz
-        onclone: (clonedDoc) => {
-          const stylesheets = clonedDoc.querySelectorAll('link[rel="stylesheet"], style');
-          stylesheets.forEach((sheet) => sheet.remove());
-        }
+        imageTimeout: 15000,
+        scrollX: 0,
+        scrollY: 0
       });
 
-      const imgData = canvas.toDataURL('image/png');
-      
+      // Original style'larni qaytaramiz
+      element.style.display = originalDisplay;
+      element.style.opacity = originalOpacity;
+      element.style.visibility = originalVisibility;
+
+      if (!canvas.width || !canvas.height) {
+        throw new Error('Sertifikat rasmi yaratilmadi');
+      }
+
+      const imgData = canvas.toDataURL('image/png', 1.0);
+
+      // ============================================================
+      // A4 PDF
+      // ============================================================
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
         compress: true
       });
-      
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const margin = 10;
-      const imgWidth = pdfWidth - (margin * 2);
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, Math.min(imgHeight, pdfHeight - (margin * 2)));
-      
-      const fileName = `Kafolat_Taloni_${order.invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+      const margin = 8;
+
+      const availableWidth = pdfWidth - margin * 2;
+      const availableHeight = pdfHeight - margin * 2;
+
+      // Canvas proporsiyasini saqlaymiz
+      let imgWidth = availableWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // Agar balandligi A4 dan oshib ketsa,
+      // proporsional ravishda kichraytiramiz
+      if (imgHeight > availableHeight) {
+        imgHeight = availableHeight;
+        imgWidth = (canvas.width * imgHeight) / canvas.height;
+      }
+
+      // Markazga joylashtirish
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = (pdfHeight - imgHeight) / 2;
+
+      pdf.addImage(
+        imgData,
+        'PNG',
+        x,
+        y,
+        imgWidth,
+        imgHeight,
+        undefined,
+        'FAST'
+      );
+
+      // Fayl nomi
+      const safeInvoiceNumber = String(
+        order.invoiceNumber || '000000'
+      ).replace(/[^a-zA-Z0-9_-]/g, '_');
+
+      const date = new Date()
+        .toISOString()
+        .split('T')[0];
+
+      const fileName = `Kafolat_Taloni_${safeInvoiceNumber}_${date}.pdf`;
+
+      // PDF saqlash
       pdf.save(fileName);
-      
+
+      // Muvaffaqiyat
       setDownloadSuccess(true);
-      setTimeout(() => setDownloadSuccess(false), 3000);
-      
+
+      setTimeout(() => {
+        setDownloadSuccess(false);
+      }, 3000);
+
     } catch (err: any) {
       console.error('❌ PDF generation detailed error:', err);
-      setPdfError(`Xatolik: ${err?.message || "PDF yaratishda xatolik yuz berdi."}`);
+
+      const message =
+        err?.message ||
+        'PDF yaratishda xatolik yuz berdi.';
+
+      setPdfError(`Xatolik: ${message}`);
+
     } finally {
       setIsGeneratingPdf(false);
     }
   };
 
+  // ============================================================
+  // PRINT
+  // ============================================================
   const handlePrint = () => {
     window.print();
   };
 
+  // ============================================================
+  // READY BO'LMAGAN HOLAT
+  // ============================================================
   if (!isReady) {
     return (
       <AnimatePresence>
-        <div 
+        <div
           id="warranty-modal-overlay"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 15 }}
+            initial={{
+              opacity: 0,
+              scale: 0.96,
+              y: 15
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.96,
+              y: 15
+            }}
             className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
           >
             <div className="p-6 text-center space-y-4">
+
               <div className="flex justify-center">
                 <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
                   <AlertCircle className="w-8 h-8 text-amber-400" />
                 </div>
               </div>
-              <h3 className="text-lg font-bold text-white">Kafolat Taloni Hali Tayyor Emas</h3>
+
+              <h3 className="text-lg font-bold text-white">
+                Kafolat Taloni Hali Tayyor Emas
+              </h3>
+
               <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
                 <p className="text-sm text-amber-300 font-medium">
-                  Buyurtma Sifat nazorati xodimlari tomondan <br />
+                  Buyurtma Sifat nazorati xodimlari tomondan
+                  <br />
                   <strong>tasdiqlanmadi!</strong>
                 </p>
+
                 <p className="text-xs text-slate-400 mt-2">
-                  Iltimos, sifat nazoratidan o'tishi uchun <br />
+                  Iltimos, sifat nazoratidan o'tishi uchun
+                  <br />
                   <strong>kuting!</strong>
                 </p>
               </div>
+
               <div className="text-xs text-slate-400">
-                Hozirgi holat: <span className="text-amber-400 font-semibold">
-                  {order.status === 'kontrol_kachestva' ? 'Sifat nazorati tekshiruvida' : 'Ishlab chiqarishda'}
+                Hozirgi holat:{' '}
+                <span className="text-amber-400 font-semibold">
+                  {order.status === 'kontrol_kachestva'
+                    ? 'Sifat nazorati tekshiruvida'
+                    : 'Ishlab chiqarishda'}
                 </span>
               </div>
+
               <button
                 onClick={onClose}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Tushundim, Yopish
               </button>
+
             </div>
           </motion.div>
         </div>
@@ -159,39 +282,76 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
     );
   }
 
+  // ============================================================
+  // ASOSIY MODAL
+  // ============================================================
   return (
     <AnimatePresence>
-      <div 
+      <div
         id="warranty-modal-overlay"
         className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto"
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 15 }}
-          transition={{ duration: 0.2 }}
+          initial={{
+            opacity: 0,
+            scale: 0.96,
+            y: 15
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            y: 0
+          }}
+          exit={{
+            opacity: 0,
+            scale: 0.96,
+            y: 15
+          }}
+          transition={{
+            duration: 0.2
+          }}
           className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
         >
-          {/* Header */}
+
+          {/* ======================================================
+              HEADER
+          ====================================================== */}
           <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 shrink-0 gap-2">
+
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                 <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
+
               <div className="min-w-0">
+
                 <h3 className="text-xs sm:text-base md:text-lg font-bold text-white flex items-center gap-1.5 truncate">
-                  <span>Kafolat Taloni</span>
+
+                  <span>
+                    Kafolat Taloni
+                  </span>
+
                   <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium shrink-0">
                     Sifat Nazoratidan O'tgan
                   </span>
+
                 </h3>
+
                 <p className="text-[11px] sm:text-xs text-slate-400 truncate">
-                  Schet: <span className="text-slate-200 font-mono font-semibold">{order.invoiceNumber}</span>
+                  Schet:{' '}
+                  <span className="text-slate-200 font-mono font-semibold">
+                    {order.invoiceNumber}
+                  </span>
                 </p>
+
               </div>
             </div>
 
+            {/* Header buttons */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+
+              {/* PRINT */}
               <button
                 onClick={handlePrint}
                 className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700 cursor-pointer"
@@ -200,30 +360,46 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 <span>Chop etish</span>
               </button>
 
+              {/* PDF DOWNLOAD */}
               <button
                 onClick={handleDownloadPdf}
                 disabled={isGeneratingPdf}
-                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 rounded-xl shadow-md shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 rounded-xl shadow-md shadow-amber-500/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
+
                 {isGeneratingPdf ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="hidden sm:inline">Tayyorlanmoqda...</span>
+
+                    <span className="hidden sm:inline">
+                      Tayyorlanmoqda...
+                    </span>
                   </>
                 ) : downloadSuccess ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-slate-950" />
-                    <span>Yuklandi!</span>
+
+                    <span>
+                      Yuklandi!
+                    </span>
                   </>
                 ) : (
                   <>
                     <Download className="w-4 h-4" />
-                    <span className="sm:hidden">Yuklash</span>
-                    <span className="hidden sm:inline">PDF Yuklab Olish</span>
+
+                    <span className="sm:hidden">
+                      Yuklash
+                    </span>
+
+                    <span className="hidden sm:inline">
+                      PDF Yuklab Olish
+                    </span>
                   </>
                 )}
+
               </button>
 
+              {/* CLOSE */}
               <button
                 onClick={onClose}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors min-h-[40px] min-w-[40px] flex items-center justify-center cursor-pointer"
@@ -231,235 +407,491 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
               >
                 <X className="w-5 h-5" />
               </button>
+
             </div>
           </div>
 
-          {/* Xatolik xabari */}
+          {/* ======================================================
+              PDF ERROR
+          ====================================================== */}
           {pdfError && (
             <div className="mx-4 mt-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
-              <p className="text-xs text-rose-300">{pdfError}</p>
+              <p className="text-xs text-rose-300">
+                {pdfError}
+              </p>
             </div>
           )}
 
-          {/* Certificate Content */}
+          {/* ======================================================
+              CERTIFICATE CONTENT
+          ====================================================== */}
           <div className="p-2 sm:p-5 md:p-8 overflow-y-auto flex-1 bg-slate-950/70">
+
             <div
               ref={certificateRef}
               id="certificate-content"
               className="relative w-full bg-white text-slate-900 p-4 sm:p-7 md:p-10 rounded-xl sm:rounded-2xl border-2 sm:border-4 md:border-[6px] border-double border-[#D4AF37] shadow-2xl max-w-full"
-              style={{ 
+              style={{
                 fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
                 color: '#0f172a',
                 backgroundColor: '#ffffff'
               }}
             >
-              {/* Background */}
+
+              {/* ==================================================
+                  BACKGROUND
+              ================================================== */}
               <div className="absolute inset-0 bg-[#FFFDF9] rounded-xl" />
-              
-              {/* Corner Flourishes */}
+
+              {/* ==================================================
+                  CORNER FLOURISHES
+              ================================================== */}
               <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-l-2 border-[#D4AF37] z-10" />
+
               <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-r-2 border-[#D4AF37] z-10" />
+
               <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-l-2 border-[#D4AF37] z-10" />
+
               <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-r-2 border-[#D4AF37] z-10" />
 
-              {/* Content */}
+              {/* ==================================================
+                  CONTENT
+              ================================================== */}
               <div className="relative z-10">
-                {/* Top Header */}
+
+                {/* ==================================================
+                    TOP HEADER
+                ================================================== */}
                 <div className="text-center pb-4 sm:pb-6 border-b border-amber-900/20">
+
                   <div className="flex justify-center pb-2">
-                    <ImzoLogo size="lg" variant="dark" className="h-10 sm:h-12" />
+                    <ImzoLogo
+                      size="lg"
+                      variant="dark"
+                      className="h-10 sm:h-12"
+                    />
                   </div>
+
                   <div className="inline-flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5">
+
                     <Award className="w-4 h-4 sm:w-5 sm:h-5 text-[#B8860B]" />
+
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[#855B14]">
                       Rasmiy Sifat va Kafolat Taloni
                     </span>
+
                     <Award className="w-4 h-4 sm:w-5 sm:h-5 text-[#B8860B]" />
+
                   </div>
+
                   <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 uppercase font-serif">
                     KAFOLAT TALONI
                   </h1>
+
                   <p className="text-[11px] sm:text-xs font-serif italic text-amber-950/70 mt-0.5">
-                    Sertifikat raqami: <strong className="text-amber-900 font-mono font-bold">
-                      {order.warranty?.certificateNumber || 'Imzo-2026-0000001'}
+
+                    Sertifikat raqami:{' '}
+
+                    <strong className="text-amber-900 font-mono font-bold">
+                      {order.warranty?.certificateNumber ||
+                        'Imzo-2026-0000001'}
                     </strong>
+
                   </p>
+
                 </div>
 
-                {/* Info Grid */}
+                {/* ==================================================
+                    INFO GRID
+                ================================================== */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4 sm:py-6 border-b border-amber-900/15 text-xs sm:text-sm">
+
+                  {/* LEFT */}
                   <div className="space-y-2">
+
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-slate-500 font-medium shrink-0">Buyurtmachi (Mijoz):</span>
-                      <span className="font-bold text-slate-900 text-right">{order.clientFullName}</span>
+
+                      <span className="text-slate-500 font-medium shrink-0">
+                        Buyurtmachi (Mijoz):
+                      </span>
+
+                      <span className="font-bold text-slate-900 text-right">
+                        {order.clientFullName}
+                      </span>
+
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 font-medium shrink-0">Schet raqami:</span>
+
+                      <span className="text-slate-500 font-medium shrink-0">
+                        Schet raqami:
+                      </span>
+
                       <span className="font-mono font-bold text-slate-900 bg-amber-100 px-2 py-0.5 rounded text-xs">
                         {order.invoiceNumber}
                       </span>
+
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 font-medium shrink-0">Showroom filiali:</span>
-                      <span className="font-semibold text-slate-800 text-right">{order.showroomName}</span>
+
+                      <span className="text-slate-500 font-medium shrink-0">
+                        Showroom filiali:
+                      </span>
+
+                      <span className="font-semibold text-slate-800 text-right">
+                        {order.showroomName}
+                      </span>
+
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 font-medium shrink-0">Showroom telefon:</span>
-                      <span className="font-semibold text-slate-800 font-mono text-sm">{showroomPhone}</span>
+
+                      <span className="text-slate-500 font-medium shrink-0">
+                        Showroom telefon:
+                      </span>
+
+                      <span className="font-semibold text-slate-800 font-mono text-sm">
+                        {showroomPhone}
+                      </span>
+
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 font-medium shrink-0">Mas'ul menedjer:</span>
-                      <span className="font-semibold text-slate-800">{order.salesManagerName}</span>
+
+                      <span className="text-slate-500 font-medium shrink-0">
+                        Mas'ul menedjer:
+                      </span>
+
+                      <span className="font-semibold text-slate-800">
+                        {order.salesManagerName}
+                      </span>
+
                     </div>
+
                   </div>
 
+                  {/* RIGHT */}
                   <div className="space-y-2 sm:border-l sm:border-amber-900/15 sm:pl-4">
+
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 font-medium shrink-0">Buyurtma sanasi:</span>
-                      <span className="font-semibold text-slate-800 font-mono text-xs">{order.orderDate}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 font-medium shrink-0">Fabrikaga berilgan:</span>
-                      <span className="font-semibold text-slate-800 font-mono text-xs">{order.factorySentDate || order.orderDate}</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500 font-medium shrink-0">Tayyor bo'lgan sana:</span>
-                      <span className="font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded text-xs font-mono">
-                        {order.readyDate || (isReady ? 'Tasdiqlangan' : order.orderDate)}
+
+                      <span className="text-slate-500 font-medium shrink-0">
+                        Buyurtma sanasi:
                       </span>
+
+                      <span className="font-semibold text-slate-800 font-mono text-xs">
+                        {order.orderDate}
+                      </span>
+
                     </div>
+
+                    <div className="flex items-center justify-between gap-2">
+
+                      <span className="text-slate-500 font-medium shrink-0">
+                        Fabrikaga berilgan:
+                      </span>
+
+                      <span className="font-semibold text-slate-800 font-mono text-xs">
+                        {order.factorySentDate ||
+                          order.orderDate}
+                      </span>
+
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2">
+
+                      <span className="text-slate-500 font-medium shrink-0">
+                        Tayyor bo'lgan sana:
+                      </span>
+
+                      <span className="font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded text-xs font-mono">
+                        {order.readyDate ||
+                          (isReady
+                            ? 'Tasdiqlangan'
+                            : order.orderDate)}
+                      </span>
+
+                    </div>
+
                   </div>
+
                 </div>
 
-                {/* Products Table */}
+                {/* ==================================================
+                    PRODUCTS TABLE
+                ================================================== */}
                 <div className="py-4">
+
                   <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#855B14] mb-2 sm:mb-3 flex items-center gap-1.5">
+
                     <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#B8860B]" />
+
                     Kafolat berilgan mahsulotlar spetsifikatsiyasi:
+
                   </h4>
 
                   <div className="overflow-x-auto rounded-lg border border-amber-900/20 bg-white shadow-xs">
+
                     <table className="w-full text-left text-xs min-w-[340px]">
+
                       <thead className="bg-amber-100 text-slate-700 font-semibold border-b border-amber-900/15">
+
                         <tr>
-                          <th className="py-2 px-2.5 sm:px-3 text-[11px]">№</th>
-                          <th className="py-2 px-2.5 sm:px-3 text-[11px]">Mahsulot va Model</th>
-                          <th className="py-2 px-2.5 sm:px-3 text-[11px]">Rangi</th>
-                          <th className="py-2 px-2.5 sm:px-3 text-[11px]">Hajm</th>
+
+                          <th className="py-2 px-2.5 sm:px-3 text-[11px]">
+                            №
+                          </th>
+
+                          <th className="py-2 px-2.5 sm:px-3 text-[11px]">
+                            Mahsulot va Model
+                          </th>
+
+                          <th className="py-2 px-2.5 sm:px-3 text-[11px]">
+                            Rangi
+                          </th>
+
+                          <th className="py-2 px-2.5 sm:px-3 text-[11px]">
+                            Hajm
+                          </th>
+
                         </tr>
+
                       </thead>
+
                       <tbody className="divide-y divide-amber-900/10 text-slate-800">
+
                         {order.products.map((item, idx) => (
+
                           <tr key={item.id || idx}>
-                            <td className="py-2 px-2.5 sm:px-3 font-mono text-slate-500 text-[11px]">{idx + 1}</td>
-                            <td className="py-2 px-2.5 sm:px-3">
-                              <span className="font-bold block text-slate-900 text-xs">{item.name}</span>
-                              <span className="text-[10px] text-slate-600 block">{item.model && item.model !== 'Bo\'sh' ? item.model : (item.dimensions && item.dimensions !== 'Bo\'sh' ? item.dimensions : '')}</span>
+
+                            <td className="py-2 px-2.5 sm:px-3 font-mono text-slate-500 text-[11px]">
+                              {idx + 1}
                             </td>
-                            <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.color && item.color !== 'Bo\'sh' ? item.color : 'Bo\'sh'}</td>
-                            <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">{item.areaSqM > 0 ? `${item.areaSqM} m²` : 'Bo\'sh'}</td>
+
+                            <td className="py-2 px-2.5 sm:px-3">
+
+                              <span className="font-bold block text-slate-900 text-xs">
+                                {item.name}
+                              </span>
+
+                              <span className="text-[10px] text-slate-600 block">
+                                {item.model &&
+                                item.model !== "Bo'sh"
+                                  ? item.model
+                                  : item.dimensions &&
+                                    item.dimensions !==
+                                      "Bo'sh"
+                                  ? item.dimensions
+                                  : ''}
+                              </span>
+
+                            </td>
+
+                            <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">
+
+                              {item.color &&
+                              item.color !== "Bo'sh"
+                                ? item.color
+                                : "Bo'sh"}
+
+                            </td>
+
+                            <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">
+
+                              {item.areaSqM > 0
+                                ? `${item.areaSqM} m²`
+                                : 'Bo\'sh'}
+
+                            </td>
+
                           </tr>
+
                         ))}
+
                       </tbody>
+
                     </table>
+
                   </div>
+
                 </div>
 
-                {/* Warranty Period */}
+                {/* ==================================================
+                    WARRANTY PERIOD
+                ================================================== */}
                 <div className="my-2 sm:my-3 p-3 sm:p-4 bg-amber-50 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3">
+
                   <div className="flex items-center gap-3">
+
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#B8860B] text-white flex items-center justify-center font-extrabold text-sm sm:text-base shadow-sm shrink-0">
                       {warrantyMonths}
                     </div>
+
                     <div>
+
                       <h5 className="font-bold text-slate-900 text-xs sm:text-sm">
-                        Kafolat Muddati: {warrantyMonths} Oy ({warrantyMonths / 12} Yil)
+                        Kafolat Muddati: {warrantyMonths} Oy (
+                        {warrantyMonths / 12} Yil)
                       </h5>
+
                       <p className="text-[10px] sm:text-[11px] text-slate-600 leading-tight">
-                        Konstruksiyalar, furnitura va lak-bo'yoq qatlamiga rasmiy servis kafolatlangan.
+                        Konstruksiyalar, furnitura va lak-bo'yoq
+                        qatlamiga rasmiy servis kafolatlangan.
                       </p>
+
                     </div>
+
                   </div>
+
                   <div className="hidden sm:block text-right shrink-0">
+
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300">
+
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+
                       Sifat: {order.warranty?.qualityScore || 100}%
+
                     </span>
+
                   </div>
+
                 </div>
 
-                {/* Bottom */}
+                {/* ==================================================
+                    BOTTOM
+                ================================================== */}
                 <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-center sm:items-end text-xs">
+
+                  {/* LEFT */}
                   <div className="text-center sm:text-left">
-                    <p className="text-[11px] text-slate-500 font-medium">Sifat nazorati xulosasi:</p>
-                    <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      Barcha standartlarga to'liq mos keladi
+
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Sifat nazorati xulosasi:
                     </p>
+
+                    <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
+
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+
+                      Barcha standartlarga to'liq mos keladi
+
+                    </p>
+
                     <div className="mt-2">
-                      <p className="text-[10px] text-slate-500">Sifat nazorati Mutaxassisi:</p>
-                      <p className="font-bold text-slate-900 text-xs">{inspectorName}</p>
+
+                      <p className="text-[10px] text-slate-500">
+                        Sifat nazorati Mutaxassisi:
+                      </p>
+
+                      <p className="font-bold text-slate-900 text-xs">
+                        {inspectorName}
+                      </p>
+
                     </div>
+
                   </div>
 
+                  {/* SIGNATURES */}
                   <div className="flex flex-row items-center justify-end gap-6 sm:gap-10 py-1">
+
+                    {/* IMZO */}
                     <div className="flex flex-col items-center">
+
                       <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
-                        <img 
-                          src="/images.png" 
-                          alt="Imzo" 
+
+                        <img
+                          src="/images.png"
+                          alt="Imzo"
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
                         />
+
                       </div>
+
                       <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
-                        <img 
-                          src="/signature1.png" 
-                          alt="Mahsulot kafolati" 
+
+                        <img
+                          src="/signature1.png"
+                          alt="Mahsulot kafolati"
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
                         />
+
                       </div>
+
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
                         Mahsulot kafolati
                       </p>
+
                     </div>
 
+                    {/* SIFAT NAZORATI */}
                     <div className="flex flex-col items-center">
+
                       <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
-                        <img 
-                          src="/images1.png" 
-                          alt="Sifat Nazorati" 
+
+                        <img
+                          src="/images1.png"
+                          alt="Sifat Nazorati"
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
                         />
+
                       </div>
+
                       <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
-                        <img 
-                          src="/signature2.png" 
-                          alt="Sifat nazorati" 
+
+                        <img
+                          src="/signature2.png"
+                          alt="Sifat nazorati"
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
                         />
+
                       </div>
+
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
                         Sifat nazorati
                       </p>
+
                     </div>
+
                   </div>
+
                 </div>
 
-                {/* Footer */}
+                {/* ==================================================
+                    FOOTER
+                ================================================== */}
                 <div className="mt-4 pt-3 border-t border-amber-900/10 text-[9px] sm:text-[10px] text-slate-500 text-center flex flex-wrap items-center justify-center gap-2 sm:gap-4">
-                  <span>Call Markaz: +998 (71) 200-88-00</span>
-                  <span className="hidden sm:inline">•</span>
-                  <span>imzo.uz</span>
-                  <span className="hidden sm:inline">•</span>
-                  <span>O'z DSt standartlariga muvofiq</span>
+
+                  <span>
+                    Call Markaz: +998 (71) 200-88-00
+                  </span>
+
+                  <span className="hidden sm:inline">
+                    •
+                  </span>
+
+                  <span>
+                    imzo.uz
+                  </span>
+
+                  <span className="hidden sm:inline">
+                    •
+                  </span>
+
+                  <span>
+                    O'z DSt standartlariga muvofiq
+                  </span>
+
                 </div>
+
               </div>
             </div>
           </div>
+
         </motion.div>
       </div>
     </AnimatePresence>
