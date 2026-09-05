@@ -1,4 +1,4 @@
-// WarrantyModal.tsx - TO'LIQ VA YANGILANGAN
+// WarrantyModal.tsx - To'liq kod
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,7 +44,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   
   const showroomPhone = getShowroomPhone(order.showroomName);
 
-  // 🔥 PDF yuklab olish (CORS va allowTaint xatoligi hal qilindi)
+  // 🔥 PDF yuklab olish
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) {
       console.error('Certificate ref not found');
@@ -58,24 +58,20 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
       
       const element = certificateRef.current;
       
-      // 🔥 Elementni ko'rinadigan qilish
       element.style.display = 'block';
       element.style.opacity = '1';
       element.style.visibility = 'visible';
       
-      // 🔥 html2canvas bilan suratga olish
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
-        logging: false,
+        allowTaint: false,
+        logging: true,
         backgroundColor: '#ffffff',
-        allowTaint: true, // CORS va rasm xatoliklarini oldini oladi
       });
 
-      // 🔥 Rasmni PNG ga o'tkazish
       const imgData = canvas.toDataURL('image/png');
       
-      // 🔥 PDF yaratish
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -90,40 +86,17 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
       const imgWidth = pdfWidth - (margin * 2);
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      let yPosition = margin;
-      let remainingHeight = imgHeight;
-      let pageCount = 1;
+      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, Math.min(imgHeight, pdfHeight - (margin * 2)));
       
-      while (remainingHeight > 0) {
-        if (pageCount > 1) {
-          pdf.addPage();
-          yPosition = margin;
-        }
-        
-        const currentHeight = Math.min(remainingHeight, pdfHeight - (margin * 2));
-        pdf.addImage(
-          imgData, 
-          'PNG', 
-          margin, 
-          yPosition, 
-          imgWidth, 
-          currentHeight
-        );
-        
-        remainingHeight -= currentHeight;
-        pageCount++;
-      }
-      
-      // 🔥 PDF ni saqlash
       const fileName = `Kafolat_Taloni_${order.invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
       
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3000);
       
-    } catch (err) {
-      console.error('❌ PDF generation error:', err);
-      setPdfError('PDF yaratishda xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
+    } catch (err: any) {
+      console.error('❌ PDF generation detailed error:', err);
+      setPdfError(`Xatolik: ${err?.message || "Rasm yoki Server CORS ruxsatini bermadi."}`);
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -429,9 +402,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           alt="Imzo" 
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
-                          onError={(e) => {
-                            console.warn('Rasm yuklanmadi:', e);
-                          }}
                         />
                       </div>
                       <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
@@ -440,9 +410,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           alt="Mahsulot kafolati" 
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
-                          onError={(e) => {
-                            console.warn('Rasm yuklanmadi:', e);
-                          }}
                         />
                       </div>
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
@@ -457,9 +424,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           alt="Sifat Nazorati" 
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
-                          onError={(e) => {
-                            console.warn('Rasm yuklanmadi:', e);
-                          }}
                         />
                       </div>
                       <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
@@ -468,9 +432,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           alt="Sifat nazorati" 
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
-                          onError={(e) => {
-                            console.warn('Rasm yuklanmadi:', e);
-                          }}
                         />
                       </div>
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
