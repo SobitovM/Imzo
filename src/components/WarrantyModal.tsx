@@ -1,4 +1,4 @@
-// WarrantyModal.tsx - TO'LIQ QAYTA YOZILGAN
+// WarrantyModal.tsx - TO'LIQ VA YANGILANGAN
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,57 +44,38 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   
   const showroomPhone = getShowroomPhone(order.showroomName);
 
-  // 🔥 PDF yuklab olish - SODDA VA ISHONCHLI
+  // 🔥 PDF yuklab olish (CORS va allowTaint xatoligi hal qilindi)
   const handleDownloadPdf = async () => {
-    // 🔥 1. Element mavjudligini tekshirish
     if (!certificateRef.current) {
+      console.error('Certificate ref not found');
       setPdfError('Sertifikat elementi topilmadi');
       return;
     }
 
-    setIsGeneratingPdf(true);
-    setPdfError(null);
-
     try {
+      setIsGeneratingPdf(true);
+      setPdfError(null);
+      
       const element = certificateRef.current;
       
-      // 🔥 2. Elementni ko'rinadigan qilish
+      // 🔥 Elementni ko'rinadigan qilish
       element.style.display = 'block';
       element.style.opacity = '1';
       element.style.visibility = 'visible';
       
-      // 🔥 3. html2canvas bilan suratga olish
+      // 🔥 html2canvas bilan suratga olish
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        allowTaint: false,
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        onclone: (clonedDoc, clonedElement) => {
-          const imgs = clonedElement.querySelectorAll('img');
-          imgs.forEach(img => {
-            img.crossOrigin = 'anonymous';
-          });
-        }
+        allowTaint: true, // CORS va rasm xatoliklarini oldini oladi
       });
 
-      // 🔥 4. Canvas ni tekshirish
-      if (!canvas) {
-        throw new Error('Canvas yaratilmadi');
-      }
-
-      // 🔥 5. Rasmni PNG ga o'tkazish
+      // 🔥 Rasmni PNG ga o'tkazish
       const imgData = canvas.toDataURL('image/png');
       
-      if (!imgData || imgData === 'data:image/png;base64,') {
-        throw new Error('Rasm yaratilmadi');
-      }
-
-      // 🔥 6. PDF yaratish
+      // 🔥 PDF yaratish
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -109,7 +90,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
       const imgWidth = pdfWidth - (margin * 2);
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // 🔥 7. Rasmni PDF ga qo'shish
       let yPosition = margin;
       let remainingHeight = imgHeight;
       let pageCount = 1;
@@ -134,16 +114,16 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
         pageCount++;
       }
       
-      // 🔥 8. PDF ni saqlash
-      const fileName = `Kafolat_Taloni_${order.invoiceNumber}.pdf`;
+      // 🔥 PDF ni saqlash
+      const fileName = `Kafolat_Taloni_${order.invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
       
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3000);
       
-    } catch (err: any) {
+    } catch (err) {
       console.error('❌ PDF generation error:', err);
-      setPdfError(err.message || 'PDF yaratishda xatolik yuz berdi');
+      setPdfError('PDF yaratishda xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -281,12 +261,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
           {pdfError && (
             <div className="mx-4 mt-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
               <p className="text-xs text-rose-300">{pdfError}</p>
-              <button 
-                onClick={() => setPdfError(null)}
-                className="text-xs text-rose-400 hover:text-rose-300 mt-1 underline cursor-pointer"
-              >
-                Yopish
-              </button>
             </div>
           )}
 
