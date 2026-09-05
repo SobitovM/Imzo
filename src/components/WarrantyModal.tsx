@@ -1,4 +1,4 @@
-// WarrantyModal.tsx - TO'LIQ (PDF MARKAZGA JOYLASHTIRILGAN)
+// WarrantyModal.tsx - To'liq tuzatilgan va mobil qurilmalar uchun moslashtirilgan versiya
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -56,10 +56,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
   const showroomPhone = getShowroomPhone(order.showroomName);
 
   // ============================================================
-  // PDF YUKLAB OLISH - MARKAZGA JOYLASHTIRILGAN
+  // PDF YUKLAB OLISH (Mobil qurilmalar uchun moslashtirilgan)
   // ============================================================
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) {
+      console.error('Certificate ref not found');
       setPdfError('Sertifikat elementi topilmadi');
       return;
     }
@@ -80,45 +81,30 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
       element.style.opacity = '1';
       element.style.visibility = 'visible';
 
-      // Rasmlar yuklanishini kutamiz
+      // Barcha rasmlar yuklanishini kutamiz
       const images = Array.from(element.querySelectorAll('img'));
+
       await Promise.all(
         images.map((img) => {
           if (img.complete) return Promise.resolve();
+
           return new Promise<void>((resolve) => {
             img.onload = () => resolve();
             img.onerror = () => resolve();
-            setTimeout(resolve, 5000);
           });
         })
       );
 
       // HTML -> Canvas
       const canvas = await html2canvas(element, {
-        scale: 2.5,
+        scale: 2,
         useCORS: true,
         allowTaint: false,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 15000,
         scrollX: 0,
-        scrollY: 0,
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        onclone: (clonedDoc, clonedElement) => {
-          const allElements = clonedElement.querySelectorAll('*');
-          allElements.forEach((el: any) => {
-            if (el.style) {
-              ['backgroundColor', 'color', 'borderColor'].forEach(prop => {
-                if (el.style[prop] && el.style[prop].includes('oklch')) {
-                  el.style[prop] = '';
-                }
-              });
-            }
-          });
-        }
+        scrollY: 0
       });
 
       // Original style'larni qaytaramiz
@@ -126,97 +112,99 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
       element.style.opacity = originalOpacity;
       element.style.visibility = originalVisibility;
 
-      if (!canvas || !canvas.width || !canvas.height) {
+      if (!canvas.width || !canvas.height) {
         throw new Error('Sertifikat rasmi yaratilmadi');
       }
 
       const imgData = canvas.toDataURL('image/png', 1.0);
 
       // ============================================================
-      // A4 PDF - MARKAZGA JOYLASHTIRISH
+      // A4 PDF yaratish
       // ============================================================
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
-        compress: true,
-        hotfixes: ['px_scaling']
+        compress: true
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();  // 210mm
-      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // 🔥 Margin - chetdan 10mm masofa
-      const margin = 10;
+      const margin = 8;
 
-      // 🔥 Rasm o'lchamlarini A4 ga moslash (margin bilan)
-      const maxWidth = pdfWidth - (margin * 2);
-      const maxHeight = pdfHeight - (margin * 2);
+      const availableWidth = pdfWidth - margin * 2;
+      const availableHeight = pdfHeight - margin * 2;
 
-      // 🔥 Canvas proporsiyasini saqlab, A4 ga moslash
-      let imgWidth = maxWidth;
+      let imgWidth = availableWidth;
       let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      // 🔥 Agar balandligi A4 dan oshsa, enini kichraytirish
-      if (imgHeight > maxHeight) {
-        imgHeight = maxHeight;
+      if (imgHeight > availableHeight) {
+        imgHeight = availableHeight;
         imgWidth = (canvas.width * imgHeight) / canvas.height;
       }
 
-      // 🔥 MARKAZGA JOYLASHTIRISH - x va y ni hisoblash
       const x = (pdfWidth - imgWidth) / 2;
       const y = (pdfHeight - imgHeight) / 2;
 
-      // 🔥 Rasmni PDF ga qo'shish (markazda)
-      pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight, undefined, 'FAST');
+      pdf.addImage(
+        imgData,
+        'PNG',
+        x,
+        y,
+        imgWidth,
+        imgHeight,
+        undefined,
+        'FAST'
+      );
 
-      // ============================================================
-      // MOBIL UCHUN - PDF ni BLOB va URL orqali yuklab olish
-      // ============================================================
+      // Fayl nomi
       const safeInvoiceNumber = String(
         order.invoiceNumber || '000000'
       ).replace(/[^a-zA-Z0-9_-]/g, '_');
 
-      const date = new Date().toISOString().split('T')[0];
+      const date = new Date()
+        .toISOString()
+        .split('T')[0];
+
       const fileName = `Kafolat_Taloni_${safeInvoiceNumber}_${date}.pdf`;
 
-      // PDF ni blob ga o'tkazamiz
+      // ============================================================
+      // MOBIL VA KOMPYUTER UCHUN ISHONCHLI YUKLASH (BLOB USuli)
+      // ============================================================
       const pdfBlob = pdf.output('blob');
+      const blobUrl = URL.createObjectURL(pdfBlob);
 
-      // Blob ni URL ga o'tkazamiz
-      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      
+      // Mobil brauzerlarda ishlashi uchun DOM'ga qo'shamiz
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-      // Mobil va desktop uchun universal yuklab olish
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      // Xotirani tozalash
+      setTimeout(() => {
+        URL.revokeObjectURL(blobUrl);
+      }, 100);
 
-      if (isMobile) {
-        // Mobil qurilma - PDF ni yangi oynada ochish
-        window.open(url, '_blank');
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      } else {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      }
-
+      // Muvaffaqiyat
       setDownloadSuccess(true);
-      setTimeout(() => setDownloadSuccess(false), 3000);
+
+      setTimeout(() => {
+        setDownloadSuccess(false);
+      }, 3000);
 
     } catch (err: any) {
       console.error('❌ PDF generation detailed error:', err);
-      setPdfError(`Xatolik: ${err?.message || 'PDF yaratishda xatolik yuz berdi.'}`);
+
+      const message =
+        err?.message ||
+        'PDF yaratishda xatolik yuz berdi.';
+
+      setPdfError(`Xatolik: ${message}`);
+
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -240,30 +228,49 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 15 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 15 }}
+            initial={{
+              opacity: 0,
+              scale: 0.96,
+              y: 15
+            }}
+            animate={{
+              opacity: 1,
+              scale: 1,
+              y: 0
+            }}
+            exit={{
+              opacity: 0,
+              scale: 0.96,
+              y: 15
+            }}
             className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden"
           >
             <div className="p-6 text-center space-y-4">
+
               <div className="flex justify-center">
                 <div className="w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
                   <AlertCircle className="w-8 h-8 text-amber-400" />
                 </div>
               </div>
-              <h3 className="text-lg font-bold text-white">Kafolat Taloni Hali Tayyor Emas</h3>
+
+              <h3 className="text-lg font-bold text-white">
+                Kafolat Taloni Hali Tayyor Emas
+              </h3>
+
               <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
                 <p className="text-sm text-amber-300 font-medium">
                   Buyurtma Sifat nazorati xodimlari tomondan
                   <br />
                   <strong>tasdiqlanmadi!</strong>
                 </p>
+
                 <p className="text-xs text-slate-400 mt-2">
                   Iltimos, sifat nazoratidan o'tishi uchun
                   <br />
                   <strong>kuting!</strong>
                 </p>
               </div>
+
               <div className="text-xs text-slate-400">
                 Hozirgi holat:{' '}
                 <span className="text-amber-400 font-semibold">
@@ -272,12 +279,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                     : 'Ishlab chiqarishda'}
                 </span>
               </div>
+
               <button
                 onClick={onClose}
                 className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-colors cursor-pointer"
               >
                 Tushundim, Yopish
               </button>
+
             </div>
           </motion.div>
         </div>
@@ -295,35 +304,58 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
         className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/85 backdrop-blur-md overflow-y-auto"
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.96, y: 15 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 15 }}
-          transition={{ duration: 0.2 }}
+          initial={{
+            opacity: 0,
+            scale: 0.96,
+            y: 15
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            y: 0
+          }}
+          exit={{
+            opacity: 0,
+            scale: 0.96,
+            y: 15
+          }}
+          transition={{
+            duration: 0.2
+          }}
           className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
         >
+
           {/* HEADER */}
           <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 shrink-0 gap-2">
+
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
                 <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
+
               <div className="min-w-0">
+
                 <h3 className="text-xs sm:text-base md:text-lg font-bold text-white flex items-center gap-1.5 truncate">
                   <span>Kafolat Taloni</span>
                   <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-medium shrink-0">
                     Sifat Nazoratidan O'tgan
                   </span>
                 </h3>
+
                 <p className="text-[11px] sm:text-xs text-slate-400 truncate">
                   Schet:{' '}
                   <span className="text-slate-200 font-mono font-semibold">
                     {order.invoiceNumber}
                   </span>
                 </p>
+
               </div>
             </div>
 
+            {/* Header buttons */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+
               <button
                 onClick={handlePrint}
                 className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition-colors border border-slate-700 cursor-pointer"
@@ -363,19 +395,17 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
               >
                 <X className="w-5 h-5" />
               </button>
+
             </div>
           </div>
 
-          {/* PDF ERROR */}
           {pdfError && (
             <div className="mx-4 mt-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
               <p className="text-xs text-rose-300">{pdfError}</p>
             </div>
           )}
 
-          {/* ============================================================
-              CERTIFICATE CONTENT - TO'LIQ
-          ============================================================ */}
+          {/* CERTIFICATE CONTENT */}
           <div className="p-2 sm:p-5 md:p-8 overflow-y-auto flex-1 bg-slate-950/70">
             <div
               ref={certificateRef}
@@ -387,31 +417,19 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                 backgroundColor: '#ffffff'
               }}
             >
-              {/* BACKGROUND */}
-              <div className="absolute inset-0 bg-gradient-to-b from-[#FFFDF9] to-[#FAF5E8] rounded-xl" />
+              <div className="absolute inset-0 bg-[#FFFDF9] rounded-xl" />
 
-              {/* WATERMARK */}
-              <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
-                <Award className="w-64 h-64 sm:w-96 sm:h-96 text-[#855B14]" />
-              </div>
-
-              {/* CORNER FLOURISHES */}
               <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-l-2 border-[#D4AF37] z-10" />
               <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-r-2 border-[#D4AF37] z-10" />
               <div className="absolute bottom-1.5 left-1.5 sm:bottom-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-l-2 border-[#D4AF37] z-10" />
               <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-r-2 border-[#D4AF37] z-10" />
 
-              {/* ============================================================
-                  CONTENT
-              ============================================================ */}
               <div className="relative z-10">
-                {/* ==========================================================
-                    TOP HEADER
-                ========================================================== */}
                 <div className="text-center pb-4 sm:pb-6 border-b border-amber-900/20">
                   <div className="flex justify-center pb-2">
                     <ImzoLogo size="lg" variant="dark" className="h-10 sm:h-12" />
                   </div>
+
                   <div className="inline-flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5">
                     <Award className="w-4 h-4 sm:w-5 sm:h-5 text-[#B8860B]" />
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] sm:tracking-[0.3em] text-[#855B14]">
@@ -419,9 +437,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                     </span>
                     <Award className="w-4 h-4 sm:w-5 sm:h-5 text-[#B8860B]" />
                   </div>
+
                   <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900 uppercase font-serif">
                     KAFOLAT TALONI
                   </h1>
+
                   <p className="text-[11px] sm:text-xs font-serif italic text-amber-950/70 mt-0.5">
                     Sertifikat raqami:{' '}
                     <strong className="text-amber-900 font-mono font-bold">
@@ -430,67 +450,67 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                   </p>
                 </div>
 
-                {/* ==========================================================
-                    INFO GRID
-                ========================================================== */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4 sm:py-6 border-b border-amber-900/15 text-xs sm:text-sm">
-                  {/* LEFT COLUMN */}
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Buyurtmachi (Mijoz):</span>
                       <span className="font-bold text-slate-900 text-right">{order.clientFullName}</span>
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Schet raqami:</span>
-                      <span className="font-mono font-bold text-slate-900 bg-amber-100/70 px-2 py-0.5 rounded text-xs">
+                      <span className="font-mono font-bold text-slate-900 bg-amber-100 px-2 py-0.5 rounded text-xs">
                         {order.invoiceNumber}
                       </span>
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Showroom filiali:</span>
                       <span className="font-semibold text-slate-800 text-right">{order.showroomName}</span>
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Showroom telefon:</span>
                       <span className="font-semibold text-slate-800 font-mono text-sm">{showroomPhone}</span>
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Mas'ul menedjer:</span>
                       <span className="font-semibold text-slate-800">{order.salesManagerName}</span>
                     </div>
                   </div>
 
-                  {/* RIGHT COLUMN */}
                   <div className="space-y-2 sm:border-l sm:border-amber-900/15 sm:pl-4">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Buyurtma sanasi:</span>
                       <span className="font-semibold text-slate-800 font-mono text-xs">{order.orderDate}</span>
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Fabrikaga berilgan:</span>
-                      <span className="font-semibold text-slate-800 font-mono text-xs">{order.factorySentDate || order.orderDate}</span>
+                      <span className="font-semibold text-slate-800 font-mono text-xs">
+                        {order.factorySentDate || order.orderDate}
+                      </span>
                     </div>
+
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Tayyor bo'lgan sana:</span>
-                      <span className="font-bold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded text-xs font-mono">
+                      <span className="font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded text-xs font-mono">
                         {order.readyDate || (isReady ? 'Tasdiqlangan' : order.orderDate)}
                       </span>
                     </div>
                   </div>
                 </div>
 
-                {/* ==========================================================
-                    PRODUCTS TABLE
-                ========================================================== */}
                 <div className="py-4">
                   <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#855B14] mb-2 sm:mb-3 flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#B8860B]" />
                     Kafolat berilgan mahsulotlar spetsifikatsiyasi:
                   </h4>
 
-                  <div className="overflow-x-auto rounded-lg border border-amber-900/20 bg-white/80 shadow-xs">
+                  <div className="overflow-x-auto rounded-lg border border-amber-900/20 bg-white shadow-xs">
                     <table className="w-full text-left text-xs min-w-[340px]">
-                      <thead className="bg-amber-100/60 text-slate-700 font-semibold border-b border-amber-900/15">
+                      <thead className="bg-amber-100 text-slate-700 font-semibold border-b border-amber-900/15">
                         <tr>
                           <th className="py-2 px-2.5 sm:px-3 text-[11px]">№</th>
                           <th className="py-2 px-2.5 sm:px-3 text-[11px]">Mahsulot va Model</th>
@@ -501,7 +521,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                       <tbody className="divide-y divide-amber-900/10 text-slate-800">
                         {order.products.map((item, idx) => (
                           <tr key={item.id || idx}>
-                            <td className="py-2 px-2.5 sm:px-3 font-mono text-slate-500 text-[11px]">{idx + 1}</td>
+                            <td className="py-2 px-2.5 sm:px-3 font-mono text-slate-500 text-[11px]">
+                              {idx + 1}
+                            </td>
                             <td className="py-2 px-2.5 sm:px-3">
                               <span className="font-bold block text-slate-900 text-xs">{item.name}</span>
                               <span className="text-[10px] text-slate-600 block">
@@ -525,10 +547,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                   </div>
                 </div>
 
-                {/* ==========================================================
-                    WARRANTY PERIOD
-                ========================================================== */}
-                <div className="my-2 sm:my-3 p-3 sm:p-4 bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-amber-500/15 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3">
+                <div className="my-2 sm:my-3 p-3 sm:p-4 bg-amber-50 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#B8860B] text-white flex items-center justify-center font-extrabold text-sm sm:text-base shadow-sm shrink-0">
                       {warrantyMonths}
@@ -542,6 +561,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                       </p>
                     </div>
                   </div>
+
                   <div className="hidden sm:block text-right shrink-0">
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-300">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -550,11 +570,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                   </div>
                 </div>
 
-                {/* ==========================================================
-                    BOTTOM - Sifat nazorati xulosasi + Pechatlar
-                ========================================================== */}
                 <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-center sm:items-end text-xs">
-                  {/* LEFT: Sifat nazorati xulosasi */}
                   <div className="text-center sm:text-left">
                     <p className="text-[11px] text-slate-500 font-medium">Sifat nazorati xulosasi:</p>
                     <p className="text-xs font-bold text-emerald-900 inline-flex items-center gap-1 mt-0.5">
@@ -567,52 +583,25 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                     </div>
                   </div>
 
-                  {/* RIGHT: Pechatlar va imzolar */}
                   <div className="flex flex-row items-center justify-end gap-6 sm:gap-10 py-1">
-                    {/* 1 - Mahsulot Kafolati */}
                     <div className="flex flex-col items-center">
                       <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
-                        <img
-                          src="/images.png"
-                          alt="Imzo"
-                          className="w-full h-full object-contain"
-                          crossOrigin="anonymous"
-                          onError={(e) => console.warn('Rasm yuklanmadi:', e)}
-                        />
+                        <img src="/images.png" alt="Imzo" className="w-full h-full object-contain" crossOrigin="anonymous" />
                       </div>
                       <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
-                        <img
-                          src="/signature1.png"
-                          alt="Mahsulot kafolati"
-                          className="w-full h-full object-contain"
-                          crossOrigin="anonymous"
-                          onError={(e) => console.warn('Rasm yuklanmadi:', e)}
-                        />
+                        <img src="/signature1.png" alt="Mahsulot kafolati" className="w-full h-full object-contain" crossOrigin="anonymous" />
                       </div>
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
                         Mahsulot kafolati
                       </p>
                     </div>
 
-                    {/* 2 - Sifat Nazorati */}
                     <div className="flex flex-col items-center">
                       <div className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
-                        <img
-                          src="/images1.png"
-                          alt="Sifat Nazorati"
-                          className="w-full h-full object-contain"
-                          crossOrigin="anonymous"
-                          onError={(e) => console.warn('Rasm yuklanmadi:', e)}
-                        />
+                        <img src="/images1.png" alt="Sifat Nazorati" className="w-full h-full object-contain" crossOrigin="anonymous" />
                       </div>
                       <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
-                        <img
-                          src="/signature2.png"
-                          alt="Sifat nazorati"
-                          className="w-full h-full object-contain"
-                          crossOrigin="anonymous"
-                          onError={(e) => console.warn('Rasm yuklanmadi:', e)}
-                        />
+                        <img src="/signature2.png" alt="Sifat nazorati" className="w-full h-full object-contain" crossOrigin="anonymous" />
                       </div>
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
                         Sifat nazorati
@@ -621,9 +610,6 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                   </div>
                 </div>
 
-                {/* ==========================================================
-                    FOOTER
-                ========================================================== */}
                 <div className="mt-4 pt-3 border-t border-amber-900/10 text-[9px] sm:text-[10px] text-slate-500 text-center flex flex-wrap items-center justify-center gap-2 sm:gap-4">
                   <span>Call Markaz: +998 (71) 200-88-00</span>
                   <span className="hidden sm:inline">•</span>
@@ -631,9 +617,11 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                   <span className="hidden sm:inline">•</span>
                   <span>O'z DSt standartlariga muvofiq</span>
                 </div>
+
               </div>
             </div>
           </div>
+
         </motion.div>
       </div>
     </AnimatePresence>
