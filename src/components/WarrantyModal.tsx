@@ -29,6 +29,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   const certificateRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -43,31 +44,34 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   
   const showroomPhone = getShowroomPhone(order.showroomName);
 
-  // 🔥 PDF yuklab olish - QAYTA YOZILGAN
+  // 🔥 PDF yuklab olish - TO'G'RILANGAN
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) {
       console.error('Certificate ref not found');
+      setPdfError('Sertifikat elementi topilmadi');
       return;
     }
 
     try {
       setIsGeneratingPdf(true);
+      setPdfError(null);
       
       const element = certificateRef.current;
       
+      console.log('📄 PDF generatsiya boshlandi...');
+      
       // 🔥 1. Canvas yaratish
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 2.5,
         useCORS: true,
-        logging: false,
+        logging: true,
         backgroundColor: '#ffffff',
-        allowTaint: true,
+        allowTaint: false,
         width: element.scrollWidth,
         height: element.scrollHeight,
         windowWidth: element.scrollWidth,
         windowHeight: element.scrollHeight,
         onclone: (clonedDoc, clonedElement) => {
-          // Klonlangan elementda rasmlarni to'g'ri ko'rsatish
           const imgs = clonedElement.querySelectorAll('img');
           imgs.forEach(img => {
             img.crossOrigin = 'anonymous';
@@ -75,43 +79,67 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
         }
       });
 
+      console.log('✅ Canvas yaratildi:', canvas.width, 'x', canvas.height);
+
       // 🔥 2. Rasmni PNG ga o'tkazish
       const imgData = canvas.toDataURL('image/png');
       
       // 🔥 3. PDF yaratish
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+      
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
       // 🔥 4. Rasm o'lchamlarini A4 ga moslash
-      const imgWidth = pdfWidth - 20; // 10mm margin
+      const margin = 10;
+      const imgWidth = pdfWidth - (margin * 2);
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
       // 🔥 5. Rasmni PDF ga qo'shish
-      let heightLeft = imgHeight;
-      let position = 10; // Yuqoridan margin
+      let yPosition = margin;
+      let remainingHeight = imgHeight;
+      let pageCount = 1;
       
-      // Birinchi bet
-      pdf.addImage(imgData, 'PNG', 10, position, imgWidth, Math.min(imgHeight, pdfHeight - 20));
-      heightLeft -= (pdfHeight - 20);
-      
-      // Agar rasm bir betga sig'masa
-      while (heightLeft > 0) {
-        position = 10 - (imgHeight - heightLeft);
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-        heightLeft -= (pdfHeight - 20);
+      while (remainingHeight > 0) {
+        if (pageCount > 1) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+        
+        const currentHeight = Math.min(remainingHeight, pdfHeight - (margin * 2));
+        pdf.addImage(
+          imgData, 
+          'PNG', 
+          margin, 
+          yPosition, 
+          imgWidth, 
+          currentHeight,
+          undefined,
+          'FAST'
+        );
+        
+        remainingHeight -= currentHeight;
+        yPosition = margin;
+        pageCount++;
       }
       
+      console.log('✅ PDF yaratildi, betlar:', pageCount - 1);
+      
       // 🔥 6. PDF ni saqlash
-      pdf.save(`Kafolat_Taloni_${order.invoiceNumber}.pdf`);
+      const fileName = `Kafolat_Taloni_${order.invoiceNumber}_${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
       
       setDownloadSuccess(true);
       setTimeout(() => setDownloadSuccess(false), 3000);
+      
     } catch (err) {
-      console.error('PDF generation error:', err);
-      // Xatolik bo'lsa, chop etishga o'tish
-      window.print();
+      console.error('❌ PDF generation error:', err);
+      setPdfError('PDF yaratishda xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -244,6 +272,13 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
               </button>
             </div>
           </div>
+
+          {/* Xatolik xabari */}
+          {pdfError && (
+            <div className="mx-4 mt-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
+              <p className="text-xs text-rose-300">{pdfError}</p>
+            </div>
+          )}
 
           {/* Certificate Content */}
           <div className="p-2 sm:p-5 md:p-8 overflow-y-auto flex-1 bg-slate-950/70">
@@ -410,6 +445,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           alt="Imzo" 
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
+                          onError={(e) => {
+                            console.warn('Rasm yuklanmadi:', e);
+                          }}
                         />
                       </div>
                       <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
@@ -418,6 +456,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           alt="Mahsulot kafolati" 
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
+                          onError={(e) => {
+                            console.warn('Rasm yuklanmadi:', e);
+                          }}
                         />
                       </div>
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
@@ -432,6 +473,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           alt="Sifat Nazorati" 
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
+                          onError={(e) => {
+                            console.warn('Rasm yuklanmadi:', e);
+                          }}
                         />
                       </div>
                       <div className="mt-0.5 w-28 h-10 sm:w-36 sm:h-12">
@@ -440,6 +484,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                           alt="Sifat nazorati" 
                           className="w-full h-full object-contain"
                           crossOrigin="anonymous"
+                          onError={(e) => {
+                            console.warn('Rasm yuklanmadi:', e);
+                          }}
                         />
                       </div>
                       <p className="text-[6px] sm:text-[7px] text-slate-600 text-center font-medium tracking-wider">
