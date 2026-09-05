@@ -1,4 +1,4 @@
-// WarrantyModal.tsx - Mobil va kompyuter uchun to'liq tuzatilgan versiya
+// WarrantyModal.tsx - Kompyuter va mobil uchun to'g'rilangan yakuniy versiya
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -56,7 +56,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
   const showroomPhone = getShowroomPhone(order.showroomName);
 
   // ============================================================
-  // PDF YUKLAB OLISH (Mobil va Kompyuter uchun universal usul)
+  // PDF YUKLAB OLISH (Kompyuter va Mobil uchun alohida sozlamali)
   // ============================================================
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) {
@@ -148,8 +148,13 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
       const pdfBlob = pdf.output('blob', { type: 'application/pdf' });
       const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-      // 2. Mobil qurilmalar uchun ulashish va "Fayllarga saqlash" oynasi
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // 2. Qurilma mobil yoki planshet ekanligini aniqlaymiz
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent
+      );
+
+      // 3. Faqat mobil qurilmalarda navigator.share ni ishlatamiz
+      if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
             files: [file],
@@ -170,7 +175,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
         }
       }
 
-      // 3. Kompyuterlar uchun standart yuklash
+      // 4. Kompyuterlar (PC) uchun to'g'ridan-to'g'ri yuklab olish
       const blobUrl = URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = blobUrl;
