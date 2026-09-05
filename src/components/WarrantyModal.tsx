@@ -68,6 +68,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
         allowTaint: false,
         logging: false,
         backgroundColor: '#ffffff',
+        // 🔥 OKLCH xatosini oldini olish uchun maxsus funksiya
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById('certificate-content');
+          if (el) {
+            el.style.color = '#000000';
+            el.style.backgroundColor = '#ffffff';
+          }
+        }
       });
 
       const imgData = canvas.toDataURL('image/png');
