@@ -1,4 +1,3 @@
-```tsx
 // WarrantyModal.tsx - To'liq tuzatilgan versiya
 
 import React, { useRef, useState } from 'react';
@@ -58,6 +57,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
   // ============================================================
   // PDF YUKLAB OLISH
+  // html2canvas-pro OKLCH ranglarini qo'llab-quvvatlaydi
   // ============================================================
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) {
@@ -66,57 +66,37 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
       return;
     }
 
-    const element = certificateRef.current;
-
-    const originalDisplay = element.style.display;
-    const originalOpacity = element.style.opacity;
-    const originalVisibility = element.style.visibility;
-
     try {
       setIsGeneratingPdf(true);
       setPdfError(null);
       setDownloadSuccess(false);
 
-      // Elementni vaqtincha ko'rinadigan qilamiz
+      const element = certificateRef.current;
+
+      // Element ko'rinishini majburan aktiv qilamiz
+      const originalDisplay = element.style.display;
+      const originalOpacity = element.style.opacity;
+      const originalVisibility = element.style.visibility;
+
       element.style.display = 'block';
       element.style.opacity = '1';
       element.style.visibility = 'visible';
 
-      // ============================================================
-      // BARCHA RASMLAR YUKLANISHINI KUTAMIZ
-      // ============================================================
-      const images = Array.from(
-        element.querySelectorAll('img')
-      );
+      // Barcha rasmlar yuklanishini kutamiz
+      const images = Array.from(element.querySelectorAll('img'));
 
       await Promise.all(
         images.map((img) => {
-          if (img.complete && img.naturalWidth > 0) {
-            return Promise.resolve();
-          }
+          if (img.complete) return Promise.resolve();
 
           return new Promise<void>((resolve) => {
-            const timeout = window.setTimeout(() => {
-              resolve();
-            }, 15000);
-
-            img.onload = () => {
-              window.clearTimeout(timeout);
-              resolve();
-            };
-
-            img.onerror = () => {
-              window.clearTimeout(timeout);
-              resolve();
-            };
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
           });
         })
       );
 
-      // ============================================================
-      // HTML -> CANVAS
-      // html2canvas-pro ranglarni to'g'ri saqlaydi
-      // ============================================================
+      // HTML -> Canvas
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
@@ -128,19 +108,16 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
         scrollY: 0
       });
 
+      // Original style'larni qaytaramiz
+      element.style.display = originalDisplay;
+      element.style.opacity = originalOpacity;
+      element.style.visibility = originalVisibility;
+
       if (!canvas.width || !canvas.height) {
-        throw new Error(
-          'Sertifikat rasmi yaratilmadi'
-        );
+        throw new Error('Sertifikat rasmi yaratilmadi');
       }
 
-      // ============================================================
-      // CANVAS -> PNG
-      // ============================================================
-      const imgData = canvas.toDataURL(
-        'image/png',
-        1.0
-      );
+      const imgData = canvas.toDataURL('image/png', 1.0);
 
       // ============================================================
       // A4 PDF
@@ -152,42 +129,28 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
         compress: true
       });
 
-      const pdfWidth =
-        pdf.internal.pageSize.getWidth();
-
-      const pdfHeight =
-        pdf.internal.pageSize.getHeight();
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
       const margin = 8;
 
-      const availableWidth =
-        pdfWidth - margin * 2;
-
-      const availableHeight =
-        pdfHeight - margin * 2;
+      const availableWidth = pdfWidth - margin * 2;
+      const availableHeight = pdfHeight - margin * 2;
 
       // Canvas proporsiyasini saqlaymiz
       let imgWidth = availableWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      let imgHeight =
-        (canvas.height * imgWidth) /
-        canvas.width;
-
-      // A4 balandligidan oshsa kichraytiramiz
+      // Agar balandligi A4 dan oshib ketsa,
+      // proporsional ravishda kichraytiramiz
       if (imgHeight > availableHeight) {
         imgHeight = availableHeight;
-
-        imgWidth =
-          (canvas.width * imgHeight) /
-          canvas.height;
+        imgWidth = (canvas.width * imgHeight) / canvas.height;
       }
 
       // Markazga joylashtirish
-      const x =
-        (pdfWidth - imgWidth) / 2;
-
-      const y =
-        (pdfHeight - imgHeight) / 2;
+      const x = (pdfWidth - imgWidth) / 2;
+      const y = (pdfHeight - imgHeight) / 2;
 
       pdf.addImage(
         imgData,
@@ -200,172 +163,37 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
         'FAST'
       );
 
-      // ============================================================
-      // FAYL NOMI
-      // Template literal ishlatmaymiz
-      // ============================================================
+      // Fayl nomi
       const safeInvoiceNumber = String(
         order.invoiceNumber || '000000'
-      ).replace(
-        /[^a-zA-Z0-9_-]/g,
-        '_'
-      );
+      ).replace(/[^a-zA-Z0-9_-]/g, '_');
 
       const date = new Date()
         .toISOString()
         .split('T')[0];
 
-      const fileName =
-        'Kafolat_Taloni_' +
-        safeInvoiceNumber +
-        '_' +
-        date +
-        '.pdf';
+      const fileName = `Kafolat_Taloni_${safeInvoiceNumber}_${date}.pdf`;
 
-      // ============================================================
-      // PDF BLOB
-      // ============================================================
-      const pdfBlob = pdf.output('blob');
+      // PDF saqlash
+      pdf.save(fileName);
 
-      if (
-        !pdfBlob ||
-        pdfBlob.size === 0
-      ) {
-        throw new Error(
-          'PDF fayli yaratilmadi yoki bo‘sh'
-        );
-      }
+      // Muvaffaqiyat
+      setDownloadSuccess(true);
 
-      // ============================================================
-      // MOBILE / IPHONE / ANDROID
-      // Web Share API orqali fayl yuborish
-      // ============================================================
-      const nav =
-        navigator as Navigator & {
-          canShare?: (
-            data: ShareData
-          ) => boolean;
-
-          share?: (
-            data?: ShareData
-          ) => Promise<void>;
-        };
-
-      let sharedSuccessfully = false;
-
-      if (
-        typeof File !== 'undefined' &&
-        typeof nav.share === 'function' &&
-        typeof nav.canShare === 'function'
-      ) {
-        const pdfFile = new File(
-          [pdfBlob],
-          fileName,
-          {
-            type: 'application/pdf'
-          }
-        );
-
-        try {
-          const canShareFile =
-            nav.canShare({
-              files: [pdfFile]
-            });
-
-          if (canShareFile) {
-            await nav.share({
-              files: [pdfFile],
-              title: 'Kafolat Taloni',
-              text: 'Kafolat taloni PDF fayli'
-            });
-
-            sharedSuccessfully = true;
-
-            setDownloadSuccess(true);
-
-            window.setTimeout(() => {
-              setDownloadSuccess(false);
-            }, 3000);
-
-            return;
-          }
-        } catch (shareError: any) {
-          // Foydalanuvchi Share oynasini yopgan bo'lsa
-          // xatolik ko'rsatmaymiz
-          if (
-            shareError?.name ===
-            'AbortError'
-          ) {
-            return;
-          }
-
-          console.warn(
-            'Web Share ishlamadi:',
-            shareError
-          );
-        }
-      }
-
-      // ============================================================
-      // DESKTOP / FALLBACK
-      // ============================================================
-      if (!sharedSuccessfully) {
-        const blobUrl =
-          URL.createObjectURL(pdfBlob);
-
-        try {
-          const link =
-            document.createElement('a');
-
-          link.href = blobUrl;
-          link.download = fileName;
-          link.style.display = 'none';
-
-          document.body.appendChild(link);
-
-          link.click();
-
-          document.body.removeChild(link);
-        } finally {
-          window.setTimeout(() => {
-            URL.revokeObjectURL(blobUrl);
-          }, 10000);
-        }
-
-        setDownloadSuccess(true);
-
-        window.setTimeout(() => {
-          setDownloadSuccess(false);
-        }, 3000);
-      }
+      setTimeout(() => {
+        setDownloadSuccess(false);
+      }, 3000);
 
     } catch (err: any) {
-      console.error(
-        '❌ PDF generation detailed error:',
-        err
-      );
+      console.error('❌ PDF generation detailed error:', err);
 
       const message =
         err?.message ||
         'PDF yaratishda xatolik yuz berdi.';
 
-      setPdfError(
-        'Xatolik: ' + message
-      );
+      setPdfError(`Xatolik: ${message}`);
 
     } finally {
-      // ============================================================
-      // ORIGINAL STYLE'LARNI QAYTARAMIZ
-      // ============================================================
-      element.style.display =
-        originalDisplay;
-
-      element.style.opacity =
-        originalOpacity;
-
-      element.style.visibility =
-        originalVisibility;
-
       setIsGeneratingPdf(false);
     }
   };
@@ -485,7 +313,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
           className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[94vh] flex flex-col"
         >
 
-          {/* HEADER */}
+          {/* ======================================================
+              HEADER
+          ====================================================== */}
           <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 border-b border-slate-800 bg-slate-950/90 shrink-0 gap-2">
 
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -518,6 +348,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
               </div>
             </div>
 
+            {/* Header buttons */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
 
               {/* PRINT */}
@@ -580,7 +411,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
             </div>
           </div>
 
-          {/* PDF ERROR */}
+          {/* ======================================================
+              PDF ERROR
+          ====================================================== */}
           {pdfError && (
             <div className="mx-4 mt-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl">
               <p className="text-xs text-rose-300">
@@ -589,7 +422,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
             </div>
           )}
 
-          {/* CERTIFICATE CONTENT */}
+          {/* ======================================================
+              CERTIFICATE CONTENT
+          ====================================================== */}
           <div className="p-2 sm:p-5 md:p-8 overflow-y-auto flex-1 bg-slate-950/70">
 
             <div
@@ -603,10 +438,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
               }}
             >
 
-              {/* BACKGROUND */}
+              {/* ==================================================
+                  BACKGROUND
+              ================================================== */}
               <div className="absolute inset-0 bg-[#FFFDF9] rounded-xl" />
 
-              {/* CORNER FLOURISHES */}
+              {/* ==================================================
+                  CORNER FLOURISHES
+              ================================================== */}
               <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-l-2 border-[#D4AF37] z-10" />
 
               <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-r-2 border-[#D4AF37] z-10" />
@@ -615,10 +454,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
               <div className="absolute bottom-1.5 right-1.5 sm:bottom-2 sm:right-2 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-r-2 border-[#D4AF37] z-10" />
 
-              {/* CONTENT */}
+              {/* ==================================================
+                  CONTENT
+              ================================================== */}
               <div className="relative z-10">
 
-                {/* TOP HEADER */}
+                {/* ==================================================
+                    TOP HEADER
+                ================================================== */}
                 <div className="text-center pb-4 sm:pb-6 border-b border-amber-900/20">
 
                   <div className="flex justify-center pb-2">
@@ -658,7 +501,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
                 </div>
 
-                {/* INFO GRID */}
+                {/* ==================================================
+                    INFO GRID
+                ================================================== */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 py-4 sm:py-6 border-b border-amber-900/15 text-xs sm:text-sm">
 
                   {/* LEFT */}
@@ -773,7 +618,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
                 </div>
 
-                {/* PRODUCTS TABLE */}
+                {/* ==================================================
+                    PRODUCTS TABLE
+                ================================================== */}
                 <div className="py-4">
 
                   <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-[#855B14] mb-2 sm:mb-3 flex items-center gap-1.5">
@@ -853,7 +700,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
                             <td className="py-2 px-2.5 sm:px-3 font-medium text-[11px]">
 
                               {item.areaSqM > 0
-                                ? item.areaSqM + ' m²'
+                                ? `${item.areaSqM} m²`
                                 : 'Bo\'sh'}
 
                             </td>
@@ -870,7 +717,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
                 </div>
 
-                {/* WARRANTY PERIOD */}
+                {/* ==================================================
+                    WARRANTY PERIOD
+                ================================================== */}
                 <div className="my-2 sm:my-3 p-3 sm:p-4 bg-amber-50 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3">
 
                   <div className="flex items-center gap-3">
@@ -909,7 +758,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
                 </div>
 
-                {/* BOTTOM */}
+                {/* ==================================================
+                    BOTTOM
+                ================================================== */}
                 <div className="pt-4 sm:pt-6 mt-3 sm:mt-4 border-t border-amber-900/20 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-center sm:items-end text-xs">
 
                   {/* LEFT */}
@@ -1010,7 +861,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
 
                 </div>
 
-                {/* FOOTER */}
+                {/* ==================================================
+                    FOOTER
+                ================================================== */}
                 <div className="mt-4 pt-3 border-t border-amber-900/10 text-[9px] sm:text-[10px] text-slate-500 text-center flex flex-wrap items-center justify-center gap-2 sm:gap-4">
 
                   <span>
@@ -1044,4 +897,3 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({
     </AnimatePresence>
   );
 };
-```
