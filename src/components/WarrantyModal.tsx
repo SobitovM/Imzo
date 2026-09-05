@@ -1,4 +1,4 @@
-// WarrantyModal.tsx - To'liq kod
+// WarrantyModal.tsx - To'liq va tuzatilgan kod
 
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -44,7 +44,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   
   const showroomPhone = getShowroomPhone(order.showroomName);
 
-  // 🔥 PDF yuklab olish
+  // 🔥 PDF yuklab olish (OKLCH xatosini chetlab o'tish uchun inline ranglar bilan)
   const handleDownloadPdf = async () => {
     if (!certificateRef.current) {
       console.error('Certificate ref not found');
@@ -66,7 +66,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
         scale: 1.5,
         useCORS: true,
         allowTaint: false,
-        logging: true,
+        logging: false,
         backgroundColor: '#ffffff',
       });
 
@@ -96,13 +96,12 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
       
     } catch (err: any) {
       console.error('❌ PDF generation detailed error:', err);
-      setPdfError(`Xatolik: ${err?.message || "Rasm yoki Server CORS ruxsatini bermadi."}`);
+      setPdfError(`Xatolik: ${err?.message || "PDF yaratishda xatolik yuz berdi."}`);
     } finally {
       setIsGeneratingPdf(false);
     }
   };
 
-  // 🔥 Chop etish
   const handlePrint = () => {
     window.print();
   };
@@ -243,10 +242,14 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
               ref={certificateRef}
               id="certificate-content"
               className="relative w-full bg-white text-slate-900 p-4 sm:p-7 md:p-10 rounded-xl sm:rounded-2xl border-2 sm:border-4 md:border-[6px] border-double border-[#D4AF37] shadow-2xl max-w-full"
-              style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+              style={{ 
+                fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                color: '#0f172a',
+                backgroundColor: '#ffffff'
+              }}
             >
               {/* Background */}
-              <div className="absolute inset-0 bg-gradient-to-b from-[#FFFDF9] to-[#FAF5E8] rounded-xl" />
+              <div className="absolute inset-0 bg-[#FFFDF9] rounded-xl" />
               
               {/* Corner Flourishes */}
               <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-l-2 border-[#D4AF37] z-10" />
@@ -287,7 +290,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Schet raqami:</span>
-                      <span className="font-mono font-bold text-slate-900 bg-amber-100/70 px-2 py-0.5 rounded text-xs">
+                      <span className="font-mono font-bold text-slate-900 bg-amber-100 px-2 py-0.5 rounded text-xs">
                         {order.invoiceNumber}
                       </span>
                     </div>
@@ -316,7 +319,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-slate-500 font-medium shrink-0">Tayyor bo'lgan sana:</span>
-                      <span className="font-bold text-emerald-900 bg-emerald-100/80 px-2 py-0.5 rounded text-xs font-mono">
+                      <span className="font-bold text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded text-xs font-mono">
                         {order.readyDate || (isReady ? 'Tasdiqlangan' : order.orderDate)}
                       </span>
                     </div>
@@ -330,9 +333,9 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                     Kafolat berilgan mahsulotlar spetsifikatsiyasi:
                   </h4>
 
-                  <div className="overflow-x-auto rounded-lg border border-amber-900/20 bg-white/80 shadow-xs">
+                  <div className="overflow-x-auto rounded-lg border border-amber-900/20 bg-white shadow-xs">
                     <table className="w-full text-left text-xs min-w-[340px]">
-                      <thead className="bg-amber-100/60 text-slate-700 font-semibold border-b border-amber-900/15">
+                      <thead className="bg-amber-100 text-slate-700 font-semibold border-b border-amber-900/15">
                         <tr>
                           <th className="py-2 px-2.5 sm:px-3 text-[11px]">№</th>
                           <th className="py-2 px-2.5 sm:px-3 text-[11px]">Mahsulot va Model</th>
@@ -358,7 +361,7 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
                 </div>
 
                 {/* Warranty Period */}
-                <div className="my-2 sm:my-3 p-3 sm:p-4 bg-gradient-to-r from-amber-500/15 via-amber-400/20 to-amber-500/15 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3">
+                <div className="my-2 sm:my-3 p-3 sm:p-4 bg-amber-50 border border-amber-500/40 rounded-xl flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#B8860B] text-white flex items-center justify-center font-extrabold text-sm sm:text-base shadow-sm shrink-0">
                       {warrantyMonths}
