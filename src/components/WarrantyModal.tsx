@@ -44,72 +44,102 @@ export const WarrantyModal: React.FC<WarrantyModalProps> = ({ order, isOpen, onC
   
   const showroomPhone = getShowroomPhone(order.showroomName);
 
-  // 🔥 PDF yuklab olish - TO'G'RILANGAN
-  const handleDownloadPdf = async () => {
-    if (!certificateRef.current) {
-      console.error('Certificate ref not found');
-      setPdfError('Sertifikat elementi topilmadi');
-      return;
+  // WarrantyModal.tsx - PDF yuklab olish
+
+const handleDownloadPdf = async () => {
+  if (!certificateRef.current) {
+    console.error('Certificate ref not found');
+    setPdfError('Sertifikat elementi topilmadi');
+    return;
+  }
+
+  try {
+    setIsGeneratingPdf(true);
+    setPdfError(null);
+    
+    const element = certificateRef.current;
+    
+    // 🔥 1. Avval elementni ko'rinadigan qilish (agar hidden bo'lsa)
+    element.style.display = 'block';
+    element.style.opacity = '1';
+    element.style.visibility = 'visible';
+    
+    // 🔥 2. html2canvas bilan suratga olish
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      allowTaint: false,
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
+      onclone: (clonedDoc, clonedElement) => {
+        // Rasmlarni to'g'ri ko'rsatish
+        const imgs = clonedElement.querySelectorAll('img');
+        imgs.forEach(img => {
+          img.crossOrigin = 'anonymous';
+        });
+      }
+    });
+
+    // 🔥 3. Rasmni PNG ga o'tkazish
+    const imgData = canvas.toDataURL('image/png');
+    
+    // 🔥 4. PDF yaratish
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
+    
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    
+    const margin = 10;
+    const imgWidth = pdfWidth - (margin * 2);
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    
+    let yPosition = margin;
+    let remainingHeight = imgHeight;
+    let pageCount = 1;
+    
+    while (remainingHeight > 0) {
+      if (pageCount > 1) {
+        pdf.addPage();
+        yPosition = margin;
+      }
+      
+      const currentHeight = Math.min(remainingHeight, pdfHeight - (margin * 2));
+      pdf.addImage(
+        imgData, 
+        'PNG', 
+        margin, 
+        yPosition, 
+        imgWidth, 
+        currentHeight
+      );
+      
+      remainingHeight -= currentHeight;
+      pageCount++;
     }
-
-    try {
-      setIsGeneratingPdf(true);
-      setPdfError(null);
-      
-      const element = certificateRef.current;
-      
-      console.log('📄 PDF generatsiya boshlandi...');
-      
-      // 🔥 1. Canvas yaratish
-      const canvas = await html2canvas(element, {
-        scale: 2.5,
-        useCORS: true,
-        logging: true,
-        backgroundColor: '#ffffff',
-        allowTaint: false,
-        width: element.scrollWidth,
-        height: element.scrollHeight,
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        onclone: (clonedDoc, clonedElement) => {
-          const imgs = clonedElement.querySelectorAll('img');
-          imgs.forEach(img => {
-            img.crossOrigin = 'anonymous';
-          });
-        }
-      });
-
-      console.log('✅ Canvas yaratildi:', canvas.width, 'x', canvas.height);
-
-      // 🔥 2. Rasmni PNG ga o'tkazish
-      const imgData = canvas.toDataURL('image/png');
-      
-      // 🔥 3. PDF yaratish
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // 🔥 4. Rasm o'lchamlarini A4 ga moslash
-      const margin = 10;
-      const imgWidth = pdfWidth - (margin * 2);
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      
-      // 🔥 5. Rasmni PDF ga qo'shish
-      let yPosition = margin;
-      let remainingHeight = imgHeight;
-      let pageCount = 1;
-      
-      while (remainingHeight > 0) {
-        if (pageCount > 1) {
-          pdf.addPage();
-          yPosition = margin;
-        }
+    
+    // 🔥 5. PDF ni saqlash
+    const fileName = `Kafolat_Taloni_${order.invoiceNumber}.pdf`;
+    pdf.save(fileName);
+    
+    setDownloadSuccess(true);
+    setTimeout(() => setDownloadSuccess(false), 3000);
+    
+  } catch (err) {
+    console.error('❌ PDF generation error:', err);
+    setPdfError('PDF yaratishda xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring.');
+  } finally {
+    setIsGeneratingPdf(false);
+  }
+};
         
         const currentHeight = Math.min(remainingHeight, pdfHeight - (margin * 2));
         pdf.addImage(
